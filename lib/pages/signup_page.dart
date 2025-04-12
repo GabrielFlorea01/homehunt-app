@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/forgot_password_page.dart';
-import 'package:homehunt/pages/signup_page.dart';
+import 'package:homehunt/pages/home_page.dart';
+import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/widgets/error_banner.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<SignupPage> createState() => _SignupPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignupPageState extends State<SignupPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -21,24 +22,33 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _signUp() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      await AuthService().login(
+      await AuthService().signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
+        _nameController.text.trim(),
       );
+      if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    }
     } on AuthException catch (e) {
       setState(() => _errorMessage = e.message);
     } finally {
-      setState(() => _isLoading = false);
+      if(mounted){
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -58,13 +68,13 @@ class _LoginPageState extends State<LoginPage> {
                 Column(
                   children: [
                     Text(
-                      'Welcome Back',
+                      'Create Account',
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Log in to your account',
+                      'Get started with your new account',
                     ),
                   ],
                 ),
@@ -80,6 +90,14 @@ class _LoginPageState extends State<LoginPage> {
                 ],
 
                 // Form
+                TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextField(
                   controller: _emailController,
                   decoration: const InputDecoration(
@@ -97,24 +115,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   obscureText: true,
                 ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ForgotPasswordPage(),
-                        ),
-                      );
-                    },
-                    child: const Text('Forgot Password?'),
-                  ),
-                ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _isLoading ? null : _login,
+                  onPressed: _isLoading ? null : _signUp,
                   child:
                       _isLoading
                           ? const SizedBox(
@@ -122,24 +125,24 @@ class _LoginPageState extends State<LoginPage> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('Log In'),
+                          : const Text('Sign Up'),
                 ),
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account?"),
+                    const Text('Already have an account?'),
                     const SizedBox(width: 4),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const SignupPage(),
+                            builder: (context) => const LoginPage(),
                           ),
                         );
                       },
-                      child: const Text('Sign Up'),
+                      child: const Text('Log In'),
                     ),
                   ],
                 ),
