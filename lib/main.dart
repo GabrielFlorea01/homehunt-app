@@ -21,10 +21,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.grey,
-          primary: Colors.grey.shade700,
-          secondary: Colors.grey.shade500,
-          tertiary: Colors.grey.shade400,
+          seedColor: Colors.deepPurple,
+          primary: Colors.deepPurple,
+          secondary: Colors.deepPurpleAccent,
+          tertiary: Colors.deepPurple.shade400,
           brightness: Brightness.light,
         ),
         useMaterial3: true,

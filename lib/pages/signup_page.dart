@@ -39,14 +39,14 @@ class _SignupPageState extends State<SignupPage> {
         _nameController.text.trim(),
       );
       if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-      );
-    }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
     } on AuthException catch (e) {
       setState(() => _errorMessage = e.message);
     } finally {
-      if(mounted){
+      if (mounted) {
         setState(() => _isLoading = false);
       }
     }
@@ -55,28 +55,34 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 44, 48, 77), // Dark background
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          constraints: const BoxConstraints(maxWidth: 400), // Small container
+          padding: const EdgeInsets.all(32), // Padding for inner elements
+          decoration: const BoxDecoration(
+            color: Colors.white, // White background for the form container
+            borderRadius: BorderRadius.all(
+              Radius.circular(16),
+            ), // Rounded corners
+          ),
           child: SingleChildScrollView(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
-                Column(
-                  children: [
-                    Text(
-                      'Create Account',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Get started with your new account',
-                    ),
-                  ],
+                const SizedBox(height: 24),
+                Text(
+                  'Create your account',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '...and start the hunt',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
 
@@ -89,7 +95,7 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 20),
                 ],
 
-                // Form
+                // Form Fields
                 TextField(
                   controller: _nameController,
                   decoration: const InputDecoration(

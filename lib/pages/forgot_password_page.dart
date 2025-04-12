@@ -41,30 +41,36 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 44, 48, 77), // Dark background
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          constraints: const BoxConstraints(maxWidth: 400), // Small container
+          padding: const EdgeInsets.all(32), // Padding for inner elements
+          decoration: const BoxDecoration(
+            color: Colors.white, // White background for the form container
+            borderRadius: BorderRadius.all(
+              Radius.circular(16),
+            ), // Rounded corners
+          ),
           child: SingleChildScrollView(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
-                Column(
-                  children: [
-                    Text(
-                      'Reset Password',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _emailSent
-                          ? 'Check your email for a reset link'
-                          : 'Enter your email to receive a reset link',
-                    ),
-                  ],
+                const SizedBox(height: 24),
+                Text(
+                  'Reset Password',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _emailSent
+                      ? 'Check your email for a reset link'
+                      : 'Enter your email to receive a reset link',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
 

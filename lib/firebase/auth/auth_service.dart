@@ -23,16 +23,16 @@ class AuthService {
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        throw AuthException('The password provided is too weak.');
+        throw AuthException('Password too weak');
       } else if (e.code == 'email-already-in-use') {
-        throw AuthException('An account already exists for that email.');
+        throw AuthException('Email already associated to an account');
       } else if (e.code == 'invalid-email') {
-        throw AuthException('The email address is badly formatted.');
+        throw AuthException('Invalid email address provided');
       } else {
-        throw AuthException('Sign up failed. Please try again.');
+        throw AuthException('Sign up failed. Please try again');
       }
     } catch (e) {
-      throw AuthException('An unexpected error occurred.');
+      throw AuthException('An unexpected error occurred');
     }
   }
 
@@ -41,16 +41,16 @@ class AuthService {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        throw AuthException('No user found for that email.');
+        throw AuthException('User not found with this email');
       } else if (e.code == 'wrong-password') {
-        throw AuthException('Wrong password provided.');
+        throw AuthException('Wrong password provided');
       } else if (e.code == 'invalid-email') {
-        throw AuthException('The email address is badly formatted.');
+        throw AuthException('Invalid email address provided');
       } else {
-        throw AuthException('Login failed. Please try again.');
+        throw AuthException('Login failed. Please try again');
       }
     } catch (e) {
-      throw AuthException('An unexpected error occurred.');
+      throw AuthException('An unexpected error occurred');
     }
   }
 
@@ -59,14 +59,14 @@ class AuthService {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        throw AuthException('No user found for that email.');
+        throw AuthException('No user found with this email');
       } else if (e.code == 'invalid-email') {
-        throw AuthException('The email address is badly formatted.');
+        throw AuthException('Invalid email address provided');
       } else {
-        throw AuthException('Password reset failed. Please try again.');
+        throw AuthException('Password reset failed. Please try again');
       }
     } catch (e) {
-      throw AuthException('An unexpected error occurred.');
+      throw AuthException('An unexpected error occurred');
     }
   }
 
