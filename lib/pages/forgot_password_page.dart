@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/login_page.dart';
-import 'package:homehunt/widgets/error_banner.dart';
+import 'package:homehunt/error_widgets/error_banner.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});

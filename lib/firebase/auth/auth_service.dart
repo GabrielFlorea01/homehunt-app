@@ -7,7 +7,7 @@ class AuthService {
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<void> signUp(String email, String password, String name) async {
+  Future<void> signUp(String email, String password, String name, String userType) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -18,6 +18,7 @@ class AuthService {
         await _firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': email,
           'name': name,
+          'userType': userType,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

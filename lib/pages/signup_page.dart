@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/login_page.dart';
-import 'package:homehunt/widgets/error_banner.dart';
+import 'package:homehunt/error_widgets/error_banner.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -13,16 +13,18 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _userTypeController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     _nameController.dispose();
+    _passwordController.dispose();
+    _userTypeController.dispose();
     super.dispose();
   }
 
@@ -35,8 +37,9 @@ class _SignupPageState extends State<SignupPage> {
     try {
       await AuthService().signUp(
         _emailController.text.trim(),
-        _passwordController.text.trim(),
         _nameController.text.trim(),
+        _passwordController.text.trim(),
+        _userTypeController.text.trim(),
       );
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -102,6 +105,33 @@ class _SignupPageState extends State<SignupPage> {
                     labelText: 'Full Name',
                     prefixIcon: Icon(Icons.person),
                   ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: null, // Initial value (null means no selection)
+                  decoration: const InputDecoration(
+                    labelText: 'User Type',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'Buyer',
+                      child: Text('Buyer'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Seller',
+                      child: Text('Seller'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Agent',
+                      child: Text('Agent'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _userTypeController.text = value ?? '';
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextField(
