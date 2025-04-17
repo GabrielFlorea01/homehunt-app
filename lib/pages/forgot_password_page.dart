@@ -58,7 +58,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               children: [
                 const SizedBox(height: 24),
                 Text(
-                  'Reset Password',
+                  'Reseteaza parola',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -67,8 +67,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 const SizedBox(height: 8),
                 Text(
                   _emailSent
-                      ? 'Check your email for a reset link'
-                      : 'Enter your email to receive a reset link',
+                      ? 'Verifica email-ul pentru link-ul de resetare'
+                      : 'Introdu adresa de email si primesti link de restare',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -103,7 +103,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                            : const Text('Send Reset Link'),
+                            : const Text('Trimite Link'),
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -116,7 +116,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                     );
                   },
-                  child: const Text('Back to Login'),
+                  child: const Text('Inapoi la Login'),
                 ),
               ],
             ),

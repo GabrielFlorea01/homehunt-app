@@ -44,15 +44,34 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: StreamBuilder(
-        stream: AuthService().authStateChanges,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return const HomePage();
-          }
-          return const LoginPage();
-        },
-      ),
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: AuthService().authStateChanges,
+      builder: (context, snapshot) {
+        // While waiting for auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Logged in
+        if (snapshot.hasData) {
+          return const HomePage();
+        }
+
+        // Not logged in
+        return const LoginPage();
+      },
     );
   }
 }
