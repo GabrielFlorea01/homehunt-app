@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -7,7 +8,12 @@ class AuthService {
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<void> signUp(String email, String password, String name, String userType) async {
+  Future<void> signUp(
+    String email,
+    String password,
+    String name,
+    String userType,
+  ) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -55,6 +61,33 @@ class AuthService {
     }
   }
 
+  Future<void> googleSignIn() async {
+    try {
+      if (!kIsWeb) {
+        throw AuthException('Google Sign-In is only supported on web.');
+      }
+      final googleProvider = GoogleAuthProvider();
+      final userCredential = await _auth.signInWithPopup(googleProvider);
+
+      final user = userCredential.user;
+      if (user == null) {
+        throw AuthException('No user returned from Google Sign-In.');
+      }
+      // add to firebase daca e nou
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        await _firestore.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'name': user.displayName ?? '',
+          'userType': 'Te rog updateaza tipul de user',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      throw AuthException('Google Sign-In failed. Please try again.');
+    }
+  }
+
   Future<void> forgotPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -74,6 +107,9 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await _auth.signOut();
+      if (kIsWeb) {
+        await _auth.signOut();
+      }
     } catch (e) {
       throw AuthException('Error signing out. Please try again.');
     }

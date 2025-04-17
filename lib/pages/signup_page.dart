@@ -75,7 +75,7 @@ class _SignupPageState extends State<SignupPage> {
               children: [
                 const SizedBox(height: 24),
                 Text(
-                  'Create your account',
+                  'Creeaza un cont',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -83,7 +83,7 @@ class _SignupPageState extends State<SignupPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '...and start the hunt',
+                  '...si incepe cautarea',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -102,7 +102,7 @@ class _SignupPageState extends State<SignupPage> {
                 TextField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Full Name',
+                    labelText: 'Nume complet',
                     prefixIcon: Icon(Icons.person),
                   ),
                 ),
@@ -110,17 +110,17 @@ class _SignupPageState extends State<SignupPage> {
                 DropdownButtonFormField<String>(
                   value: null, // Initial value (null means no selection)
                   decoration: const InputDecoration(
-                    labelText: 'User Type',
+                    labelText: 'Tipul de utilizator',
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   items: const [
                     DropdownMenuItem(
                       value: 'Buyer',
-                      child: Text('Buyer'),
+                      child: Text('Cumparator'),
                     ),
                     DropdownMenuItem(
                       value: 'Seller',
-                      child: Text('Seller'),
+                      child: Text('Vanzator'),
                     ),
                     DropdownMenuItem(
                       value: 'Agent',
@@ -146,7 +146,7 @@ class _SignupPageState extends State<SignupPage> {
                 TextField(
                   controller: _passwordController,
                   decoration: const InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Parola',
                     prefixIcon: Icon(Icons.lock),
                   ),
                   obscureText: true,
@@ -161,13 +161,13 @@ class _SignupPageState extends State<SignupPage> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('Sign Up'),
+                          : const Text('Creeaza cont'),
                 ),
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account?'),
+                    const Text('Ai deja un cont?'),
                     const SizedBox(width: 4),
                     TextButton(
                       onPressed: () {
@@ -178,7 +178,7 @@ class _SignupPageState extends State<SignupPage> {
                           ),
                         );
                       },
-                      child: const Text('Log In'),
+                      child: const Text('Conecteaza-te'),
                     ),
                   ],
                 ),

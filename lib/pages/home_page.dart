@@ -36,11 +36,10 @@ class _HomePageState extends State<HomePage> {
 
     try {
       await AuthService().signOut();
-      //Navigation to login page after signing out
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginPage()),
-          (route) => false, // Remove all previous routes
+          (route) => false,
         );
       }
     } on AuthException catch (e) {
@@ -50,6 +49,33 @@ class _HomePageState extends State<HomePage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _showSignOutConfirmationDialog() async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Are you sure you want to sign out?'),
+          content: const Text('You will be signed out from your account.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                _signOut(); // Sign out the user
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -122,8 +148,8 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.logout),
               title: const Text('Logout'),
               onTap: () {
-                Navigator.pop(context); // Close the drawer first
-                _signOut(); // Then sign out
+                Navigator.pop(context);
+                _showSignOutConfirmationDialog();
               },
             ),
           ],
@@ -138,7 +164,7 @@ class _HomePageState extends State<HomePage> {
             children: [
                 Text(
                   'Hey, let\'s see what we can find today...',
-                  style: TextStyle(fontSize: 20)
+                  style: TextStyle(fontSize: 20),
                 ),
                 const SizedBox(height: 24),
             ],

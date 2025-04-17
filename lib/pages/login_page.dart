@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/forgot_password_page.dart';
+import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/signup_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 
@@ -40,6 +41,40 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _errorMessage = e.message);
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      await AuthService().googleSignIn();
+
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+        (route) => false,
+      );
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "An error occurred";
+        });
+      }
     }
   }
 
@@ -88,10 +123,12 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 const SizedBox(height: 24),
                 Text(
-                  'Enter to start the hunt!',
+                  'Home Hunt',
                   style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 42,
+                    color: Colors.deepPurple,
+                    fontWeight: FontWeight.w900,   
+                    letterSpacing: 1.5
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -115,7 +152,7 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Parola',
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -143,7 +180,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       );
                     },
-                    child: const Text('Forgot your password?'),
+                    child: const Text('Ai uitat parola?'),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -156,17 +193,17 @@ class _LoginPageState extends State<LoginPage> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('Log In'),
+                          : const Text('Conecteaza-te'),
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
-                  onPressed: () {}, // TODO: Add Google login
+                  onPressed: _isLoading ? null : _googleSignIn,
                   icon: Image.asset(
                     'lib/images/google.png',
                     width: 20,
                     height: 20,
                   ),
-                  label: const Text('Sign in with Google'),
+                  label: const Text('Conecteaza-te cu Google'),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -176,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account?"),
+                    const Text("Nu ai un cont?"),
                     TextButton(
                       onPressed: () {
                         Navigator.push(
@@ -186,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         );
                       },
-                      child: const Text('Register here'),
+                      child: const Text('Hai aici :)'),
                     ),
                   ],
                 ),
