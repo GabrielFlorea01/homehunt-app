@@ -7,50 +7,48 @@ class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  State<ForgotPasswordPage> createState() => ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final _emailController = TextEditingController();
-  bool _isLoading = false;
-  bool _emailSent = false;
-  String? _errorMessage;
+class ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final emailController = TextEditingController();
+  bool isLoading = false;
+  bool emailSent = false;
+  String? errorMessage;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    emailController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendResetEmail() async {
+  Future<void> sendResetEmail() async {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      isLoading = true;
+      errorMessage = null;
     });
 
     try {
-      await AuthService().forgotPassword(_emailController.text.trim());
-      setState(() => _emailSent = true);
+      await AuthService().forgotPassword(emailController.text.trim());
+      setState(() => emailSent = true);
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
+      setState(() => errorMessage = e.message);
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 44, 48, 77), // Dark background
+      backgroundColor: const Color.fromARGB(255, 44, 48, 77),
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 400), // Small container
-          padding: const EdgeInsets.all(32), // Padding for inner elements
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(32),
           decoration: const BoxDecoration(
-            color: Colors.white, // White background for the form container
-            borderRadius: BorderRadius.all(
-              Radius.circular(16),
-            ), // Rounded corners
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -66,27 +64,25 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _emailSent
-                      ? 'Verifica email-ul pentru link-ul de resetare'
-                      : 'Introdu adresa de email si primesti link de restare',
+                  emailSent
+                      ? 'Verifica email-ul pentru linkul de resetare'
+                      : 'Introdu adresa de email pentru a primi link de resetare',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
 
-                // Error Banner
-                if (_errorMessage != null) ...[
+                if (errorMessage != null) ...[
                   ErrorBanner(
-                    message: _errorMessage!,
-                    onDismiss: () => setState(() => _errorMessage = null),
+                    message: errorMessage!,
+                    onDismiss: () => setState(() => errorMessage = null),
                   ),
                   const SizedBox(height: 20),
                 ],
 
-                // Form or Success Message
-                if (!_emailSent) ...[
+                if (!emailSent) ...[
                   TextField(
-                    controller: _emailController,
+                    controller: emailController,
                     decoration: const InputDecoration(
                       labelText: 'Email',
                       prefixIcon: Icon(Icons.email),
@@ -95,15 +91,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                   const SizedBox(height: 24),
                   FilledButton(
-                    onPressed: _isLoading ? null : _sendResetEmail,
+                    onPressed: isLoading ? null : sendResetEmail,
                     child:
-                        _isLoading
+                        isLoading
                             ? const SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                            : const Text('Trimite Link'),
+                            : const Text('Trimite link'),
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -116,7 +112,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                     );
                   },
-                  child: const Text('Inapoi la Login'),
+                  child: const Text('Inapoi la login'),
                 ),
               ],
             ),

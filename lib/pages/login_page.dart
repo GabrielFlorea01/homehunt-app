@@ -9,53 +9,56 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<LoginPage> createState() => LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _isLoading = false;
-  String? _errorMessage;
-  bool _obscurePassword = true;
+class LoginPageState extends State<LoginPage> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool isLoading = false;
+  String? errorMessage;
+  bool obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> login() async {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      isLoading = true;
+      errorMessage = null;
     });
 
     try {
       await AuthService().login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
+        emailController.text.trim(),
+        passwordController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+        (route) => false,
       );
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
+      setState(() => errorMessage = e.message);
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => isLoading = false);
     }
   }
 
-  Future<void> _googleSignIn() async {
-    if (!mounted) {
-      return;
-    }
+  Future<void> googleSignIn() async {
+    if (!mounted) return;
+
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      isLoading = true;
+      errorMessage = null;
     });
-    
+
     try {
       await AuthService().googleSignIn();
-
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const HomePage()),
@@ -64,15 +67,15 @@ class _LoginPageState extends State<LoginPage> {
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
-          _errorMessage = e.message;
+          isLoading = false;
+          errorMessage = e.message;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
-          _errorMessage = "An error occurred";
+          isLoading = false;
+          errorMessage = "A aparut o eroare";
         });
       }
     }
@@ -93,10 +96,10 @@ class _LoginPageState extends State<LoginPage> {
                 child:
                     isWide
                         ? Row(
-                          children: [_buildLoginContainer(), _buildImageSide()],
+                          children: [buildLoginContainer(), buildImageSide()],
                         )
                         : Column(
-                          children: [_buildImageSide(), _buildLoginContainer()],
+                          children: [buildImageSide(), buildLoginContainer()],
                         ),
               ),
             ),
@@ -106,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildLoginContainer() {
+  Widget buildLoginContainer() {
     return Expanded(
       child: Center(
         child: Container(
@@ -121,27 +124,27 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 24),
-                Text(
-                  'Home Hunt',
-                  style: const TextStyle(
+                const SizedBox(height: 15),
+                const Text(
+                  'HOME HUNT',
+                  style: TextStyle(
                     fontSize: 42,
                     color: Colors.deepPurple,
-                    fontWeight: FontWeight.w900,   
-                    letterSpacing: 1.5
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 32),
-                if (_errorMessage != null) ...[
+                const SizedBox(height: 40),
+                if (errorMessage != null) ...[
                   ErrorBanner(
-                    message: _errorMessage!,
-                    onDismiss: () => setState(() => _errorMessage = null),
+                    message: errorMessage!,
+                    onDismiss: () => setState(() => errorMessage = null),
                   ),
                   const SizedBox(height: 16),
                 ],
                 TextField(
-                  controller: _emailController,
+                  controller: emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email),
@@ -149,20 +152,20 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
+                  controller: passwordController,
+                  obscureText: obscurePassword,
                   decoration: InputDecoration(
                     labelText: 'Parola',
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword
+                        obscurePassword
                             ? Icons.visibility
                             : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscurePassword = !_obscurePassword;
+                          obscurePassword = !obscurePassword;
                         });
                       },
                     ),
@@ -185,9 +188,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _isLoading ? null : _login,
+                  onPressed: isLoading ? null : login,
                   child:
-                      _isLoading
+                      isLoading
                           ? const SizedBox(
                             width: 20,
                             height: 20,
@@ -197,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
-                  onPressed: _isLoading ? null : _googleSignIn,
+                  onPressed: isLoading ? null : googleSignIn,
                   icon: Image.asset(
                     'lib/images/google.png',
                     width: 20,
@@ -235,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildImageSide() {
+  Widget buildImageSide() {
     return Expanded(
       child: Container(
         decoration: const BoxDecoration(

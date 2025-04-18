@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get authStateChanges => auth.authStateChanges();
 
   Future<void> signUp(
     String email,
@@ -15,13 +15,13 @@ class AuthService {
     String userType,
   ) async {
     try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(
+      final userCredential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (userCredential.user != null) {
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        await firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': email,
           'name': name,
           'userType': userType,
@@ -30,88 +30,91 @@ class AuthService {
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
-        throw AuthException('Password too weak');
+        throw AuthException('Parola este prea slaba');
       } else if (e.code == 'email-already-in-use') {
-        throw AuthException('Email already associated to an account');
+        throw AuthException('Email deja asociat cu un cont');
       } else if (e.code == 'invalid-email') {
-        throw AuthException('Invalid email address provided');
+        throw AuthException('Email invalid');
       } else {
-        throw AuthException('Sign up failed. Please try again');
+        throw AuthException('Sign up esuat. Incearca din nou');
       }
     } catch (e) {
-      throw AuthException('An unexpected error occurred');
+      throw AuthException('Eroare neasteptata');
     }
   }
 
   Future<void> login(String email, String password) async {
     try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        throw AuthException('User not found with this email');
+        throw AuthException('User cu acest email nu exista');
       } else if (e.code == 'wrong-password') {
-        throw AuthException('Wrong password provided');
+        throw AuthException('Parola introdusa este gresita');
       } else if (e.code == 'invalid-email') {
-        throw AuthException('Invalid email address provided');
+        throw AuthException('Adresa de email invalida');
       } else {
-        throw AuthException('Login failed. Please try again');
+        throw AuthException('Login esuat. Incearca din nou');
       }
     } catch (e) {
-      throw AuthException('An unexpected error occurred');
+      throw AuthException('Eroare neasteptata');
     }
   }
 
   Future<void> googleSignIn() async {
     try {
       if (!kIsWeb) {
-        throw AuthException('Google Sign-In is only supported on web.');
+        throw AuthException('Google Sign-In este disponibil doar pe web.');
       }
-      final googleProvider = GoogleAuthProvider();
-      final userCredential = await _auth.signInWithPopup(googleProvider);
 
+      final googleProvider = GoogleAuthProvider();
+      googleProvider.setCustomParameters({'prompt': 'select_account'});
+
+      final userCredential = await auth.signInWithPopup(googleProvider);
       final user = userCredential.user;
+
       if (user == null) {
-        throw AuthException('No user returned from Google Sign-In.');
+        throw AuthException('Nu s-a returnat niciun user de la Google.');
       }
-      // add to firebase daca e nou
-      final doc = await _firestore.collection('users').doc(user.uid).get();
+
+      final doc = await firestore.collection('users').doc(user.uid).get();
       if (!doc.exists) {
-        await _firestore.collection('users').doc(user.uid).set({
+        await firestore.collection('users').doc(user.uid).set({
           'email': user.email,
           'name': user.displayName ?? '',
-          'userType': 'Te rog updateaza tipul de user',
+          'userType': 'Te rog sa actualizezi tipul de user',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
     } catch (e) {
-      throw AuthException('Google Sign-In failed. Please try again.');
+      throw AuthException('Google Sign-In a esuat. Incearca din nou.');
     }
   }
 
   Future<void> forgotPassword(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
+      await auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
-        throw AuthException('No user found with this email');
+        throw AuthException('User negasit cu acest email');
       } else if (e.code == 'invalid-email') {
-        throw AuthException('Invalid email address provided');
+        throw AuthException('Adresa de email invalida');
       } else {
-        throw AuthException('Password reset failed. Please try again');
+        throw AuthException('Introdu o adresa de email');
       }
     } catch (e) {
-      throw AuthException('An unexpected error occurred');
+      throw AuthException('Eroare neasteptata');
     }
   }
 
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
+      await auth.signOut();
       if (kIsWeb) {
-        await _auth.signOut();
+        await auth.signOut();
       }
     } catch (e) {
-      throw AuthException('Error signing out. Please try again.');
+      throw AuthException('Eroare la sign out. Incearca din nou');
     }
   }
 }

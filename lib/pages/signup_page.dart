@@ -8,38 +8,39 @@ class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
   @override
-  State<SignupPage> createState() => _SignupPageState();
+  State<SignupPage> createState() => SignupPageState();
 }
 
-class _SignupPageState extends State<SignupPage> {
-  final _emailController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _userTypeController = TextEditingController();
-  bool _isLoading = false;
-  String? _errorMessage;
+class SignupPageState extends State<SignupPage> {
+  final emailController = TextEditingController();
+  final nameController = TextEditingController();
+  final passwordController = TextEditingController();
+  final userTypeController = TextEditingController();
+  bool isLoading = false;
+  String? errorMessage;
+  bool obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _nameController.dispose();
-    _passwordController.dispose();
-    _userTypeController.dispose();
+    emailController.dispose();
+    nameController.dispose();
+    passwordController.dispose();
+    userTypeController.dispose();
     super.dispose();
   }
 
-  Future<void> _signUp() async {
+  Future<void> signUp() async {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      isLoading = true;
+      errorMessage = null;
     });
 
     try {
       await AuthService().signUp(
-        _emailController.text.trim(),
-        _nameController.text.trim(),
-        _passwordController.text.trim(),
-        _userTypeController.text.trim(),
+        emailController.text.trim(),
+        nameController.text.trim(),
+        passwordController.text.trim(),
+        userTypeController.text.trim(),
       );
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -47,10 +48,10 @@ class _SignupPageState extends State<SignupPage> {
         );
       }
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
+      setState(() => errorMessage = e.message);
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => isLoading = false);
       }
     }
   }
@@ -58,16 +59,14 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 44, 48, 77), // Dark background
+      backgroundColor: const Color.fromARGB(255, 44, 48, 77),
       body: Center(
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 400), // Small container
-          padding: const EdgeInsets.all(32), // Padding for inner elements
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(32),
           decoration: const BoxDecoration(
-            color: Colors.white, // White background for the form container
-            borderRadius: BorderRadius.all(
-              Radius.circular(16),
-            ), // Rounded corners
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -88,19 +87,15 @@ class _SignupPageState extends State<SignupPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-
-                // Error Banner
-                if (_errorMessage != null) ...[
+                if (errorMessage != null) ...[
                   ErrorBanner(
-                    message: _errorMessage!,
-                    onDismiss: () => setState(() => _errorMessage = null),
+                    message: errorMessage!,
+                    onDismiss: () => setState(() => errorMessage = null),
                   ),
                   const SizedBox(height: 20),
                 ],
-
-                // Form Fields
                 TextField(
-                  controller: _nameController,
+                  controller: nameController,
                   decoration: const InputDecoration(
                     labelText: 'Nume complet',
                     prefixIcon: Icon(Icons.person),
@@ -108,34 +103,25 @@ class _SignupPageState extends State<SignupPage> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: null, // Initial value (null means no selection)
+                  value: null,
                   decoration: const InputDecoration(
                     labelText: 'Tipul de utilizator',
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   items: const [
-                    DropdownMenuItem(
-                      value: 'Buyer',
-                      child: Text('Cumparator'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Seller',
-                      child: Text('Vanzator'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Agent',
-                      child: Text('Agent'),
-                    ),
+                    DropdownMenuItem(value: 'buyer', child: Text('Cumparator')),
+                    DropdownMenuItem(value: 'seller', child: Text('Vanzator')),
+                    DropdownMenuItem(value: 'agent', child: Text('Agent')),
                   ],
                   onChanged: (value) {
                     setState(() {
-                      _userTypeController.text = value ?? '';
+                      userTypeController.text = value ?? '';
                     });
                   },
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  controller: _emailController,
+                  controller: emailController,
                   decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email),
@@ -144,18 +130,30 @@ class _SignupPageState extends State<SignupPage> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
+                  controller: passwordController,
+                  obscureText: obscurePassword,
+                  decoration: InputDecoration(
                     labelText: 'Parola',
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscurePassword = !obscurePassword;
+                        });
+                      },
+                    ),
                   ),
-                  obscureText: true,
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _isLoading ? null : _signUp,
+                  onPressed: isLoading ? null : signUp,
                   child:
-                      _isLoading
+                      isLoading
                           ? const SizedBox(
                             width: 20,
                             height: 20,

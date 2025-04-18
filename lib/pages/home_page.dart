@@ -1,37 +1,54 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/pages/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   User? user;
-  bool _isLoading = true;
-  String? _errorMessage;
+  String? userType;
+  bool isLoading = true;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    loadUser();
   }
 
-  Future<void> _loadUser() async {
-    setState(() => _isLoading = true);
+  Future<void> loadUser() async {
+    setState(() => isLoading = true);
     user = FirebaseAuth.instance.currentUser;
-    setState(() => _isLoading = false);
+
+    if (user != null) {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user!.uid)
+              .get();
+      if (doc.exists) {
+        userType = doc.data()?['userType'] ?? 'buyer';
+      }
+    }
+    setState(() => isLoading = false);
   }
 
-  Future<void> _signOut() async {
+  bool get isUserTypeInvalid =>
+      !(userType == 'buyer' || userType == 'seller' || userType == 'agent');
+
+  Future<void> signOut() async {
     setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+      isLoading = true;
+      errorMessage = null;
     });
 
     try {
@@ -43,33 +60,77 @@ class _HomePageState extends State<HomePage> {
         );
       }
     } on AuthException catch (e) {
-      setState(() => _errorMessage = e.message);
+      setState(() => errorMessage = e.message);
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => isLoading = false);
       }
     }
   }
 
-  Future<void> _showSignOutConfirmationDialog() async {
+  void clearError() {
+    setState(() {
+      errorMessage = null;
+    });
+  }
+
+  Future<void> showSignOutConfirmationDialog() async {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Are you sure you want to sign out?'),
-          content: const Text('You will be signed out from your account.'),
+          title: const Text('Esti sigur ca vrei sa iesi?'),
+          content: const Text('Va trebui sa te loghezi din nou'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Nu'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                _signOut(); // Sign out the user
+                Navigator.of(context).pop();
+                signOut();
               },
+              child: const Text('Da'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void addNewListing() {
+    setState(() => isLoading = true);
+    setState(() => isLoading = false);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Adauga anunt nou'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Inchide'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showCannotAddListingDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Doar agentii si vanzatorii pot adauga un anunt'),
+          content: const Text(
+            'Daca doresti sa publici anunt, creeaza un cont nou de vanzator sau agent',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
           ],
@@ -115,17 +176,17 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.home),
               title: const Text('Marketplace'),
               selected: true,
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-              },
+              onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.favorite),
               title: const Text('Favorite'),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                // Navigate to favorites page
-              },
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.addchart_rounded),
+              title: const Text('Anunturile mele'),
+              onTap: () => Navigator.pop(context),
             ),
             const Divider(),
             ListTile(
@@ -133,44 +194,108 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Profil'),
               onTap: () {
                 Navigator.pop(context);
-                // Navigate to profile page to do
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
               },
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Setari'),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                // Navigate to settings page
-              },
+              onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Logout'),
               onTap: () {
                 Navigator.pop(context);
-                _showSignOutConfirmationDialog();
+                showSignOutConfirmationDialog();
               },
             ),
           ],
         ),
       ),
-      body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 600),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-                Text(
-                  'Hey, let\'s see what we can find today...',
-                  style: TextStyle(fontSize: 20),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (isUserTypeInvalid)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange[100],
+                            border: Border.all(color: Colors.orange),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.warning, color: Colors.orange),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Tipul de utilizator nu este completat. Actualizeaza profilul inainte de a continua',
+                                  style: TextStyle(color: Colors.orange[900]),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ProfilePage(),
+                                    ),
+                                  );
+                                },
+                                child: const Text('UPDATE'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed:
+                              (userType == 'seller' || userType == 'agent')
+                                  ? addNewListing
+                                  : showCannotAddListingDialog,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 20,
+                            ),
+                            backgroundColor:
+                                (userType == 'seller' || userType == 'agent')
+                                    ? Theme.of(context).colorScheme.secondary
+                                    : Colors.grey,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          label: const Text(
+                            'Adauga anunt',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      if (errorMessage != null)
+                        ErrorBanner(
+                          message: errorMessage!,
+                          onDismiss: clearError,
+                        ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
+              ),
     );
   }
 }
