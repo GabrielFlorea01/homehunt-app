@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class ProfilePageAgent extends StatefulWidget {
+  const ProfilePageAgent({super.key});
 
   @override
-  State<ProfilePage> createState() => ProfilePageState();
+  State<ProfilePageAgent> createState() => ProfilePageAgentState();
 }
 
-class ProfilePageState extends State<ProfilePage> {
+class ProfilePageAgentState extends State<ProfilePageAgent> {
   final user = FirebaseAuth.instance.currentUser;
+  String? userType;
   String? errorMessage;
   bool isLoading = false;
 
@@ -22,10 +23,16 @@ class ProfilePageState extends State<ProfilePage> {
 
   Future<void> loadUserType() async {
     if (user == null) return;
-    FirebaseFirestore.instance
-    .collection('users')
-    .doc(user!.uid)
-    .get();
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+    if (doc.exists) {
+      setState(() {
+        userType = doc.data()?['userType'];
+      });
+    }
   }
 
   @override
@@ -33,15 +40,14 @@ class ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
       body: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center),
         ),
       ),
     );

@@ -12,7 +12,7 @@ class AuthService {
     String email,
     String password,
     String name,
-    String userType,
+    String phone,
   ) async {
     try {
       final userCredential = await auth.createUserWithEmailAndPassword(
@@ -24,7 +24,7 @@ class AuthService {
         await firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': email,
           'name': name,
-          'userType': userType,
+          'phone': phone,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -63,10 +63,6 @@ class AuthService {
 
   Future<void> googleSignIn() async {
     try {
-      if (!kIsWeb) {
-        throw AuthException('Google Sign-In este disponibil doar pe web.');
-      }
-
       final googleProvider = GoogleAuthProvider();
       googleProvider.setCustomParameters({'prompt': 'select_account'});
 
@@ -82,12 +78,38 @@ class AuthService {
         await firestore.collection('users').doc(user.uid).set({
           'email': user.email,
           'name': user.displayName ?? '',
-          'userType': 'Te rog sa actualizezi tipul de user',
+          'phone': user.phoneNumber ?? '',
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
     } catch (e) {
-      throw AuthException('Google Sign-In a esuat. Incearca din nou.');
+      throw AuthException('Logarea cu Google a esuat');
+    }
+  }
+
+  Future<void> facebookSignIn() async {
+    try {
+      final facebookProvider = FacebookAuthProvider();
+      facebookProvider.setCustomParameters({'display': 'popup'});
+
+      final userCredential = await auth.signInWithPopup(facebookProvider);
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw AuthException('Nu s-a returnat niciun user de la Facebook.');
+      }
+
+      final doc = await firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        await firestore.collection('users').doc(user.uid).set({
+          'email': user.email,
+          'name': user.displayName ?? '',
+          'phone': user.phoneNumber ?? '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      throw AuthException('Logarea cu Facebook a esuat');
     }
   }
 

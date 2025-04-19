@@ -81,6 +81,37 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
+    Future<void> facebookSignIn() async {
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      await AuthService().facebookSignIn();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+        (route) => false,
+      );
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          errorMessage = "A aparut o eroare";
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -125,17 +156,12 @@ class LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 15),
-                const Text(
-                  'HOME HUNT',
-                  style: TextStyle(
-                    fontSize: 42,
-                    color: Colors.deepPurple,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
+                Image(
+                  image: const AssetImage('lib/images/logomov.png'),
+                  width: 150,
+                  height: 150,
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -183,10 +209,10 @@ class LoginPageState extends State<LoginPage> {
                         ),
                       );
                     },
-                    child: const Text('Ai uitat parola?'),
+                    child: const Text('Ai uitat parola'),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 15),
                 FilledButton(
                   onPressed: isLoading ? null : login,
                   child:
@@ -198,7 +224,7 @@ class LoginPageState extends State<LoginPage> {
                           )
                           : const Text('Conecteaza-te'),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 45),
                 FilledButton.icon(
                   onPressed: isLoading ? null : googleSignIn,
                   icon: Image.asset(
@@ -206,10 +232,26 @@ class LoginPageState extends State<LoginPage> {
                     width: 20,
                     height: 20,
                   ),
-                  label: const Text('Conecteaza-te cu Google'),
+                  label: const Text('Continua cu Google'),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
+                    side: const BorderSide(color: Colors.black, width: 0.5),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                FilledButton.icon(
+                  onPressed: isLoading ? null : facebookSignIn,
+                  icon: Image.asset(
+                    'lib/images/facebook.png',
+                    width: 20,
+                    height: 22,
+                  ),
+                  label: const Text('Continua cu Facebook'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.blueAccent, width: 0.5),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -226,7 +268,7 @@ class LoginPageState extends State<LoginPage> {
                           ),
                         );
                       },
-                      child: const Text('Hai aici :)'),
+                      child: const Text('Creeaza cont nou'),
                     ),
                   ],
                 ),

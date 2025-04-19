@@ -37,8 +37,11 @@ dependencies:
   firebase_core: ^3.13.0
   firebase_auth: ^5.5.2
   cloud_firestore: 5.6.6
-  fluttertoast: ^8.2.12
   google_sign_in: ^6.1.0
+  google_fonts: ^6.1.0
+  intl_phone_field: ^3.2.0
+  firebase_storage: 12.4.5
+  uuid: ^4.2.2
 
 dev_dependencies:
   flutter_test:
@@ -65,7 +68,10 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - lib/images/google.png
+    - lib/images/facebook.png
     - lib/images/homehuntlogin.png
+    - lib/images/logo.png
+    - lib/images/logomov.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

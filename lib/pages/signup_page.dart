@@ -3,6 +3,8 @@ import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:intl_phone_field/country_picker_dialog.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -15,7 +17,7 @@ class SignupPageState extends State<SignupPage> {
   final emailController = TextEditingController();
   final nameController = TextEditingController();
   final passwordController = TextEditingController();
-  final userTypeController = TextEditingController();
+  final phoneController = TextEditingController();
   bool isLoading = false;
   String? errorMessage;
   bool obscurePassword = true;
@@ -25,7 +27,7 @@ class SignupPageState extends State<SignupPage> {
     emailController.dispose();
     nameController.dispose();
     passwordController.dispose();
-    userTypeController.dispose();
+    phoneController.dispose();
     super.dispose();
   }
 
@@ -40,7 +42,7 @@ class SignupPageState extends State<SignupPage> {
         emailController.text.trim(),
         nameController.text.trim(),
         passwordController.text.trim(),
-        userTypeController.text.trim(),
+        phoneController.text.trim(),
       );
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -102,22 +104,20 @@ class SignupPageState extends State<SignupPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: null,
+                IntlPhoneField(
                   decoration: const InputDecoration(
-                    labelText: 'Tipul de utilizator',
-                    prefixIcon: Icon(Icons.person_outline),
+                    labelText: 'Telefon',
+                    border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'buyer', child: Text('Cumparator')),
-                    DropdownMenuItem(value: 'seller', child: Text('Vanzator')),
-                    DropdownMenuItem(value: 'agent', child: Text('Agent')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      userTypeController.text = value ?? '';
-                    });
+                  initialCountryCode: 'RO',
+                  disableLengthCheck: true,
+                  onChanged: (phone) {
+                    phoneController.text = phone.completeNumber;
                   },
+                  pickerDialogStyle: PickerDialogStyle(
+                    width: 300,
+                    backgroundColor: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(

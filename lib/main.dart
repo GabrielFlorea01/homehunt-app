@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/firebase/config/firebase_options.dart';
 import 'package:homehunt/pages/home_page.dart';
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
           tertiary: Colors.deepPurple.shade400,
           brightness: Brightness.light,
         ),
+        textTheme: GoogleFonts.rubikTextTheme(),
         useMaterial3: true,
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
