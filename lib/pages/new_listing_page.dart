@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:html' as html;
 
 class AddNewListingPage extends StatefulWidget {
   const AddNewListingPage({super.key});
@@ -10,9 +12,49 @@ class AddNewListingPage extends StatefulWidget {
 
 class AddNewListingPageState extends State<AddNewListingPage> {
   String selectedCategory = 'Apartament';
+  String? errorMessage;
   String transactionType = 'De inchiriat';
   String? selectedAgent;
   List<String> agents = [];
+  List<PlatformFile> selectedImages = [];
+  List<html.File> webImages = [];
+  List<String> imageUrls = [];
+  final formKey = GlobalKey<FormState>();
+
+  //Locatie form 
+  final titleController = TextEditingController();
+  final priceController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final cityController = TextEditingController();
+  final streetController = TextEditingController();
+  final numberController = TextEditingController();
+  final sectorController = TextEditingController();
+
+  //Apartament form
+  String? selectedNumarCamereApartament;
+  String? selectedCompartimentare;
+  final etajController = TextEditingController();
+  final suprafataUtilaApartController = TextEditingController();
+  final anConstructieApartController = TextEditingController();
+
+  //Casa form
+  String? selectedNumarCamereCasa;
+  final suprafataUtilaCasaController = TextEditingController();
+  final suprafataTerenCasaController = TextEditingController();
+  final anConstructieCasaController = TextEditingController();
+  final etajeCasaController = TextEditingController();
+
+  //Teren form
+  String? selectedTipTeren;
+  String? selectedClasificare;
+  final suprafataTerenController = TextEditingController();
+
+  //Spatiu Comercial form
+  String? selectedCategorieSpatiu;
+  final suprafataSpatioController = TextEditingController();
+
+  String? selectedJudet;
+
   final judete = [
     'Alba',
     'Arad',
@@ -68,15 +110,80 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       setState(() {
         agents = snapshot.docs.map((doc) => doc['name'] as String).toList();
       });
-    } catch (_) {
-      // handle error if needed
+    } catch (e) {
+      errorMessage = "A aparut o eroare la incarcarea agentilor";
     }
+  }
+
+  Future<void> pickImages() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: true,
+        withData: true,
+      );
+
+      if (result != null) {
+        setState(() {
+          selectedImages = result.files;
+
+          for (var file in result.files) {
+            if (file.bytes != null) {
+              final url = html.Url.createObjectUrlFromBlob(
+                html.Blob([file.bytes!], 'image/${file.extension}'),
+              );
+              imageUrls.add(url);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      errorMessage = "Eroare la incarcarea imaginilor";
+    }
+  }
+
+  void removeImage(int index) {
+    setState(() {
+      if (index < imageUrls.length) {
+        html.Url.revokeObjectUrl(imageUrls[index]);
+        imageUrls.removeAt(index);
+      }
+      if (index < selectedImages.length) {
+        selectedImages.removeAt(index);
+      }
+    });
   }
 
   @override
   void initState() {
     super.initState();
     getAgents();
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    priceController.dispose();
+    descriptionController.dispose();
+    cityController.dispose();
+    streetController.dispose();
+    numberController.dispose();
+    sectorController.dispose();
+    etajController.dispose();
+    suprafataUtilaApartController.dispose();
+    anConstructieApartController.dispose();
+    suprafataUtilaCasaController.dispose();
+    suprafataTerenCasaController.dispose();
+    anConstructieCasaController.dispose();
+    etajeCasaController.dispose();
+    suprafataTerenController.dispose();
+    suprafataSpatioController.dispose();
+
+    for (var url in imageUrls) {
+      html.Url.revokeObjectUrl(url);
+    }
+
+    super.dispose();
   }
 
   Widget buildLocalizareFields() {
@@ -93,36 +200,49 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             labelText: 'Judet',
             border: OutlineInputBorder(),
           ),
+          value: selectedJudet,
+          validator: (value) => value == null ? 'Selecteaza judetul' : null,
           items:
               judete
                   .map((j) => DropdownMenuItem(value: j, child: Text(j)))
                   .toList(),
-          onChanged: (_) {},
+          onChanged: (String? value) {
+            setState(() {
+              selectedJudet = value;
+            });
+          },
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: cityController,
+          decoration: const InputDecoration(
             labelText: 'Oras',
             border: OutlineInputBorder(),
           ),
+          validator: (value) => value!.isEmpty ? 'Introdu orasul' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: streetController,
+          decoration: const InputDecoration(
             labelText: 'Strada',
             border: OutlineInputBorder(),
           ),
+          validator: (value) => value!.isEmpty ? 'Introdu strada' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: numberController,
+          decoration: const InputDecoration(
             labelText: 'Numar',
             border: OutlineInputBorder(),
           ),
+          validator: (value) => value!.isEmpty ? 'Introdu numarul' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: sectorController,
+          decoration: const InputDecoration(
             labelText: 'Sector (optional)',
             border: OutlineInputBorder(),
           ),
@@ -131,7 +251,151 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     );
   }
 
-  Widget buildChoiceChips(String label, List<String> options) {
+  Widget buildImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Imagini:',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width:
+              double.infinity, // 👈 Ensures full width like other form fields
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: pickImages,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 30,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child:
+                      imageUrls.isEmpty
+                          ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 50,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(height: 16),
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Incarca o fotografie',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          '\n\nMaxim 15 poze. Formate acceptate: PNG, JPG. Dimensiune maximă 10MB',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                          : Center(
+                            child: Icon(
+                              Icons.add_photo_alternate,
+                              size: 30,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                ),
+              ),
+              if (imageUrls.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      imageUrls.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final url = entry.value;
+
+                        return Stack(
+                          children: [
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(url, fit: BoxFit.cover),
+                              ),
+                            ),
+                            Positioned(
+                              right: 4,
+                              top: 4,
+                              child: GestureDetector(
+                                onTap: () => removeImage(index),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 3,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.close, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+
+  Widget buildChoiceChips(
+    String label,
+    List<String> options,
+    String? selectedValue,
+    Function(String?) onSelect,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -142,8 +406,12 @@ class AddNewListingPageState extends State<AddNewListingPage> {
               options.map((opt) {
                 return ChoiceChip(
                   label: Text(opt),
-                  selected: false,
-                  onSelected: (_) {},
+                  selected: selectedValue == opt,
+                  onSelected: (bool selected) {
+                    if (selected) {
+                      onSelect(opt);
+                    }
+                  },
                 );
               }).toList(),
         ),
@@ -151,42 +419,28 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     );
   }
 
-  Widget buildCommonFields({
-    bool includeEtaj = false,
-    bool includeAnConstructie = false,
-  }) {
+  Widget buildTransactionTypeChips() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
-        if (includeAnConstructie) ...[
-          const SizedBox(height: 10),
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'An constructie',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-          ),
-        ],
-        if (includeEtaj) ...[
-          const SizedBox(height: 10),
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'Etaje',
-              border: OutlineInputBorder(),
-            ),
-            keyboardType: TextInputType.number,
-          ),
-        ],
-        const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
-            labelText: 'Descriere',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 5,
-          maxLength: 200,
+        const Text('Tip tranzactie'),
+        SizedBox(height: 10),
+        Wrap(
+          spacing: 12,
+          children:
+              transactionTypes.map((type) {
+                return ChoiceChip(
+                  label: Text(type),
+                  selected: transactionType == type,
+                  onSelected: (bool selected) {
+                    if (selected) {
+                      setState(() {
+                        transactionType = type;
+                      });
+                    }
+                  },
+                );
+              }).toList(),
         ),
       ],
     );
@@ -196,19 +450,21 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
             labelText: 'Titlu',
             border: OutlineInputBorder(),
           ),
           maxLength: 30,
+          validator: (value) => value!.isEmpty ? 'Introdu titlul' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
-            labelText: 'Numar camere',
-            border: OutlineInputBorder(),
-          ),
+        buildChoiceChips(
+          'Numar camere',
+          List.generate(5, (i) => '${i + 1}'),
+          selectedNumarCamereApartament,
+          (value) => setState(() => selectedNumarCamereApartament = value),
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField(
@@ -216,38 +472,76 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             labelText: 'Compartimentare',
             border: OutlineInputBorder(),
           ),
+          value: selectedCompartimentare,
+          validator:
+              (value) => value == null ? 'Selecteaza compartimentarea' : null,
           items:
               [
                 'Decomandat',
                 'Semidecomandat',
                 'Nedecomandat',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (_) {},
+          onChanged: (value) {
+            setState(() {
+              selectedCompartimentare = value;
+            });
+          },
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: etajController,
+          decoration: const InputDecoration(
             labelText: 'Etaj',
             border: OutlineInputBorder(),
           ),
+          validator: (value) => value!.isEmpty ? 'Introdu etajul' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: suprafataUtilaApartController,
+          decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.isEmpty ? 'Introdu suprafata' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: anConstructieApartController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          validator:
+              (value) => value!.isEmpty ? 'Introdu anul constructiei' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
         ),
-        buildCommonFields(includeAnConstructie: true),
+        const SizedBox(height: 10),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (value) => value!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
     );
@@ -257,40 +551,92 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
             labelText: 'Titlu',
             border: OutlineInputBorder(),
           ),
           maxLength: 30,
+          validator: (value) => value!.isEmpty ? 'Introduceti titlul' : null,
         ),
         const SizedBox(height: 10),
-        buildChoiceChips('Numar camere', List.generate(10, (i) => '${i + 1}')),
+        buildChoiceChips(
+          'Numar camere',
+          List.generate(10, (i) => '${i + 1}'),
+          selectedNumarCamereCasa,
+          (value) => setState(() => selectedNumarCamereCasa = value),
+        ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: suprafataUtilaCasaController,
+          decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator:
+              (value) => value!.isEmpty ? 'Introduceti suprafata utila' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: suprafataTerenCasaController,
+          decoration: const InputDecoration(
             labelText: 'Suprafata teren (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator:
+              (value) =>
+                  value!.isEmpty ? 'Introduceti suprafata terenului' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: anConstructieCasaController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          validator:
+              (value) => value!.isEmpty ? 'Introdu anul construcției' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: etajeCasaController,
+          decoration: const InputDecoration(
+            labelText: 'Etaje',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          validator:
+              (value) => value!.isEmpty ? 'Introdu numarul de etaje' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
         ),
-        buildCommonFields(includeEtaj: true, includeAnConstructie: true),
+        const SizedBox(height: 10),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (value) => value!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
     );
@@ -300,25 +646,34 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
             labelText: 'Titlu',
             border: OutlineInputBorder(),
           ),
           maxLength: 30,
+          validator: (value) => value!.isEmpty ? 'Introdu titlul' : null,
         ),
         DropdownButtonFormField(
           decoration: const InputDecoration(
             labelText: 'Tip teren',
             border: OutlineInputBorder(),
           ),
+          value: selectedTipTeren,
+          validator:
+              (value) => value == null ? 'Selecteaza tipul terenului' : null,
           items:
               [
                 'Agricol',
                 'Constructii',
                 'Forestier',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (_) {},
+          onChanged: (value) {
+            setState(() {
+              selectedTipTeren = value;
+            });
+          },
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField(
@@ -326,30 +681,56 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             labelText: 'Clasificare',
             border: OutlineInputBorder(),
           ),
+          value: selectedClasificare,
+          validator:
+              (value) => value == null ? 'Selecteaza clasificarea' : null,
           items:
               [
                 'Intravilan',
                 'Extravilan',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (_) {},
+          onChanged: (value) {
+            setState(() {
+              selectedClasificare = value;
+            });
+          },
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: suprafataTerenController,
+          decoration: const InputDecoration(
             labelText: 'Suprafata teren (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator:
+              (value) => value!.isEmpty ? 'Introdu suprafata terenului' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
         ),
-        buildCommonFields(),
+        const SizedBox(height: 10),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (value) => value!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
     );
@@ -359,43 +740,69 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
             labelText: 'Titlu',
             border: OutlineInputBorder(),
           ),
           maxLength: 30,
+          validator: (value) => value!.isEmpty ? 'Introdu titlul' : null,
         ),
         DropdownButtonFormField(
           decoration: const InputDecoration(
             labelText: 'Categorie',
             border: OutlineInputBorder(),
           ),
+          value: selectedCategorieSpatiu,
+          validator: (value) => value == null ? 'Selecteaza categoria' : null,
           items:
               [
                 'Birou',
                 'Magazin',
                 'Hala',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-          onChanged: (_) {},
+          onChanged: (value) {
+            setState(() {
+              selectedCategorieSpatiu = value;
+            });
+          },
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: suprafataSpatioController,
+          decoration: const InputDecoration(
             labelText: 'Suprafata (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.isEmpty ? 'Introdu suprafata' : null,
         ),
         const SizedBox(height: 10),
-        const TextField(
-          decoration: InputDecoration(
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
         ),
-        buildCommonFields(),
+        const SizedBox(height: 10),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (value) => value!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
     );
@@ -442,69 +849,89 @@ class AddNewListingPageState extends State<AddNewListingPage> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children:
-                      categories.map((cat) {
-                        return ChoiceChip(
-                          label: Text(cat),
-                          selected: selectedCategory == cat,
-                          onSelected: (_) {
-                            setState(() {
-                              selectedCategory = cat;
-                            });
-                          },
-                        );
-                      }).toList(),
-                ),
-                const SizedBox(height: 20),
-                buildDynamicForm(),
-                const SizedBox(height: 30),
-                agents.isEmpty
-                    ? const CircularProgressIndicator()
-                    : DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Alege agentul de vanzari',
-                        border: OutlineInputBorder(),
-                      ),
-                      value: selectedAgent,
-                      items:
-                          agents
-                              .map(
-                                (agent) => DropdownMenuItem<String>(
-                                  value: agent,
-                                  child: Text(agent),
-                                ),
-                              )
-                              .toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          selectedAgent = newValue;
-                        });
-                      },
-                    ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: () {},
-                    child: const Text('Publica anuntul'),
+            child: Form(
+              key: formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children:
+                        categories.map((cat) {
+                          return ChoiceChip(
+                            label: Text(cat),
+                            selected: selectedCategory == cat,
+                            onSelected: (_) {
+                              setState(() {
+                                selectedCategory = cat;
+                              });
+                            },
+                          );
+                        }).toList(),
                   ),
-                ),
-                const SizedBox(height: 50),
-              ],
+                  const SizedBox(height: 20),
+                  buildDynamicForm(),
+                  const SizedBox(height: 30),
+                  agents.isEmpty
+                      ? const CircularProgressIndicator()
+                      : DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Alege agentul de vanzari',
+                          border: OutlineInputBorder(),
+                        ),
+                        value: selectedAgent,
+                        validator:
+                            (value) =>
+                                value == null ? 'Selecteaza agentul' : null,
+                        items:
+                            agents
+                                .map(
+                                  (agent) => DropdownMenuItem<String>(
+                                    value: agent,
+                                    child: Text(agent),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedAgent = newValue;
+                          });
+                        },
+                      ),
+                  const SizedBox(height: 40),
+                  Center(
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.4,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () {
+                          if (formKey.currentState!.validate()) {
+                            // Submit form logic here
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Formular validat cu succes!'),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text(
+                          'Publica anuntul',
+                          style: TextStyle(fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
