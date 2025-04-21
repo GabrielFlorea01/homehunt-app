@@ -109,7 +109,7 @@ class HomePageState extends State<HomePage> {
               child: TextButton.icon(
                 onPressed: addNewListing,
                 icon: Icon(
-                  Icons.add,
+                  Icons.add_box_rounded,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 label: Text(

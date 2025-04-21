@@ -28,7 +28,7 @@ theme: ThemeData(
           tertiary: Colors.deepPurple.shade200,
           brightness: Brightness.light,
         ),
-        textTheme: GoogleFonts.rubikTextTheme(),
+        textTheme: GoogleFonts.interTextTheme(),
         useMaterial3: true,
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
