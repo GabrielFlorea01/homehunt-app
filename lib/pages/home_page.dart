@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/pages/my_listings_page.dart';
 import 'package:homehunt/pages/new_listing_page.dart';
 import 'package:homehunt/pages/profile_page.dart';
 
@@ -170,7 +171,15 @@ class HomePageState extends State<HomePage> {
             ListTile(
               leading: const Icon(Icons.addchart_rounded),
               title: const Text('Anunturile mele'),
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyListingsPage(),
+                  ),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.person),
@@ -242,9 +251,8 @@ class HomePageState extends State<HomePage> {
                         ),
                         const SizedBox(height: 20),
                       ],
-                      // ... ...
 
-                      
+                      // ... ...
                     ],
                   ),
                 ),

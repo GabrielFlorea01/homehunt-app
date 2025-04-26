@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Home Hunt',
       debugShowCheckedModeBanner: false,
-theme: ThemeData(
+      theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
           primary: Colors.deepPurple,

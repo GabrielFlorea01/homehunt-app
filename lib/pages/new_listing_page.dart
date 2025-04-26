@@ -188,7 +188,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       return downloadUrls;
     } catch (e) {
       errorMessage = "Nu s-au putut incarca imaginile";
-      throw Exception("Eroare la incarcarea imaginilor $e");
+      throw Exception("Eroare la incarcarea imaginilor");
     }
   }
 
