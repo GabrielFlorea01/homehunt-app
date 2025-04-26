@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:homehunt/error_widgets/error_banner.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:html' as html;
 
 class AddNewListingPage extends StatefulWidget {
@@ -12,16 +15,20 @@ class AddNewListingPage extends StatefulWidget {
 
 class AddNewListingPageState extends State<AddNewListingPage> {
   String selectedCategory = 'Apartament';
-  String? errorMessage;
   String transactionType = 'De inchiriat';
+  String? errorMessage;
+  String? successMessage;
   String? selectedAgent;
-  List<String> agents = [];
+  bool isLoading = false;
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+  String? selectedAgentId;
+  List<Map<String, dynamic>> agents = [];
   List<PlatformFile> selectedImages = [];
   List<html.File> webImages = [];
   List<String> imageUrls = [];
   final formKey = GlobalKey<FormState>();
 
-  //Locatie form 
+  //Locatie form
   final titleController = TextEditingController();
   final priceController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -108,10 +115,15 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       final snapshot =
           await FirebaseFirestore.instance.collection('agents').get();
       setState(() {
-        agents = snapshot.docs.map((doc) => doc['name'] as String).toList();
+        agents =
+            snapshot.docs
+                .map((doc) => {'id': doc.id, 'name': doc['name'] as String})
+                .toList();
       });
     } catch (e) {
-      errorMessage = "A aparut o eroare la incarcarea agentilor";
+      setState(() {
+        errorMessage = "A aparut o eroare la incarcarea agentilor";
+      });
     }
   }
 
@@ -154,10 +166,209 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     });
   }
 
+  Future<List<String>> uploadImages(String propertyId) async {
+    List<String> downloadUrls = [];
+
+    try {
+      for (var i = 0; i < selectedImages.length; i++) {
+        final file = selectedImages[i];
+        final path = 'properties/$propertyId/image_$i.${file.extension}';
+        final ref = FirebaseStorage.instance.ref().child(path);
+
+        if (file.bytes != null) {
+          await ref.putData(
+            file.bytes!,
+            SettableMetadata(contentType: 'image/${file.extension}'),
+          );
+
+          final url = await ref.getDownloadURL();
+          downloadUrls.add(url);
+        }
+      }
+      return downloadUrls;
+    } catch (e) {
+      errorMessage = "Nu s-au putut incarca imaginile";
+      throw Exception("Eroare la incarcarea imaginilor $e");
+    }
+  }
+
+  Future<void> saveProperty() async {
+    if (formKey.currentState!.validate()) {
+      if (selectedImages.isEmpty) {
+        errorMessage = "Te rog incarca cel putin o imagine";
+        return;
+      }
+
+      try {
+        setState(() {
+          isLoading = true;
+          errorMessage = null;
+          successMessage = null;
+        });
+
+        if (currentUser == null) {
+            setState(() {
+            errorMessage = "Userul nu a fost gasit";
+          });
+          return;
+        }
+
+        if (selectedAgent != null) {
+          final agentSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('agents')
+                  .where('name', isEqualTo: selectedAgent)
+                  .limit(1)
+                  .get();
+
+          if (agentSnapshot.docs.isEmpty) {
+            errorMessage = "Agentul nu a fost gasit";
+          } else {
+            selectedAgentId = agentSnapshot.docs.first.id;
+          }
+        }
+
+        final propertyRef =
+            FirebaseFirestore.instance.collection('properties').doc();
+        final propertyId = propertyRef.id;
+
+        final uploadedImageUrls = await uploadImages(propertyId);
+
+        Map<String, dynamic> propertyData = {
+          'title': titleController.text,
+          'price': double.parse(priceController.text),
+          'description': descriptionController.text,
+          'category': selectedCategory,
+          'type': transactionType,
+          'location': {
+            'county': selectedJudet,
+            'city': cityController.text,
+            'street': streetController.text,
+            'number': numberController.text,
+            'sector': sectorController.text,
+          },
+          'images': uploadedImageUrls,
+          'userId': currentUser!.uid,
+          'agentId': selectedAgentId,
+          'agentName': selectedAgent,
+          'createdAt': FieldValue.serverTimestamp(),
+        };
+        switch (selectedCategory) {
+          case 'Apartament':
+            propertyData.addAll({
+              'apartmentDetails': {
+                'rooms': selectedNumarCamereApartament,
+                'compartments': selectedCompartimentare,
+                'floor': etajController.text,
+                'area': double.parse(suprafataUtilaApartController.text),
+                'yearBuilt': int.parse(anConstructieApartController.text),
+              },
+            });
+            break;
+          case 'Casa':
+            propertyData.addAll({
+              'houseDetails': {
+                'rooms': selectedNumarCamereCasa,
+                'area': double.parse(suprafataUtilaCasaController.text),
+                'landArea': double.parse(suprafataTerenCasaController.text),
+                'yearBuilt': int.parse(anConstructieCasaController.text),
+                'floors': int.parse(etajeCasaController.text),
+              },
+            });
+            break;
+          case 'Teren':
+            propertyData.addAll({
+              'landDetails': {
+                'type': selectedTipTeren,
+                'classification': selectedClasificare,
+                'area': double.parse(suprafataTerenController.text),
+              },
+            });
+            break;
+          case 'Spatiu comercial':
+            propertyData.addAll({
+              'commercialDetails': {
+                'type': selectedCategorieSpatiu,
+                'area': double.parse(suprafataSpatioController.text),
+              },
+            });
+            break;
+        }
+        await propertyRef.set(propertyData);
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser!.uid)
+            .update({
+              'properties': FieldValue.arrayUnion([propertyId]),
+            });
+
+        if (selectedAgentId != null) {
+          await FirebaseFirestore.instance
+              .collection('agents')
+              .doc(selectedAgentId)
+              .update({
+                'properties': FieldValue.arrayUnion([propertyId]),
+              });
+        }
+
+        setState(() {
+          successMessage = 'Anunt publicat cu succes!';
+        });
+        resetForm();
+
+      } catch (e) {
+        setState(() {
+          errorMessage = 'Eroare la salvarea anuntului: $e';
+        });
+      } finally {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     getAgents();
+  }
+
+  void resetForm() {
+    formKey.currentState?.reset();
+    setState(() {
+      selectedCategory = 'Apartament';
+      transactionType = 'De inchiriat';
+      selectedAgent = null;
+      selectedAgentId = null;
+      selectedImages.clear();
+      webImages.clear();
+      imageUrls.clear();
+      titleController.clear();
+      priceController.clear();
+      descriptionController.clear();
+      cityController.clear();
+      streetController.clear();
+      numberController.clear();
+      sectorController.clear();
+      selectedNumarCamereApartament = null;
+      selectedCompartimentare = null;
+      etajController.clear();
+      suprafataUtilaApartController.clear();
+      anConstructieApartController.clear();
+      selectedNumarCamereCasa = null;
+      suprafataUtilaCasaController.clear();
+      suprafataTerenCasaController.clear();
+      anConstructieCasaController.clear();
+      etajeCasaController.clear();
+      selectedTipTeren = null;
+      selectedClasificare = null;
+      suprafataTerenController.clear();
+      selectedCategorieSpatiu = null;
+      suprafataSpatioController.clear();
+      selectedJudet = null;
+    });
   }
 
   @override
@@ -261,8 +472,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
         ),
         const SizedBox(height: 10),
         Container(
-          width:
-              double.infinity, // 👈 Ensures full width like other form fields
+          width: double.infinity,
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey.shade300),
             borderRadius: BorderRadius.circular(20),
@@ -305,7 +515,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: 'Incarca o fotografie',
+                                      text: 'Incarca fotografii',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Theme.of(context).primaryColor,
@@ -388,7 +598,6 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       ],
     );
   }
-
 
   Widget buildChoiceChips(
     String label,
@@ -854,6 +1063,19 @@ class AddNewListingPageState extends State<AddNewListingPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (errorMessage != null) ...[
+                    ErrorBanner(message: errorMessage!,
+                    messageType: MessageType.error,
+                    onDismiss: () => setState(() => errorMessage = null),
+                    ),
+                    const SizedBox(height: 20),
+                  ] else if (successMessage != null) ...[
+                    ErrorBanner(message: successMessage!,
+                    messageType: MessageType.success,
+                    onDismiss: () => setState(() => successMessage = null),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
@@ -888,8 +1110,8 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                             agents
                                 .map(
                                   (agent) => DropdownMenuItem<String>(
-                                    value: agent,
-                                    child: Text(agent),
+                                    value: agent['name'],
+                                    child: Text(agent['name']),
                                   ),
                                 )
                                 .toList(),
@@ -913,20 +1135,16 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: () {
-                          if (formKey.currentState!.validate()) {
-                            // Submit form logic here
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Formular validat cu succes!'),
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text(
-                          'Publica anuntul',
-                          style: TextStyle(fontSize: 15),
-                        ),
+                        onPressed: isLoading ? null : saveProperty,
+                        child:
+                            isLoading
+                                ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                                : const Text(
+                                  'Publica anuntul',
+                                  style: TextStyle(fontSize: 15),
+                                ),
                       ),
                     ),
                   ),

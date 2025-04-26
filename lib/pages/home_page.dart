@@ -97,8 +97,13 @@ class HomePageState extends State<HomePage> {
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
           title: Center(
-            child: Padding(padding: const EdgeInsets.only(top: 15),
-            child: Image.asset('lib/images/logo.png', width: 220, height: 220),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 15),
+              child: Image.asset(
+                'lib/images/logo.png',
+                width: 220,
+                height: 220,
+              ),
             ),
           ),
           iconTheme: const IconThemeData(color: Colors.white),
@@ -135,9 +140,7 @@ class HomePageState extends State<HomePage> {
         ),
       ),
       drawer: Drawer(
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-        ),
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: Colors.white,
         child: Column(
           children: [
@@ -183,30 +186,28 @@ class HomePageState extends State<HomePage> {
 
             const Spacer(),
 
-            // Adauga anunt
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: addNewListing,
-                style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: addNewListing,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Adauga anunt',
+                    style: TextStyle(fontSize: 18),
+                  ),
                 ),
-                ),
-                child: const Text('Adauga anunt', style: TextStyle(
-                  fontSize: 18,
-                ),
-                ),
-              ),
               ),
             ),
             const SizedBox(height: 50),
-            //signout
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: SizedBox(
@@ -214,7 +215,7 @@ class HomePageState extends State<HomePage> {
                 child: TextButton(
                   onPressed: showSignOutConfirmationDialog,
                   style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: const Text('Deconectare'),
                 ),
@@ -234,11 +235,16 @@ class HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (errorMessage != null)
+                      if (errorMessage != null) ...[
                         ErrorBanner(
                           message: errorMessage!,
                           onDismiss: clearError,
                         ),
+                        const SizedBox(height: 20),
+                      ],
+                      // ... ...
+
+                      
                     ],
                   ),
                 ),
