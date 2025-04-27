@@ -670,7 +670,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
           selectedNumarCamereApartament,
           (value) => setState(() => selectedNumarCamereApartament = value),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         DropdownButtonFormField(
           decoration: const InputDecoration(
             labelText: 'Compartimentare',
@@ -759,7 +759,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             return null;
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         buildImageSection(),
         TextFormField(
           controller: descriptionController,
@@ -773,7 +773,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
         ),
         const SizedBox(height: 10),
         buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 25),
         buildLocalizareFields(),
       ],
     );
@@ -799,7 +799,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
           selectedNumarCamereCasa,
           (value) => setState(() => selectedNumarCamereCasa = value),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         TextFormField(
           controller: suprafataUtilaCasaController,
           decoration: const InputDecoration(
@@ -884,7 +884,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             return null;
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         buildImageSection(),
         TextFormField(
           controller: descriptionController,
@@ -898,7 +898,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
         ),
         const SizedBox(height: 10),
         buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 25),
         buildLocalizareFields(),
       ],
     );
@@ -927,8 +927,8 @@ class AddNewListingPageState extends State<AddNewListingPage> {
               (value) => value == null ? 'Selecteaza tipul terenului' : null,
           items:
               [
-                'Agricol',
                 'Constructii',
+                'Agricol',
                 'Forestier',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (value) {
@@ -991,7 +991,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             return null;
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         buildImageSection(),
         TextFormField(
           controller: descriptionController,
@@ -1034,8 +1034,8 @@ class AddNewListingPageState extends State<AddNewListingPage> {
           items:
               [
                 'Birouri',
-                'Magazin',
-                'Hala',
+                'Comercial',
+                'Industrial',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
           onChanged: (value) {
             setState(() {
@@ -1077,7 +1077,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             return null;
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         buildImageSection(),
         TextFormField(
           controller: descriptionController,

@@ -111,7 +111,7 @@ class HomePageState extends State<HomePage> {
           backgroundColor: Theme.of(context).colorScheme.primary,
           actions: [
             Padding(
-              padding: const EdgeInsets.only(right: 30, top: 15),
+              padding: const EdgeInsets.only(right: 20, top: 15),
               child: TextButton.icon(
                 onPressed: addNewListing,
                 icon: Icon(
@@ -120,6 +120,35 @@ class HomePageState extends State<HomePage> {
                 ),
                 label: Text(
                   'Anunt',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 16,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(right: 20, top: 15),
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfilePage()),
+                  );
+                },
+                label: Text(
+                  'Contul meu',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontSize: 16,
@@ -157,6 +186,7 @@ class HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(height: 16),
+            // existing menu items
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Marketplace'),
@@ -181,20 +211,133 @@ class HomePageState extends State<HomePage> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profil'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                );
-              },
+            const SizedBox(height: 10),
+
+            const Divider(height: 32, thickness: 0.5),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Apartamente de vanzare page
+                    },
+                    child: const Text('Apartamente de vanzare'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Garsoniere de vanzare page
+                    },
+                    child: const Text('Garsoniere de vanzare'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Case de vanzare page
+                    },
+                    child: const Text('Case de vanzare'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Teren de vanzare page
+                    },
+                    child: const Text('Teren de vanzare'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Spații comerciale de vanzare page
+                    },
+                    child: const Text('Spatii comerciale de vanzare'),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 32, thickness: 0.5),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Apartamente de închiriat page
+                    },
+                    child: const Text('Apartamente de inchiriat'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Garsoniere de închiriat page
+                    },
+                    child: const Text('Garsoniere de inchiriat'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Case de închiriat page
+                    },
+                    child: const Text('Case de inchiriat'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Spații comerciale de închiriat page
+                    },
+                    child: const Text('Spații comerciale de inchiriat'),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.centerLeft,
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // TODO: navigate to Birouri de închiriat page
+                    },
+                    child: const Text('Birouri de inchiriat'),
+                  ),
+                ],
+              ),
             ),
 
             const Spacer(),
 
+            // remaining bottom buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: SizedBox(
@@ -210,7 +353,7 @@ class HomePageState extends State<HomePage> {
                     ),
                   ),
                   child: const Text(
-                    'Adauga anunt',
+                    'Adaugă anunț',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
