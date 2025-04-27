@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:html' as html;
+import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddNewListingPage extends StatefulWidget {
   const AddNewListingPage({super.key});
@@ -14,19 +13,24 @@ class AddNewListingPage extends StatefulWidget {
 }
 
 class AddNewListingPageState extends State<AddNewListingPage> {
+  bool isLoading = false;
   String selectedCategory = 'Apartament';
-  String transactionType = 'De inchiriat';
+  String transactionType = 'De vanzare';
+
   String? errorMessage;
   String? successMessage;
+
   String? selectedAgent;
-  bool isLoading = false;
-  User? get currentUser => FirebaseAuth.instance.currentUser;
   String? selectedAgentId;
+
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+
   List<Map<String, dynamic>> agents = [];
-  List<PlatformFile> selectedImages = [];
-  List<html.File> webImages = [];
-  List<String> imageUrls = [];
   final formKey = GlobalKey<FormState>();
+
+  List<XFile> selectedImages = [];
+  List<String> imageUrls = [];
+  final ImagePicker picker = ImagePicker();
 
   //Locatie form
   final titleController = TextEditingController();
@@ -127,69 +131,57 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     }
   }
 
+  //adauga poze
   Future<void> pickImages() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: true,
-        withData: true,
+      final pics = await picker.pickMultiImage(
+        maxWidth: 1200,
+        imageQuality: 80,
       );
+      if (pics.isEmpty) return;
 
-      if (result != null) {
-        setState(() {
-          selectedImages = result.files;
+      final maxPhotos = 12;
+      final slotsLeft = maxPhotos - selectedImages.length;
+      final toAdd = pics.take(slotsLeft).toList();
 
-          for (var file in result.files) {
-            if (file.bytes != null) {
-              final url = html.Url.createObjectUrlFromBlob(
-                html.Blob([file.bytes!], 'image/${file.extension}'),
-              );
-              imageUrls.add(url);
-            }
-          }
-        });
-      }
+      setState(() {
+        selectedImages.addAll(pics);
+        imageUrls.addAll(toAdd.map((f) => f.path).whereType<String>());
+
+        if (pics.length > slotsLeft) {
+          errorMessage = "Poti incarca maxim $maxPhotos poze.";
+        }
+      });
     } catch (e) {
-      errorMessage = "Eroare la incarcarea imaginilor";
+      setState(() => errorMessage = "Eroare la selectarea imaginilor: $e");
     }
   }
 
   void removeImage(int index) {
     setState(() {
-      if (index < imageUrls.length) {
-        html.Url.revokeObjectUrl(imageUrls[index]);
-        imageUrls.removeAt(index);
-      }
-      if (index < selectedImages.length) {
-        selectedImages.removeAt(index);
-      }
+      selectedImages.removeAt(index);
+      imageUrls.removeAt(index);
     });
   }
 
   Future<List<String>> uploadImages(String propertyId) async {
-    List<String> downloadUrls = [];
+    final downloadUrls = <String>[];
 
-    try {
-      for (var i = 0; i < selectedImages.length; i++) {
-        final file = selectedImages[i];
-        final path = 'properties/$propertyId/image_$i.${file.extension}';
-        final ref = FirebaseStorage.instance.ref().child(path);
+    for (var i = 0; i < selectedImages.length; i++) {
+      final img = selectedImages[i];
+      final ext = img.name.split('.').last;
+      final path = 'properties/$propertyId/image_$i.$ext';
+      final ref = FirebaseStorage.instance.ref(path);
+      final bytes = await img.readAsBytes();
 
-        if (file.bytes != null) {
-          await ref.putData(
-            file.bytes!,
-            SettableMetadata(contentType: 'image/${file.extension}'),
-          );
-
-          final url = await ref.getDownloadURL();
-          downloadUrls.add(url);
-        }
-      }
-      return downloadUrls;
-    } catch (e) {
-      errorMessage = "Nu s-au putut incarca imaginile";
-      throw Exception("Eroare la incarcarea imaginilor");
+      final snap = await ref.putData(
+        bytes,
+        SettableMetadata(contentType: img.mimeType),
+      );
+      downloadUrls.add(await snap.ref.getDownloadURL());
     }
+
+    return downloadUrls;
   }
 
   Future<void> saveProperty() async {
@@ -207,7 +199,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
         });
 
         if (currentUser == null) {
-            setState(() {
+          setState(() {
             errorMessage = "Userul nu a fost gasit";
           });
           return;
@@ -316,7 +308,6 @@ class AddNewListingPageState extends State<AddNewListingPage> {
           successMessage = 'Anunt publicat cu succes!';
         });
         resetForm();
-
       } catch (e) {
         setState(() {
           errorMessage = 'Eroare la salvarea anuntului: $e';
@@ -343,7 +334,6 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       selectedAgent = null;
       selectedAgentId = null;
       selectedImages.clear();
-      webImages.clear();
       imageUrls.clear();
       titleController.clear();
       priceController.clear();
@@ -389,10 +379,6 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     etajeCasaController.dispose();
     suprafataTerenController.dispose();
     suprafataSpatioController.dispose();
-
-    for (var url in imageUrls) {
-      html.Url.revokeObjectUrl(url);
-    }
 
     super.dispose();
   }
@@ -1064,15 +1050,17 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (errorMessage != null) ...[
-                    ErrorBanner(message: errorMessage!,
-                    messageType: MessageType.error,
-                    onDismiss: () => setState(() => errorMessage = null),
+                    ErrorBanner(
+                      message: errorMessage!,
+                      messageType: MessageType.error,
+                      onDismiss: () => setState(() => errorMessage = null),
                     ),
                     const SizedBox(height: 20),
                   ] else if (successMessage != null) ...[
-                    ErrorBanner(message: successMessage!,
-                    messageType: MessageType.success,
-                    onDismiss: () => setState(() => successMessage = null),
+                    ErrorBanner(
+                      message: successMessage!,
+                      messageType: MessageType.success,
+                      onDismiss: () => setState(() => successMessage = null),
                     ),
                     const SizedBox(height: 20),
                   ],
