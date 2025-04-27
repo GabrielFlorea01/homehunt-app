@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -62,7 +63,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
 
   //Spatiu Comercial form
   String? selectedCategorieSpatiu;
-  final suprafataSpatioController = TextEditingController();
+  final suprafataSpatiuComController = TextEditingController();
 
   String? selectedJudet;
 
@@ -228,7 +229,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
 
         Map<String, dynamic> propertyData = {
           'title': titleController.text,
-          'price': double.parse(priceController.text),
+          'price': int.parse(priceController.text),
           'description': descriptionController.text,
           'category': selectedCategory,
           'type': transactionType,
@@ -252,7 +253,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                 'rooms': selectedNumarCamereApartament,
                 'compartments': selectedCompartimentare,
                 'floor': etajController.text,
-                'area': double.parse(suprafataUtilaApartController.text),
+                'area': int.parse(suprafataUtilaApartController.text),
                 'yearBuilt': int.parse(anConstructieApartController.text),
               },
             });
@@ -261,8 +262,8 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             propertyData.addAll({
               'houseDetails': {
                 'rooms': selectedNumarCamereCasa,
-                'area': double.parse(suprafataUtilaCasaController.text),
-                'landArea': double.parse(suprafataTerenCasaController.text),
+                'area': int.parse(suprafataUtilaCasaController.text),
+                'landArea': int.parse(suprafataTerenCasaController.text),
                 'yearBuilt': int.parse(anConstructieCasaController.text),
                 'floors': int.parse(etajeCasaController.text),
               },
@@ -273,7 +274,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
               'landDetails': {
                 'type': selectedTipTeren,
                 'classification': selectedClasificare,
-                'area': double.parse(suprafataTerenController.text),
+                'area': int.parse(suprafataTerenController.text),
               },
             });
             break;
@@ -281,7 +282,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             propertyData.addAll({
               'commercialDetails': {
                 'type': selectedCategorieSpatiu,
-                'area': double.parse(suprafataSpatioController.text),
+                'area': int.parse(suprafataSpatiuComController.text),
               },
             });
             break;
@@ -356,7 +357,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       selectedClasificare = null;
       suprafataTerenController.clear();
       selectedCategorieSpatiu = null;
-      suprafataSpatioController.clear();
+      suprafataSpatiuComController.clear();
       selectedJudet = null;
     });
   }
@@ -378,7 +379,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
     anConstructieCasaController.dispose();
     etajeCasaController.dispose();
     suprafataTerenController.dispose();
-    suprafataSpatioController.dispose();
+    suprafataSpatiuComController.dispose();
 
     super.dispose();
   }
@@ -434,7 +435,15 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             labelText: 'Numar',
             border: OutlineInputBorder(),
           ),
-          validator: (value) => value!.isEmpty ? 'Introdu numarul' : null,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu numarul strazii';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -689,7 +698,15 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             labelText: 'Etaj',
             border: OutlineInputBorder(),
           ),
-          validator: (value) => value!.isEmpty ? 'Introdu etajul' : null,
+          inputFormatters: [
+            // allow an optional leading P or p, then digits
+            FilteringTextInputFormatter.allow(RegExp(r'^[P]?\d*$')),
+          ],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu etajul';
+            if (!RegExp(r'^[Pp]?\d+$').hasMatch(value)) return 'Etaj invalid (ex: P, 1, 2)';
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -699,7 +716,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.isEmpty ? 'Introdu suprafata' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu suprafata utila';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -709,8 +733,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator:
-              (value) => value!.isEmpty ? 'Introdu anul constructiei' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu anul constructiei';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -720,7 +750,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu pretul';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         buildImageSection(),
@@ -770,8 +807,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator:
-              (value) => value!.isEmpty ? 'Introduceti suprafata utila' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu suprafata utila';
+            if (int.tryParse(value) == null) {
+              return 'Introduceti un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -781,9 +824,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator:
-              (value) =>
-                  value!.isEmpty ? 'Introduceti suprafata terenului' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu suprafata teren';
+            if (int.tryParse(value) == null) {
+              return 'Introduceti un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -793,8 +841,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator:
-              (value) => value!.isEmpty ? 'Introdu anul construcției' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu anul constructiei';
+            if (int.tryParse(value) == null) {
+              return 'Introduceti un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -804,8 +858,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator:
-              (value) => value!.isEmpty ? 'Introdu numarul de etaje' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu numarul de etaje';
+            if (int.tryParse(value) == null) {
+              return 'Introduceti un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -815,7 +875,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu pretul';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         buildImageSection(),
@@ -898,8 +965,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator:
-              (value) => value!.isEmpty ? 'Introdu suprafata terenului' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu suprafata';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -909,7 +982,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu pretul';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         buildImageSection(),
@@ -953,7 +1033,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
           validator: (value) => value == null ? 'Selecteaza categoria' : null,
           items:
               [
-                'Birou',
+                'Birouri',
                 'Magazin',
                 'Hala',
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
@@ -965,13 +1045,20 @@ class AddNewListingPageState extends State<AddNewListingPage> {
         ),
         const SizedBox(height: 10),
         TextFormField(
-          controller: suprafataSpatioController,
+          controller: suprafataSpatiuComController,
           decoration: const InputDecoration(
             labelText: 'Suprafata (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.isEmpty ? 'Introdu suprafata' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu suprafata';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -981,7 +1068,14 @@ class AddNewListingPageState extends State<AddNewListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (value) => value!.isEmpty ? 'Introdu pretul' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Introdu pretul';
+            if (int.tryParse(value) == null) {
+              return 'Introdu un numar intreg valid';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 10),
         buildImageSection(),
@@ -1123,14 +1217,26 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: isLoading ? null : saveProperty,
+                        onPressed:
+                            isLoading
+                                ? null
+                                : () {
+                                  if (selectedImages.isEmpty) {
+                                    setState(() {
+                                      errorMessage =
+                                          'Te rog incarcă cel putin o imagine.';
+                                    });
+                                    return;
+                                  }
+                                  saveProperty();
+                                },
                         child:
                             isLoading
                                 ? const CircularProgressIndicator(
                                   color: Colors.white,
                                 )
                                 : const Text(
-                                  'Publica anuntul',
+                                  'Publică anunțul',
                                   style: TextStyle(fontSize: 15),
                                 ),
                       ),
