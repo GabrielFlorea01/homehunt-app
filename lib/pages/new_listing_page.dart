@@ -519,7 +519,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                                     ),
                                     const TextSpan(
                                       text:
-                                          '\n\nMaxim 15 poze. Formate acceptate: PNG, JPG. Dimensiune maximă 10MB',
+                                          '\n\nMaxim 15 poze. Formate acceptate: PNG, JPG. Dimensiune maxima 10MB',
                                       style: TextStyle(fontSize: 12),
                                     ),
                                   ],
@@ -1224,7 +1224,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                                   if (selectedImages.isEmpty) {
                                     setState(() {
                                       errorMessage =
-                                          'Te rog incarcă cel putin o imagine.';
+                                          'Te rog incarca cel putin o imagine';
                                     });
                                     return;
                                   }
@@ -1236,7 +1236,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
                                   color: Colors.white,
                                 )
                                 : const Text(
-                                  'Publică anunțul',
+                                  'Publica anuntul',
                                   style: TextStyle(fontSize: 15),
                                 ),
                       ),

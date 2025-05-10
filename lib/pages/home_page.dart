@@ -319,7 +319,7 @@ class HomePageState extends State<HomePage> {
                       Navigator.pop(context);
                       // TODO: navigate to Spații comerciale de închiriat page
                     },
-                    child: const Text('Spații comerciale de inchiriat'),
+                    child: const Text('Spatii comerciale de inchiriat'),
                   ),
                   TextButton(
                     style: TextButton.styleFrom(
@@ -353,7 +353,7 @@ class HomePageState extends State<HomePage> {
                     ),
                   ),
                   child: const Text(
-                    'Adaugă anunț',
+                    'Adauga anunt',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
