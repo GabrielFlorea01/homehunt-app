@@ -172,209 +172,177 @@ class HomePageState extends State<HomePage> {
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         backgroundColor: Colors.white,
-        child: Column(
-          children: [
-            const SizedBox(height: 30),
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Text(
-                user?.email?.isNotEmpty == true
-                    ? user!.email![0].toUpperCase()
-                    : 'U',
-                style: const TextStyle(fontSize: 32, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // existing menu items
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Marketplace'),
-              selected: true,
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text('Favorite'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.addchart_rounded),
-              title: const Text('Anunturile mele'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyListingsPage(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-
-            const Divider(height: 32, thickness: 0.5),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Apartamente de vanzare page
-                    },
-                    child: const Text('Apartamente de vanzare'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Garsoniere de vanzare page
-                    },
-                    child: const Text('Garsoniere de vanzare'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Case de vanzare page
-                    },
-                    child: const Text('Case de vanzare'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Teren de vanzare page
-                    },
-                    child: const Text('Teren de vanzare'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Spații comerciale de vanzare page
-                    },
-                    child: const Text('Spatii comerciale de vanzare'),
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 32, thickness: 0.5),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Apartamente de închiriat page
-                    },
-                    child: const Text('Apartamente de inchiriat'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Garsoniere de închiriat page
-                    },
-                    child: const Text('Garsoniere de inchiriat'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Case de închiriat page
-                    },
-                    child: const Text('Case de inchiriat'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Spații comerciale de închiriat page
-                    },
-                    child: const Text('Spatii comerciale de inchiriat'),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.centerLeft,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: navigate to Birouri de închiriat page
-                    },
-                    child: const Text('Birouri de inchiriat'),
-                  ),
-                ],
-              ),
-            ),
-
-            const Spacer(),
-
-            // remaining bottom buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: addNewListing,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text(
-                    'Adauga anunt',
-                    style: TextStyle(fontSize: 18),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 30),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: Text(
+                    user?.email?.isNotEmpty == true
+                        ? user!.email![0].toUpperCase()
+                        : 'U',
+                    style: const TextStyle(fontSize: 32, color: Colors.white),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 50),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: showSignOutConfirmationDialog,
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.primary,
-                  ),
-                  child: const Text('Deconectare'),
+                const SizedBox(height: 16),
+
+                ListTile(
+                  leading: const Icon(Icons.home),
+                  title: const Text('Marketplace'),
+                  selected: true,
+                  onTap: () => Navigator.pop(context),
                 ),
-              ),
+                ListTile(
+                  leading: const Icon(Icons.favorite),
+                  title: const Text('Favorite'),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.addchart_rounded),
+                  title: const Text('Anunturile mele'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MyListingsPage(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 32, thickness: 0.5),
+
+                // Vanzare Section
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Apartamente de vanzare page
+                  },
+                  child: const Text('Apartamente de vanzare'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Garsoniere de vanzare page
+                  },
+                  child: const Text('Garsoniere de vanzare'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Case de vanzare page
+                  },
+                  child: const Text('Case de vanzare'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Teren de vanzare page
+                  },
+                  child: const Text('Teren de vanzare'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Spatii comerciale de vanzare page
+                  },
+                  child: const Text('Spatii comerciale de vanzare'),
+                ),
+
+                const Divider(height: 32, thickness: 0.5),
+
+                // Inchiriere Section
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Apartamente de inchiriat page
+                  },
+                  child: const Text('Apartamente de inchiriat'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Garsoniere de inchiriat page
+                  },
+                  child: const Text('Garsoniere de inchiriat'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Case de inchiriat page
+                  },
+                  child: const Text('Case de inchiriat'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Spatii comerciale de inchiriat page
+                  },
+                  child: const Text('Spatii comerciale de inchiriat'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // TODO: navigate to Birouri de inchiriat page
+                  },
+                  child: const Text('Birouri de inchiriat'),
+                ),
+
+                const SizedBox(height: 30),
+
+                // Bottom buttons
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: addNewListing,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: const Text(
+                        'Adauga anunt',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: showSignOutConfirmationDialog,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                    child: const Text('Deconectare'),
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
             ),
-            const SizedBox(height: 30),
-          ],
+          ),
         ),
       ),
       body:
