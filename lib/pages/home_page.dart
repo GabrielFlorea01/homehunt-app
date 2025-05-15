@@ -82,7 +82,7 @@ class HomePageState extends State<HomePage> {
         favoriteListings = favDoc.docs.map((doc) => doc.id).toList();
         setState(() {});
       } catch (e) {
-        print('Error fetching favorites: $e');
+        errorMessage = 'Eroare la afisarea favoritelor';
       }
     }
   }
