@@ -3,125 +3,235 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:homehunt/pages/gallery_view.dart';
+import 'package:homehunt/pages/home_page.dart';
 import 'package:http/http.dart' as http;
 
-// Cheia API pentru Google Maps
-const _kGoogleMapsApiKey = 'AIzaSyA_61celkZcyTPfToDzE7u4KkhxLtq3xIo';
-
-// Functie pentru a converti o adresa in coordonate geografice
+// Geocode a plain address into coordinates
 Future<LatLng?> geocodeAddress(String address) async {
-  // Adauga "Romania" la query pentru rezultate mai bune
-  final query = '$address, Romania';
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
-    'address': query,
-    'key': _kGoogleMapsApiKey,
+    'address': '$address, Romania',
+    'key': 'AIzaSyA_61celkZcyTPfToDzE7u4KkhxLtq3xIo',
   });
-
-  // Trimite cererea HTTP catre API-ul Google Maps
-  final response = await http.get(url);
-  if (response.statusCode != 200) return null;
-
-  // Parseaza raspunsul JSON
-  final body = json.decode(response.body) as Map<String, dynamic>;
-  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) {
-    return null;
-  }
-
-  // Extrage coordonatele din raspuns
-  final loc = (body['results'][0]['geometry']['location'] as Map<String, dynamic>);
+  final resp = await http.get(url);
+  if (resp.statusCode != 200) return null;
+  final body = json.decode(resp.body) as Map<String, dynamic>;
+  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) return null;
+  final loc =
+      body['results'][0]['geometry']['location'] as Map<String, dynamic>;
   return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
 }
 
-// Pagina principala pentru anunturile utilizatorului
 class MyListingsPage extends StatefulWidget {
   const MyListingsPage({super.key});
   @override
   State<MyListingsPage> createState() => MyListingsPageState();
 }
 
-// Starea pentru pagina de anunturi
 class MyListingsPageState extends State<MyListingsPage> {
-  // Utilizatorul curent autentificat
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  // Referinta la colectia de proprietati din Firestore
-  final CollectionReference propertiesRef = FirebaseFirestore.instance.collection('properties');
+  final CollectionReference propertiesRef = FirebaseFirestore.instance
+      .collection('properties');
 
-  // Controller-e pentru scroll-urile orizontale cu imagini
-  final Map<int, ScrollController> _scrollControllers = {};
+  // controllers for the horizontal gallery in each card
+  final Map<int, ScrollController> scrollControllers = {};
+  // controllers to open fullscreen gallery
+  final Map<String, ScrollController> galleryControllers = {};
+  // track which cards have phone expanded
+  final Map<String, bool> showPhone = {};
 
-  // Eliberam resursele la inchiderea paginii
-  @override
-  void dispose() {
-    for (final controller in _scrollControllers.values) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  // Deschide galeria de imagini in fullscreen
-  void _openGallery(BuildContext context, List<String> images, int initialIndex) {
-    // Verificam daca lista de imagini contine elemente valide
-    final validImages = images.where((url) => url.trim().isNotEmpty).toList();
-    
-    if (validImages.isEmpty) {
-      // Afisam un mesaj daca nu exista imagini valide
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nu exista imagini disponibile')),
-      );
-      return;
-    }
-    
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) {
+  void openGallery(BuildContext c, List<String> imgs, int idx) {
+    Navigator.of(c).push(
+      MaterialPageRoute(
+        builder: (_) {
           return Scaffold(
             backgroundColor: Colors.black,
             appBar: AppBar(
               backgroundColor: Colors.black,
               iconTheme: const IconThemeData(color: Colors.white),
-              title: Text('${initialIndex + 1}/${validImages.length}', style: const TextStyle(color: Colors.white)),
+              title: Text(
+                '${idx + 1}/${imgs.length}',
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
-            body: GalleryView(
-              images: validImages,
-              initialIndex: initialIndex,
-            ),
+            body: GalleryView(images: imgs, initialIndex: idx),
           );
         },
       ),
     );
   }
 
+  void togglePhone(String id) {
+    showPhone[id] = !(showPhone[id] ?? false);
+    setState(() {});
+  }
+
+  Widget buildMapSection(String address) {
+    return FutureBuilder<LatLng?>(
+      future: geocodeAddress(address),
+      builder: (context, snap) {
+        if (snap.hasError) {
+          return Text(
+            'Map error: ${snap.error}',
+            style: const TextStyle(color: Colors.red),
+          );
+        }
+        if (snap.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final loc = snap.data;
+        if (loc == null) return const Text('Cannot display map');
+        return SizedBox(
+          height: 200,
+          child: GoogleMap(
+            initialCameraPosition: CameraPosition(target: loc, zoom: 14),
+            markers: {Marker(markerId: MarkerId(address), position: loc)},
+            zoomControlsEnabled: false,
+            myLocationButtonEnabled: false,
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> buildChips(Map<String, dynamic> data) {
+    switch (data['category'] as String? ?? '') {
+      case 'Apartament':
+        final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
+        return [
+          Chip(
+            label: Text('${apt['rooms']} camere'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${apt['area']} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('Etaj ${apt['floor']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('An ${apt['yearBuilt']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
+      case 'Casa':
+        final c = data['houseDetails'] as Map<String, dynamic>? ?? {};
+        return [
+          Chip(
+            label: Text('${c['rooms']} camere'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${c['area']} mp utili'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${c['landArea']} mp teren'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${c['floors']} etaje'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('An ${c['yearBuilt']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
+      case 'Teren':
+        final t = data['landDetails'] as Map<String, dynamic>? ?? {};
+        return [
+          Chip(
+            label: Text(t['classification'] ?? ''),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${t['area']} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
+      case 'Spatiu comercial':
+        final sc = data['commercialDetails'] as Map<String, dynamic>? ?? {};
+        return [
+          Chip(
+            label: Text('${sc['area']} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
+      default:
+        return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // same AppBar as HomePage
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
-          // Dezactivam butonul de revenire implicit
-          automaticallyImplyLeading: false,
           backgroundColor: Theme.of(context).colorScheme.primary,
           iconTheme: const IconThemeData(color: Colors.white),
+          centerTitle: true,
           title: Padding(
             padding: const EdgeInsets.only(top: 15),
-            child: SizedBox(
-              height: 80,
-              child: Image.asset(
-                'lib/images/logo.png',
-                fit: BoxFit.contain,
-              ),
+            child: Image.asset('lib/images/logo.png', height: 80),
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 30),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: Text(
+                    currentUser?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(fontSize: 32, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.home),
+                  title: const Text('Marketplace'),
+                  selected: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomePage()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.favorite),
+                  title: const Text('Favorite'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Implement navigation to FavouritesPage when available
+                  },
+                ),
+              ],
             ),
           ),
-          centerTitle: true,
         ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: StreamBuilder<QuerySnapshot>(
-          // Obtinem proprietatile utilizatorului curent, ordonate dupa data crearii
-          stream: propertiesRef
-              .where('userId', isEqualTo: currentUser!.uid)
-              .orderBy('createdAt', descending: true)
-              .snapshots(),
+          stream:
+              propertiesRef
+                  .where('userId', isEqualTo: currentUser!.uid)
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
           builder: (ctx, snap) {
             if (snap.hasError) {
               return Center(child: Text('Eroare: ${snap.error}'));
@@ -131,246 +241,338 @@ class MyListingsPageState extends State<MyListingsPage> {
             }
             final docs = snap.data!.docs;
             if (docs.isEmpty) {
-              return const Text('Nu ai adaugat inca niciun anunt');
+              return const Center(
+                child: Text('Nu ai adaugat inca niciun anunt'),
+              );
             }
 
-            // Folosim SingleChildScrollView pentru a face toata pagina scrollabila
             return SingleChildScrollView(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: Column(
-                    children: List.generate(docs.length, (i) {
-                      _scrollControllers[i] ??= ScrollController();
+                  constraints: const BoxConstraints(maxWidth: 850),
+                  child: FractionallySizedBox(
+                    widthFactor: 0.7,
+                    child: Column(
+                      children:
+                          docs.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final doc = entry.value;
+                            scrollControllers[i] ??= ScrollController();
 
-                      final data = docs[i].data()! as Map<String, dynamic>;
-                      final images = List<String>.from(data['images'] ?? []);
-                      final title = data['title'] as String? ?? '';
-                      final price = data['price'] as int? ?? 0;
-                      final loc = data['location'] as Map<String, dynamic>?;
+                            final data = doc.data()! as Map<String, dynamic>;
+                            data['id'] = doc.id;
+                            final images = List<String>.from(
+                              data['images'] as List? ?? [],
+                            );
+                            final loc =
+                                data['location'] as Map<String, dynamic>? ?? {};
+                            final fullAddress = [
+                              loc['street'] ?? '',
+                              loc['number'] ?? '',
+                              if ((loc['sector'] ?? '').toString().isNotEmpty)
+                                'Sector ${loc['sector']}',
+                              loc['city'] ?? '',
+                              loc['county'] ?? '',
+                            ].where((s) => s.trim().isNotEmpty).join(', ');
+                            galleryControllers[data['id']] ??=
+                                ScrollController();
 
-                      // Construim adresa completa din componentele disponibile
-                      String fullAddress = '';
-                      if (loc != null) {
-                        final parts = <String>[
-                          loc['street'] ?? '',
-                          loc['number'] ?? '',
-                          if ((loc['sector'] ?? '').toString().isNotEmpty) 'Sector ${loc['sector']}',
-                          loc['city'] ?? '',
-                          loc['county'] ?? '',
-                        ];
-                        fullAddress = parts.where((s) => s.trim().isNotEmpty).join(', ');
-                      }
-
-                      // Construim chipurile pentru detaliile specifice fiecarui tip de proprietate
-                      List<Widget> buildChips() {
-                        switch (data['category'] as String? ?? '') {
-                          case 'Apartament':
-                            final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
-                            return [
-                              Chip(label: Text('${apt['rooms']} camere')),
-                              Chip(label: Text('${apt['area']} mp')),
-                              Chip(label: Text('Etaj ${apt['floor']}')),
-                              Chip(label: Text('An constructie ${apt['yearBuilt']}')),
-                            ];
-                          case 'Casa':
-                            final house = data['houseDetails'] as Map<String, dynamic>? ?? {};
-                            return [
-                              Chip(label: Text('${house['rooms']} camere')),
-                              Chip(label: Text('${house['area']} mp utili')),
-                              Chip(label: Text('${house['landArea']} mp teren')),
-                              Chip(label: Text('${house['floors']} etaje')),
-                              Chip(label: Text('${house['yearBuilt']}')),
-                            ];
-                          case 'Teren':
-                            final land = data['landDetails'] as Map<String, dynamic>? ?? {};
-                            return [
-                              Chip(label: Text(land['type'] ?? '')),
-                              Chip(label: Text(land['classification'] ?? '')),
-                              Chip(label: Text('${land['area']} mp')),
-                            ];
-                          case 'Spatiu comercial':
-                            final com = data['commercialDetails'] as Map<String, dynamic>? ?? {};
-                            return [
-                              Chip(label: Text(com['type'] ?? '')),
-                              Chip(label: Text('${com['area']} mp')),
-                            ];
-                          default:
-                            return [];
-                        }
-                      }
-
-                      // Construim cardul pentru proprietate
-                      return Align(
-                        alignment: Alignment.centerLeft,
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Imaginea principala (preview)
-                              if (images.isNotEmpty)
-                                Container(
-                                  width: double.infinity,
-                                  height: 200,
-                                  decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12),
-                                    ),
-                                    image: DecorationImage(
-                                      image: NetworkImage(images.first),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                )
-                              else
-                                Container(
-                                  width: double.infinity,
-                                  height: 200,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade300,
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.photo,
-                                    size: 60,
-                                    color: Colors.white54,
-                                  ),
-                                ),
-                              // Detaliile proprietatii
-                              ExpansionTile(
-                                tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                title: Text(
-                                  title,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text('€ $price'),
-                                childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (fullAddress.isNotEmpty) ...[
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.location_on, size: 16),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            fullAddress,
-                                            style: const TextStyle(fontSize: 14),
+                                  // image
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(12),
+                                            ),
+                                        child: AspectRatio(
+                                          aspectRatio: 16 / 9,
+                                          child:
+                                              images.isNotEmpty
+                                                  ? Image.network(
+                                                    images.first,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (_, __, ___) =>
+                                                            Container(
+                                                              color:
+                                                                  Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                            ),
+                                                  )
+                                                  : Container(
+                                                    color: Colors.grey.shade300,
+                                                  ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 8,
+                                        left: 8,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 4,
-                                    children: buildChips(),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  if ((data['description'] as String?)?.isNotEmpty ?? false) ...[
-                                    Text(
-                                      data['description']!,
-                                      style: const TextStyle(fontSize: 14),
+
+                                  // details
+                                  ExpansionTile(
+                                    tilePadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
                                     ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                  if (images.length > 1) ...[
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                                      child: Text(
-                                        'Fotografii',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                    title: Text(
+                                      data['title'] as String? ?? '',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(
-                                      height: 110,
-                                      child: Row(
-                                        children: [
-                                          // Buton de derulare la stanga
-                                          IconButton(
-                                            icon: const Icon(Icons.arrow_back_ios),
-                                            onPressed: () {
-                                              _scrollControllers[i]?.animateTo(
-                                                _scrollControllers[i]!.offset - 120,
-                                                duration: const Duration(milliseconds: 300),
-                                                curve: Curves.easeInOut,
-                                              );
-                                            },
-                                          ),
-                                          // Lista orizontala de imagini
-                                          Expanded(
-                                            child: ListView.separated(
-                                              controller: _scrollControllers[i],
-                                              scrollDirection: Axis.horizontal,
-                                              itemCount: images.length,
-                                              separatorBuilder: (_, __) => const SizedBox(width: 8),
-                                              itemBuilder: (_, idx) => GestureDetector(
-                                                onTap: () => _openGallery(context, images, idx),
-                                                child: ClipRRect(
-                                                  borderRadius: BorderRadius.circular(6),
-                                                  child: Image.network(
-                                                    images[idx],
-                                                    width: 100,
-                                                    height: 100,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      // Afisam un placeholder daca imaginea nu se incarca
-                                                      return Container(
-                                                        width: 100,
-                                                        height: 100,
-                                                        color: Colors.grey.shade300,
-                                                        child: const Icon(Icons.broken_image, color: Colors.white70),
-                                                      );
-                                                    },
-                                                  ),
+                                    subtitle: Text(
+                                      '€ ${(data['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                    ),
+                                    childrenPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    children: [
+                                      if (fullAddress.isNotEmpty)
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.location_on,
+                                              size: 16,
+                                              color: Colors.grey,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                fullAddress,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          // Buton de derulare la dreapta
-                                          IconButton(
-                                            icon: const Icon(Icons.arrow_forward_ios),
-                                            onPressed: () {
-                                              _scrollControllers[i]?.animateTo(
-                                                _scrollControllers[i]!.offset + 120,
-                                                duration: const Duration(milliseconds: 300),
-                                                curve: Curves.easeInOut,
-                                              );
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                  ],
-                                  if (fullAddress.isNotEmpty) ...[
-                                    const SizedBox(height: 30),
-                                    const Padding(
-                                      padding: EdgeInsets.only(bottom: 8.0),
-                                      child: Text(
-                                        'Se afiseaza o locatie aproximativa. Adresa exacta este in descriere',
-                                        style: TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                          fontSize: 12,
-                                          color: Colors.grey,
+                                          ],
                                         ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: buildChips(data),
                                       ),
-                                    ),
-                                    buildMapSection(fullAddress),
-                                  ],
+                                      if ((data['description'] as String?)
+                                              ?.isNotEmpty ??
+                                          false) ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          data['description'] as String,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ],
+                                      if (images.length > 1) ...[
+                                        const SizedBox(height: 8),
+                                        SizedBox(
+                                          height: 100,
+                                          child: Row(
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.arrow_back_ios,
+                                                ),
+                                                onPressed:
+                                                    () => scrollControllers[i]!
+                                                        .animateTo(
+                                                          scrollControllers[i]!
+                                                                  .offset -
+                                                              100,
+                                                          duration:
+                                                              const Duration(
+                                                                milliseconds:
+                                                                    300,
+                                                              ),
+                                                          curve:
+                                                              Curves.easeInOut,
+                                                        ),
+                                              ),
+                                              Expanded(
+                                                child: ListView.separated(
+                                                  controller:
+                                                      galleryControllers[data['id']]!,
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  itemCount: images.length,
+                                                  separatorBuilder:
+                                                      (_, __) => const SizedBox(
+                                                        width: 8,
+                                                      ),
+                                                  itemBuilder:
+                                                      (
+                                                        _,
+                                                        idx,
+                                                      ) => GestureDetector(
+                                                        onTap:
+                                                            () => openGallery(
+                                                              context,
+                                                              images,
+                                                              idx,
+                                                            ),
+                                                        child: ClipRRect(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                6,
+                                                              ),
+                                                          child: Image.network(
+                                                            images[idx],
+                                                            width: 100,
+                                                            height: 100,
+                                                            fit: BoxFit.cover,
+                                                            errorBuilder:
+                                                                (
+                                                                  _,
+                                                                  __,
+                                                                  ___,
+                                                                ) => Container(
+                                                                  color:
+                                                                      Colors
+                                                                          .grey
+                                                                          .shade300,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.arrow_forward_ios,
+                                                ),
+                                                onPressed:
+                                                    () => scrollControllers[i]!
+                                                        .animateTo(
+                                                          scrollControllers[i]!
+                                                                  .offset +
+                                                              100,
+                                                          duration:
+                                                              const Duration(
+                                                                milliseconds:
+                                                                    300,
+                                                              ),
+                                                          curve:
+                                                              Curves.easeInOut,
+                                                        ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 8),
+                                      buildMapSection(fullAddress),
+                                      const SizedBox(height: 8),
+
+                                      // agent row with phone toggle
+                                      FutureBuilder<DocumentSnapshot>(
+                                        future:
+                                            FirebaseFirestore.instance
+                                                .collection('agents')
+                                                .doc(data['agentId'] as String)
+                                                .get(),
+                                        builder: (ctx, snapAgent) {
+                                          final name =
+                                              data['agentName'] as String? ??
+                                              '';
+                                          final phone =
+                                              snapAgent.hasData
+                                                  ? (snapAgent.data!['phone']
+                                                          as String? ??
+                                                      '')
+                                                  : '';
+                                          return Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 20,
+                                                backgroundColor:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                child: Text(
+                                                  name.isNotEmpty
+                                                      ? name[0].toUpperCase()
+                                                      : 'A',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      name,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    if (showPhone[data['id']] ??
+                                                        false) ...[
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        phone,
+                                                        style: const TextStyle(
+                                                          color: Colors.grey,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.phone),
+                                                color:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                onPressed:
+                                                    () => togglePhone(
+                                                      data['id'] as String,
+                                                    ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }), 
+                            );
+                          }).toList(),
+                    ),
                   ),
                 ),
               ),
@@ -378,161 +580,6 @@ class MyListingsPageState extends State<MyListingsPage> {
           },
         ),
       ),
-    );
-  }
-
-  // Construieste sectiunea hartii pentru o adresa data
-  Widget buildMapSection(String address) {
-    return FutureBuilder<LatLng?>(
-      future: geocodeAddress(address),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return Text('Eroare harta: ${snap.error}', style: const TextStyle(color: Colors.red));
-        }
-        if (snap.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final latLng = snap.data;
-        if (latLng == null) {
-          return const Text('Adresa nu a putut fi afisata pe harta');
-        }
-        return SizedBox(
-          height: 400,
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: latLng, zoom: 14),
-            markers: {Marker(markerId: MarkerId(address), position: latLng)},
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Componenta pentru vizualizarea imaginilor in galerie fullscreen
-class GalleryView extends StatefulWidget {
-  final List<String> images; // Lista de URL-uri pentru imagini
-  final int initialIndex;   // Indexul imaginii initiale de afisat
-
-  const GalleryView({
-    super.key,
-    required this.images,
-    required this.initialIndex,
-  });
-
-  @override
-  State<GalleryView> createState() => _GalleryViewState();
-}
-
-class _GalleryViewState extends State<GalleryView> {
-  late PageController _pageController;
-  late int _currentIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Zona principala cu imaginea curenta
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: widget.images.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            itemBuilder: (context, index) {
-              return InteractiveViewer(
-                clipBehavior: Clip.none,
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: Center(
-                  child: Image.network(
-                    widget.images[index],
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
-                              : null,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      // Afisam un mesaj de eroare daca imaginea nu se incarca
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.broken_image, size: 64, color: Colors.white70),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Imaginea nu a putut fi incarcata',
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        // Bara de navigare inferioara
-        Container(
-          color: Colors.black,
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-                onPressed: _currentIndex > 0
-                    ? () {
-                        _pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    : null,
-              ),
-              Text(
-                '${_currentIndex + 1} / ${widget.images.length}',
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-                onPressed: _currentIndex < widget.images.length - 1
-                    ? () {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
