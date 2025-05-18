@@ -243,6 +243,7 @@ class EditListingPageState extends State<EditListingPage> {
     setState(() {
       isLoading = true;
       errorMessage = null;
+      successMessage = null;
     });
     try {
       final allUrls = await uploadImages(widget.listingId);
@@ -305,19 +306,16 @@ class EditListingPageState extends State<EditListingPage> {
           .update(data);
 
       if (!mounted) return;
-      setState(() {
-        successMessage = 'Modificările au fost salvate';
-        isLoading = false;
-      });
+      setState(() => successMessage = 'Modificările au fost salvate');
 
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) Navigator.of(context).pop(true);
-      });
+      await Future.delayed(const Duration(seconds: 2));
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        errorMessage = 'Eroare la salvare: $e';
-      });
+      setState(() => errorMessage = 'Eroare la salvarea modificarilor');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
