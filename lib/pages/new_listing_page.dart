@@ -141,7 +141,7 @@ class AddNewListingPageState extends State<AddNewListingPage> {
       );
       if (pics.isEmpty) return;
 
-      final maxPhotos = 12;
+      final maxPhotos = 15;
       final slotsLeft = maxPhotos - selectedImages.length;
       final toAdd = pics.take(slotsLeft).toList();
 

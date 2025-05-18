@@ -1,9 +1,9 @@
 import 'dart:typed_data';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 
@@ -29,7 +29,7 @@ class EditListingPageState extends State<EditListingPage> {
   List<String> imageUrls = []; // existing remote URLs
   List<XFile> selectedImages = []; // newly picked files
   List<Uint8List> selectedImageBytes = []; // bytes for preview
-  int maxPhotos = 15;
+  final int maxPhotos = 15;
 
   // form controllers
   final formKey = GlobalKey<FormState>();
@@ -41,33 +41,79 @@ class EditListingPageState extends State<EditListingPage> {
   final numberController = TextEditingController();
   final sectorController = TextEditingController();
 
-  // apartament
+  // Apartament
   String? selectedNumarCamereApartament;
   String? selectedCompartimentare;
   final etajController = TextEditingController();
   final suprafataUtilaApartController = TextEditingController();
   final anConstructieApartController = TextEditingController();
 
-  // casa
+  // Casa
   String? selectedNumarCamereCasa;
   final suprafataUtilaCasaController = TextEditingController();
   final suprafataTerenCasaController = TextEditingController();
   final anConstructieCasaController = TextEditingController();
   final etajeCasaController = TextEditingController();
 
-  // teren
+  // Teren
   String? selectedTipTeren;
   String? selectedClasificare;
   final suprafataTerenController = TextEditingController();
 
-  // spatiu comercial
+  // Spatiu comercial
   String? selectedCategorieSpatiu;
   final suprafataSpatiuComController = TextEditingController();
 
-  String? selectedJudet;
+  // agents
   List<Map<String, dynamic>> agents = [];
   String? selectedAgentName;
   String? selectedAgentId;
+
+  String? selectedJudet;
+  final judete = [
+    'Alba',
+    'Arad',
+    'Arges',
+    'Bacau',
+    'Bihor',
+    'Bistrita-Nasaud',
+    'Botosani',
+    'Brasov',
+    'Braila',
+    'Buzau',
+    'Caras-Severin',
+    'Calarasi',
+    'Cluj',
+    'Constanta',
+    'Covasna',
+    'Dambovita',
+    'Dolj',
+    'Galati',
+    'Giurgiu',
+    'Gorj',
+    'Harghita',
+    'Hunedoara',
+    'Ialomita',
+    'Iasi',
+    'Ilfov',
+    'Maramures',
+    'Mehedinti',
+    'Mures',
+    'Neamt',
+    'Olt',
+    'Prahova',
+    'Satu Mare',
+    'Salaj',
+    'Sibiu',
+    'Suceava',
+    'Teleorman',
+    'Timis',
+    'Tulcea',
+    'Valcea',
+    'Vaslui',
+    'Vrancea',
+    'Bucuresti',
+  ];
 
   @override
   void initState() {
@@ -111,6 +157,7 @@ class EditListingPageState extends State<EditListingPage> {
       numberController.text = loc['number'] as String? ?? '';
       sectorController.text = loc['sector'] as String? ?? '';
 
+      // populate category-specific
       switch (selectedCategory) {
         case 'Apartament':
           final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
@@ -152,59 +199,45 @@ class EditListingPageState extends State<EditListingPage> {
   Future<void> pickImages() async {
     final pics = await picker.pickMultiImage(maxWidth: 1200, imageQuality: 80);
     if (pics.isEmpty) return;
-    // how many more slots we have?
     final slotsLeft = maxPhotos - imageUrls.length - selectedImages.length;
     final toAdd = pics.take(slotsLeft).toList();
-    // read bytes for preview
     for (final f in toAdd) {
       selectedImageBytes.add(await f.readAsBytes());
     }
     setState(() {
       selectedImages.addAll(toAdd);
       if (pics.length > slotsLeft) {
-        errorMessage = 'Poți încărca maxim $maxPhotos poze.';
+        errorMessage = 'Poti incarca maxim $maxPhotos poze.';
       }
     });
   }
 
   Future<List<String>> uploadImages(String propertyId) async {
-    // preserve whatever old URLs are still in imageUrls
     final existing = List<String>.from(imageUrls);
     final newUrls = <String>[];
-
     for (final file in selectedImages) {
       final ext = file.name.split('.').last;
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}.$ext';
-      final ref = FirebaseStorage.instance.ref(
-        'properties/$propertyId/$fileName',
-      );
+      final name = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+      final ref = FirebaseStorage.instance.ref('properties/$propertyId/$name');
       final snap = await ref.putData(
         await file.readAsBytes(),
         SettableMetadata(contentType: file.mimeType),
       );
       newUrls.add(await snap.ref.getDownloadURL());
     }
-
     return [...existing, ...newUrls];
   }
 
   void removeImage(int index) {
     if (index < imageUrls.length) {
-      // removing an existing URL
-      final url = imageUrls[index];
-      // OPTIONAL: also delete from Storage:
-      // await FirebaseStorage.instance.refFromURL(url).delete();
-      setState(() {
-        imageUrls.removeAt(index);
-      });
+      imageUrls.removeAt(index);
     } else {
-      // removing a newly picked file
       final localIdx = index - imageUrls.length;
-      setState(() {
-        selectedImages.removeAt(localIdx);
-        selectedImageBytes.removeAt(localIdx);
-      });
+      selectedImages.removeAt(localIdx);
+      selectedImageBytes.removeAt(localIdx);
     }
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> saveChanges() async {
@@ -220,6 +253,7 @@ class EditListingPageState extends State<EditListingPage> {
         'price': int.parse(priceController.text),
         'description': descriptionController.text,
         'type': transactionType,
+        'category': selectedCategory,
         'images': allUrls,
         'location': {
           'county': selectedJudet,
@@ -266,6 +300,7 @@ class EditListingPageState extends State<EditListingPage> {
           break;
       }
 
+      //se actualizeaza Firestore
       await FirebaseFirestore.instance
           .collection('properties')
           .doc(widget.listingId)
@@ -273,39 +308,71 @@ class EditListingPageState extends State<EditListingPage> {
 
       if (!mounted) return;
       setState(() {
-        successMessage = 'Modificarile au fost salvate';
+        successMessage = 'Modificările au fost salvate';
+        isLoading = false;
+      });
+
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) Navigator.of(context).pop(true);
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         errorMessage = 'Eroare la salvare: $e';
       });
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
     }
   }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    priceController.dispose();
-    descriptionController.dispose();
-    cityController.dispose();
-    streetController.dispose();
-    numberController.dispose();
-    sectorController.dispose();
-    etajController.dispose();
-    suprafataUtilaApartController.dispose();
-    anConstructieApartController.dispose();
-    suprafataUtilaCasaController.dispose();
-    suprafataTerenCasaController.dispose();
-    anConstructieCasaController.dispose();
-    etajeCasaController.dispose();
-    suprafataTerenController.dispose();
-    suprafataSpatiuComController.dispose();
-    super.dispose();
+  Widget buildChoiceChips(
+    String label,
+    List<String> options,
+    String? sel,
+    void Function(String) onSelect,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children:
+              options
+                  .map(
+                    (opt) => ChoiceChip(
+                      label: Text(opt),
+                      selected: sel == opt,
+                      onSelected: (_) => onSelect(opt),
+                    ),
+                  )
+                  .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget buildTransactionTypeChips() {
+    final types = ['De vanzare', 'De inchiriat'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Tip tranzactie'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children:
+              types
+                  .map(
+                    (t) => ChoiceChip(
+                      label: Text(t),
+                      selected: transactionType == t,
+                      onSelected: (_) => setState(() => transactionType = t),
+                    ),
+                  )
+                  .toList(),
+        ),
+      ],
+    );
   }
 
   Widget buildLocalizareFields() {
@@ -323,8 +390,16 @@ class EditListingPageState extends State<EditListingPage> {
             border: OutlineInputBorder(),
           ),
           value: selectedJudet,
-          items: /* same list as AddNewListingPage */ [],
-          onChanged: (v) => setState(() => selectedJudet = v),
+          validator: (value) => value == null ? 'Selecteaza judetul' : null,
+          items:
+              judete
+                  .map((j) => DropdownMenuItem(value: j, child: Text(j)))
+                  .toList(),
+          onChanged: (String? value) {
+            setState(() {
+              selectedJudet = value;
+            });
+          },
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -333,7 +408,7 @@ class EditListingPageState extends State<EditListingPage> {
             labelText: 'Oras',
             border: OutlineInputBorder(),
           ),
-          validator: (v) => v!.isEmpty ? 'Completati orasul' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu orasul' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -342,7 +417,7 @@ class EditListingPageState extends State<EditListingPage> {
             labelText: 'Strada',
             border: OutlineInputBorder(),
           ),
-          validator: (v) => v!.isEmpty ? 'Completati strada' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu strada' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -352,7 +427,8 @@ class EditListingPageState extends State<EditListingPage> {
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          validator: (v) => v!.isEmpty ? 'Completati numarul' : null,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu numarul' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
@@ -380,21 +456,19 @@ class EditListingPageState extends State<EditListingPage> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            // existing URLs
+            // existing
             for (var i = 0; i < imageUrls.length; i++)
               buildThumb(
                 Image.network(imageUrls[i], fit: BoxFit.cover),
-                onRemove: () => removeImage(i),
+                () => removeImage(i),
               ),
-
-            // newly picked
+            // new picks
             for (var j = 0; j < selectedImageBytes.length; j++)
               buildThumb(
                 Image.memory(selectedImageBytes[j], fit: BoxFit.cover),
-                onRemove: () => removeImage(imageUrls.length + j),
+                () => removeImage(imageUrls.length + j),
               ),
-
-            // add‐photo tile
+            // add tile
             if (total < maxPhotos)
               GestureDetector(
                 onTap: pickImages,
@@ -419,94 +493,391 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
-  Widget buildThumb(Widget child, {required VoidCallback onRemove}) {
-      return Stack(
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: child,
-            ),
-          ),
-          Positioned(
-            right: 4,
-            top: 4,
-            child: GestureDetector(
-              onTap: onRemove,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 3,
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.close, size: 16),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-  Widget buildTransactionTypeChips() {
-    final types = ['De vanzare', 'De inchiriat'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget buildThumb(Widget child, VoidCallback onRemove) {
+    return Stack(
       children: [
-        const Text('Tip tranzactie'),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 12,
-          children:
-              types
-                  .map(
-                    (t) => ChoiceChip(
-                      label: Text(t),
-                      selected: transactionType == t,
-                      onSelected: (_) => setState(() => transactionType = t),
-                    ),
-                  )
-                  .toList(),
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: child,
+          ),
+        ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.close, size: 16),
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget buildChoiceChips(
-    String label,
-    List<String> options,
-    String? selected,
-    void Function(String) onSelect,
-  ) {
+  Widget buildApartamentForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 12,
-          children:
-              options
-                  .map(
-                    (opt) => ChoiceChip(
-                      label: Text(opt),
-                      selected: selected == opt,
-                      onSelected: (_) => onSelect(opt),
-                    ),
-                  )
-                  .toList(),
+        // --- same as in AddNewListingPage ---
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
         ),
+        const SizedBox(height: 10),
+        buildChoiceChips(
+          'Numar camere',
+          ['1', '2', '3', '4', '5'],
+          selectedNumarCamereApartament ?? '',
+          (v) => setState(() => selectedNumarCamereApartament = v),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Compartimentare',
+            border: OutlineInputBorder(),
+          ),
+          value: selectedCompartimentare,
+          items:
+              [
+                'Decomandat',
+                'Semidecomandat',
+                'Nedecomandat',
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) => setState(() => selectedCompartimentare = v),
+          validator: (v) => v == null ? 'Selecteaza compartimentarea' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: etajController,
+          decoration: const InputDecoration(
+            labelText: 'Etaj',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu etaj' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataUtilaApartController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata utila (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: anConstructieApartController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
+            labelText: 'Pret (EUR)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
+        buildLocalizareFields(),
+      ],
+    );
+  }
+
+  Widget buildCasaForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          maxLength: 30,
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
+        ),
+        const SizedBox(height: 10),
+        buildChoiceChips(
+          'Numar camere',
+          List.generate(10, (i) => '${i + 1}'),
+          selectedNumarCamereCasa ?? '',
+          (v) => setState(() => selectedNumarCamereCasa = v),
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataUtilaCasaController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata utila (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata utila' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataTerenCasaController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata teren (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata teren' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: anConstructieCasaController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu anul constructiei' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: etajeCasaController,
+          decoration: const InputDecoration(
+            labelText: 'Etaje',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu numarul de etaje' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
+            labelText: 'Pret (EUR)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
+        buildLocalizareFields(),
+      ],
+    );
+  }
+
+  Widget buildTerenForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          maxLength: 30,
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Tip teren',
+            border: OutlineInputBorder(),
+          ),
+          value: selectedTipTeren,
+          items:
+              [
+                'Constructii',
+                'Agricol',
+                'Forestier',
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) => setState(() => selectedTipTeren = v),
+          validator: (v) => v == null ? 'Selecteaza tip teren' : null,
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Clasificare',
+            border: OutlineInputBorder(),
+          ),
+          value: selectedClasificare,
+          items:
+              [
+                'Intravilan',
+                'Extravilan',
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) => setState(() => selectedClasificare = v),
+          validator: (v) => v == null ? 'Selecteaza clasificare' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataTerenController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata teren (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata teren' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
+            labelText: 'Pret (EUR)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
+        buildLocalizareFields(),
+      ],
+    );
+  }
+
+  Widget buildSpatiuComercialForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          maxLength: 30,
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Categorie',
+            border: OutlineInputBorder(),
+          ),
+          value: selectedCategorieSpatiu,
+          items:
+              [
+                'Birouri',
+                'Comercial',
+                'Industrial',
+              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: (v) => setState(() => selectedCategorieSpatiu = v),
+          validator: (v) => v == null ? 'Selecteaza categoria' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataSpatiuComController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          decoration: const InputDecoration(
+            labelText: 'Pret (EUR)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          maxLength: 200,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 10),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
+        buildLocalizareFields(),
       ],
     );
   }
@@ -514,98 +885,13 @@ class EditListingPageState extends State<EditListingPage> {
   Widget buildDynamicForm() {
     switch (selectedCategory) {
       case 'Apartament':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Titlu',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) => v!.isEmpty ? 'Completati titlu' : null,
-            ),
-            const SizedBox(height: 10),
-            buildChoiceChips(
-              'Numar camere',
-              ['1', '2', '3', '4', '5'],
-              selectedNumarCamereApartament,
-              (v) => setState(() => selectedNumarCamereApartament = v),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Compartimentare',
-                border: OutlineInputBorder(),
-              ),
-              value: selectedCompartimentare,
-              items:
-                  ['Decomandat', 'Semidecomandat', 'Nedecomandat']
-                      .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-              onChanged: (v) => setState(() => selectedCompartimentare = v),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: etajController,
-              decoration: const InputDecoration(
-                labelText: 'Etaj',
-                border: OutlineInputBorder(),
-              ),
-              validator: (v) => v!.isEmpty ? 'Completati etaj' : null,
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: suprafataUtilaApartController,
-              decoration: const InputDecoration(
-                labelText: 'Suprafata utila (mp)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (v) => v!.isEmpty ? 'Completati suprafata' : null,
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: anConstructieApartController,
-              decoration: const InputDecoration(
-                labelText: 'An constructie',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (v) => v!.isEmpty ? 'Completati anul' : null,
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: priceController,
-              decoration: const InputDecoration(
-                labelText: 'Pret (EUR)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              validator: (v) => v!.isEmpty ? 'Completati pretul' : null,
-            ),
-            const SizedBox(height: 20),
-            buildImageSection(),
-            TextFormField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Descriere',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 5,
-              validator: (v) => v!.isEmpty ? 'Completati descrierea' : null,
-            ),
-            const SizedBox(height: 10),
-            buildTransactionTypeChips(),
-            const SizedBox(height: 20),
-            buildLocalizareFields(),
-          ],
-        );
+        return buildApartamentForm();
       case 'Casa':
-        // … implement similar to AddNewListingPage, populating with current controllers
-        return const SizedBox.shrink();
+        return buildCasaForm();
       case 'Teren':
+        return buildTerenForm();
       case 'Spatiu comercial':
+        return buildSpatiuComercialForm();
       default:
         return const SizedBox.shrink();
     }
@@ -618,16 +904,12 @@ class EditListingPageState extends State<EditListingPage> {
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
           automaticallyImplyLeading: false,
-          iconTheme: const IconThemeData(color: Colors.white),
           backgroundColor: Theme.of(context).colorScheme.primary,
+          iconTheme: const IconThemeData(color: Colors.white),
           title: Center(
             child: Padding(
               padding: const EdgeInsets.only(top: 15),
-              child: Image.asset(
-                'lib/images/logo.png',
-                width: 220,
-                height: 220,
-              ),
+              child: Image.asset('lib/images/logo.png', height: 80),
             ),
           ),
         ),
@@ -645,6 +927,7 @@ class EditListingPageState extends State<EditListingPage> {
                   if (errorMessage != null) ...[
                     ErrorBanner(
                       message: errorMessage!,
+                      messageType: MessageType.error,
                       onDismiss: () => setState(() => errorMessage = null),
                     ),
                     const SizedBox(height: 20),
@@ -658,23 +941,27 @@ class EditListingPageState extends State<EditListingPage> {
                   ],
                   buildDynamicForm(),
                   const SizedBox(height: 30),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Agent de vanzari',
-                      border: OutlineInputBorder(),
-                    ),
-                    value: selectedAgentName,
-                    items:
-                        agents
-                            .map(
-                              (a) => DropdownMenuItem<String>(
-                                value: a['name'],
-                                child: Text(a['name']),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (v) => setState(() => selectedAgentName = v),
-                  ),
+                  agents.isEmpty
+                      ? const Center(child: CircularProgressIndicator())
+                      : DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Agent de vanzari',
+                          border: OutlineInputBorder(),
+                        ),
+                        value: selectedAgentName,
+                        items:
+                            agents
+                                .map(
+                                  (a) => DropdownMenuItem<String>(
+                                    value: a['name'],
+                                    child: Text(a['name']),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (v) => setState(() => selectedAgentName = v),
+                        validator:
+                            (v) => v == null ? 'Selecteaza agentul' : null,
+                      ),
                   const SizedBox(height: 40),
                   Center(
                     child: SizedBox(

@@ -63,12 +63,15 @@ class HomePageState extends State<HomePage> {
   }
 
   void loadUser() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     user = FirebaseAuth.instance.currentUser;
+    if (!mounted) return;
     setState(() => isLoading = false);
   }
 
   void loadListings() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     try {
       final snap =
@@ -84,14 +87,15 @@ class HomePageState extends State<HomePage> {
           }).toList();
       applyFilters();
     } catch (e) {
-      setState(() => errorMessage = 'Error loading properties:\n$e');
+      if (!mounted) return;
+      setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   void loadFavorites() async {
-    if (user == null) return;
+    if (user == null || !mounted) return;
     try {
       final favSnap =
           await FirebaseFirestore.instance
@@ -221,18 +225,19 @@ class HomePageState extends State<HomePage> {
   }
 
   void signOut() async {
-    setState(() => isLoading = true);
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
     try {
       await AuthService().signOut();
       if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-        (_) => false,
-      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } on AuthException catch (e) {
-      setState(() => errorMessage = e.message);
+      if (mounted) setState(() => errorMessage = e.message);
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 

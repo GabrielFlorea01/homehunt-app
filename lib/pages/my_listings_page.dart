@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/pages/gallery_view.dart';
-import 'package:http/http.dart' as http;
 import 'package:homehunt/pages/edit_listing_page.dart';
 import 'package:homehunt/pages/home_page.dart';
+import 'package:http/http.dart' as http;
 
 /// Geocode a plain address into coordinates
 Future<LatLng?> geocodeAddress(String address) async {
@@ -17,7 +17,9 @@ Future<LatLng?> geocodeAddress(String address) async {
   final resp = await http.get(url);
   if (resp.statusCode != 200) return null;
   final body = json.decode(resp.body) as Map<String, dynamic>;
-  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) return null;
+  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) {
+    return null;
+  }
   final loc =
       body['results'][0]['geometry']['location'] as Map<String, dynamic>;
   return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
@@ -34,30 +36,28 @@ class MyListingsPageState extends State<MyListingsPage> {
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection('properties');
 
-  // controllers for the horizontal gallery in each card
+  // A ScrollController for each card's horizontal gallery
   final Map<int, ScrollController> scrollControllers = {};
-  // controllers to open fullscreen gallery
-  final Map<String, ScrollController> galleryControllers = {};
-  // track which cards have phone expanded
+
+  // Track which cards have phone expanded
   final Map<String, bool> showPhone = {};
 
   void openGallery(BuildContext c, List<String> imgs, int idx) {
     Navigator.of(c).push(
       MaterialPageRoute(
-        builder: (_) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: AppBar(
+        builder:
+            (_) => Scaffold(
               backgroundColor: Colors.black,
-              iconTheme: const IconThemeData(color: Colors.white),
-              title: Text(
-                '${idx + 1}/${imgs.length}',
-                style: const TextStyle(color: Colors.white),
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                iconTheme: const IconThemeData(color: Colors.white),
+                title: Text(
+                  '${idx + 1}/${imgs.length}',
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
+              body: GalleryView(images: imgs, initialIndex: idx),
             ),
-            body: GalleryView(images: imgs, initialIndex: idx),
-          );
-        },
       ),
     );
   }
@@ -169,7 +169,6 @@ class MyListingsPageState extends State<MyListingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // same AppBar as HomePage
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
@@ -243,7 +242,7 @@ class MyListingsPageState extends State<MyListingsPage> {
             final docs = snap.data!.docs;
             if (docs.isEmpty) {
               return const Center(
-                child: Text('Nu ai adăugat încă niciun anunț'),
+                child: Text('Nu ai adaugat inca niciun anunt'),
               );
             }
             return SingleChildScrollView(
@@ -274,8 +273,6 @@ class MyListingsPageState extends State<MyListingsPage> {
                               loc['city'] ?? '',
                               loc['county'] ?? '',
                             ].where((s) => s.trim().isNotEmpty).join(', ');
-                            galleryControllers[data['id']] ??=
-                                ScrollController();
 
                             return Card(
                               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -386,10 +383,10 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                   builder:
                                                       (ctx) => AlertDialog(
                                                         title: const Text(
-                                                          'Confirmă ștergerea',
+                                                          'Confirma stergerea',
                                                         ),
                                                         content: const Text(
-                                                          'Sigur vrei să ștergi acest anunț?',
+                                                          'Sigur vrei sa stergi acest anunt?',
                                                         ),
                                                         actions: [
                                                           TextButton(
@@ -400,7 +397,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                                       false,
                                                                     ),
                                                             child: const Text(
-                                                              'Anulează',
+                                                              'Anuleaza',
                                                             ),
                                                           ),
                                                           TextButton(
@@ -411,7 +408,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                                       true,
                                                                     ),
                                                             child: const Text(
-                                                              'Șterge',
+                                                              'Sterge',
                                                             ),
                                                           ),
                                                         ],
@@ -494,25 +491,29 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                 icon: const Icon(
                                                   Icons.arrow_back_ios,
                                                 ),
-                                                onPressed:
-                                                    () => scrollControllers[i]!
-                                                        .animateTo(
-                                                          scrollControllers[i]!
-                                                                  .offset -
-                                                              100,
-                                                          duration:
-                                                              const Duration(
-                                                                milliseconds:
-                                                                    300,
-                                                              ),
-                                                          curve:
-                                                              Curves.easeInOut,
-                                                        ),
+                                                onPressed: () {
+                                                  final c =
+                                                      scrollControllers[i]!;
+                                                  final newOffset =
+                                                      (c.offset - 100).clamp(
+                                                        0.0,
+                                                        c
+                                                            .position
+                                                            .maxScrollExtent,
+                                                      );
+                                                  c.animateTo(
+                                                    newOffset,
+                                                    duration: const Duration(
+                                                      milliseconds: 300,
+                                                    ),
+                                                    curve: Curves.easeInOut,
+                                                  );
+                                                },
                                               ),
                                               Expanded(
                                                 child: ListView.separated(
                                                   controller:
-                                                      galleryControllers[data['id']]!,
+                                                      scrollControllers[i]!,
                                                   scrollDirection:
                                                       Axis.horizontal,
                                                   itemCount: images.length,
@@ -561,20 +562,24 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                 icon: const Icon(
                                                   Icons.arrow_forward_ios,
                                                 ),
-                                                onPressed:
-                                                    () => scrollControllers[i]!
-                                                        .animateTo(
-                                                          scrollControllers[i]!
-                                                                  .offset +
-                                                              100,
-                                                          duration:
-                                                              const Duration(
-                                                                milliseconds:
-                                                                    300,
-                                                              ),
-                                                          curve:
-                                                              Curves.easeInOut,
-                                                        ),
+                                                onPressed: () {
+                                                  final c =
+                                                      scrollControllers[i]!;
+                                                  final newOffset =
+                                                      (c.offset + 100).clamp(
+                                                        0.0,
+                                                        c
+                                                            .position
+                                                            .maxScrollExtent,
+                                                      );
+                                                  c.animateTo(
+                                                    newOffset,
+                                                    duration: const Duration(
+                                                      milliseconds: 300,
+                                                    ),
+                                                    curve: Curves.easeInOut,
+                                                  );
+                                                },
                                               ),
                                             ],
                                           ),
@@ -584,7 +589,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                       buildMapSection(fullAddress),
                                       const SizedBox(height: 8),
 
-                                      // agent row with phone toggle
+                                      // Agent row with phone toggle
                                       FutureBuilder<DocumentSnapshot>(
                                         future:
                                             FirebaseFirestore.instance
