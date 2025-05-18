@@ -216,7 +216,7 @@ class HomePageState extends State<HomePage> {
   void addListing() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AddNewListingPage()),
+      MaterialPageRoute(builder: (_) => const NewListingPage()),
     );
   }
 
@@ -451,7 +451,7 @@ class HomePageState extends State<HomePage> {
                     style: const TextStyle(fontSize: 32, color: Colors.white),
                   ),
                 ),
-                // You can implement the Favorite page navigation here if needed.
+                const SizedBox(height: 50),
                 ListTile(
                   leading: const Icon(Icons.home),
                   title: const Text('Marketplace'),
@@ -465,7 +465,7 @@ class HomePageState extends State<HomePage> {
                   //TODO
                 ),
                 ListTile(
-                  leading: const Icon(Icons.addchart_rounded),
+                  leading: const Icon(Icons.view_stream_rounded),
                   title: const Text('Anunturile mele'),
                   onTap: () {
                     Navigator.pop(context);
@@ -477,7 +477,9 @@ class HomePageState extends State<HomePage> {
                 ),
                 const Divider(),
                 // quick filters
-                TextButton(
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     transactionType = 'De vanzare';
@@ -485,9 +487,12 @@ class HomePageState extends State<HomePage> {
                     applyFilters();
                   },
                   child: const Text('Apartamente de vanzare'),
+                  ),
                 ),
-                const Divider(),
-                TextButton(
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                     transactionType = 'De inchiriat';
@@ -495,6 +500,7 @@ class HomePageState extends State<HomePage> {
                     applyFilters();
                   },
                   child: const Text('Apartamente de inchiriat'),
+                  ),
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(

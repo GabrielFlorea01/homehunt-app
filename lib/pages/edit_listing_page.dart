@@ -439,7 +439,6 @@ class EditListingPageState extends State<EditListingPage> {
   }
 
   Widget buildImageSection() {
-    final total = imageUrls.length + selectedImages.length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -448,83 +447,177 @@ class EditListingPageState extends State<EditListingPage> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            // existing
-            for (var i = 0; i < imageUrls.length; i++)
-              buildThumb(
-                Image.network(imageUrls[i], fit: BoxFit.cover),
-                () => removeImage(i),
-              ),
-            // new picks
-            for (var j = 0; j < selectedImageBytes.length; j++)
-              buildThumb(
-                Image.memory(selectedImageBytes[j], fit: BoxFit.cover),
-                () => removeImage(imageUrls.length + j),
-              ),
-            // add tile
-            if (total < maxPhotos)
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // the big upload/tap area
               GestureDetector(
                 onTap: pickImages,
                 child: Container(
-                  width: 100,
-                  height: 100,
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 30,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).primaryColor),
-                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(context).primaryColor,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    Icons.add_a_photo,
-                    size: 36,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  child:
+                      (imageUrls.isEmpty && selectedImageBytes.isEmpty)
+                          ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 50,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(height: 16),
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Incarca fotografii',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          '\n\nMaxim 15 poze. PNG, JPG. Dimensiune maxima 10MB',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                          : Center(
+                            child: Icon(
+                              Icons.add_photo_alternate,
+                              size: 30,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
                 ),
               ),
-          ],
+
+              // previews of both remote and local images
+              if (imageUrls.isNotEmpty || selectedImageBytes.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    // already‐uploaded:
+                    for (var i = 0; i < imageUrls.length; i++)
+                      Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                imageUrls[i],
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () => removeImage(i),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(Icons.close, size: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                    // newly-picked local bytes:
+                    for (var j = 0; j < selectedImageBytes.length; j++)
+                      Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.memory(
+                                selectedImageBytes[j],
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () => removeImage(imageUrls.length + j),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 3,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(Icons.close, size: 16),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget buildThumb(Widget child, VoidCallback onRemove) {
-    return Stack(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: child,
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    blurRadius: 3,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.close, size: 16),
-            ),
-          ),
-        ),
       ],
     );
   }
