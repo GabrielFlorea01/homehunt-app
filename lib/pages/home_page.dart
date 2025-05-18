@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -35,6 +36,7 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
+  late final StreamSubscription<QuerySnapshot> snapshot;
   User? user;
   bool isLoading = true;
   String? errorMessage;
@@ -58,8 +60,32 @@ class HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     loadUser();
-    loadListings();
-    loadFavorites();
+    snapshot = FirebaseFirestore.instance
+        .collection('properties')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snap) {
+            if (!mounted) return;
+            allListings =
+                snap.docs.map((d) {
+                  final m = Map<String, dynamic>.from(d.data() as Map);
+                  m['id'] = d.id;
+                  return m;
+                }).toList();
+            applyFilters();
+          },
+          onError: (e) {
+            if (!mounted) return;
+            setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
+          },
+        );
+  }
+
+  @override
+  void dispose() {
+    snapshot.cancel();
+    super.dispose();
   }
 
   void loadUser() async {
@@ -68,46 +94,6 @@ class HomePageState extends State<HomePage> {
     user = FirebaseAuth.instance.currentUser;
     if (!mounted) return;
     setState(() => isLoading = false);
-  }
-
-  void loadListings() async {
-    if (!mounted) return;
-    setState(() => isLoading = true);
-    try {
-      final snap =
-          await FirebaseFirestore.instance
-              .collection('properties')
-              .orderBy('createdAt', descending: true)
-              .get();
-      allListings =
-          snap.docs.map((d) {
-            final data = Map<String, dynamic>.from(d.data() as Map);
-            data['id'] = d.id;
-            return data;
-          }).toList();
-      applyFilters();
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
-    } finally {
-      if (mounted) setState(() => isLoading = false);
-    }
-  }
-
-  void loadFavorites() async {
-    if (user == null || !mounted) return;
-    try {
-      final favSnap =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user!.uid)
-              .collection('favorites')
-              .get();
-      favoriteIds = favSnap.docs.map((d) => d.id).toList();
-      setState(() {});
-    } catch (e) {
-      setState(() => errorMessage = 'Error loading favorites');
-    }
   }
 
   void applyFilters() {
@@ -172,26 +158,6 @@ class HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void toggleFavorite(String id) async {
-    if (user == null) {
-      promptLogin();
-      return;
-    }
-    final ref = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .collection('favorites')
-        .doc(id);
-    if (favoriteIds.contains(id)) {
-      await ref.delete();
-      favoriteIds.remove(id);
-    } else {
-      await ref.set({'addedAt': DateTime.now()});
-      favoriteIds.add(id);
-    }
-    setState(() {});
-  }
-
   void togglePhone(String id) {
     showPhone[id] = !(showPhone[id] ?? false);
     setState(() {});
@@ -224,22 +190,26 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  void signOut() async {
+  Future<void> signOut() async {
     if (!mounted) return;
     setState(() {
       isLoading = true;
       errorMessage = null;
     });
+
     try {
       await AuthService().signOut();
-      if (!mounted) return;
-      Navigator.of(context).popUntil((route) => route.isFirst);
     } on AuthException catch (e) {
-      if (mounted) setState(() => errorMessage = e.message);
+      if (mounted) {
+        setState(() => errorMessage = e.message);
+      }
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
+
 
   void clearError() => setState(() => errorMessage = null);
 
@@ -481,7 +451,7 @@ class HomePageState extends State<HomePage> {
                     style: const TextStyle(fontSize: 32, color: Colors.white),
                   ),
                 ),
-                  // You can implement the Favorite page navigation here if needed.
+                // You can implement the Favorite page navigation here if needed.
                 ListTile(
                   leading: const Icon(Icons.home),
                   title: const Text('Marketplace'),
@@ -833,11 +803,9 @@ class HomePageState extends State<HomePage> {
                                                                     : Colors
                                                                         .grey,
                                                           ),
-                                                          onPressed:
-                                                              () =>
-                                                                  toggleFavorite(
-                                                                    id,
-                                                                  ),
+                                                          onPressed: () {
+                                                            // TODO: Implement favorite toggle logic
+                                                          },
                                                         ),
                                                       ),
                                                     ),

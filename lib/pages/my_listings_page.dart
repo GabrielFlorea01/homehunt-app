@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:homehunt/pages/edit_listing_page.dart';
-import 'package:homehunt/pages/home_page.dart';
 import 'package:http/http.dart' as http;
 
 /// Geocode a plain address into coordinates
@@ -205,10 +204,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                   selected: true,
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                    );
+                    Navigator.of(context).popUntil((r) => r.isFirst);
                   },
                 ),
                 ListTile(
