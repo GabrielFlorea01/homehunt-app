@@ -4,10 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/pages/gallery_view.dart';
-import 'package:homehunt/pages/home_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:homehunt/pages/edit_listing_page.dart';
+import 'package:homehunt/pages/home_page.dart';
 
-// Geocode a plain address into coordinates
+/// Geocode a plain address into coordinates
 Future<LatLng?> geocodeAddress(String address) async {
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
     'address': '$address, Romania',
@@ -216,7 +217,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                   title: const Text('Favorite'),
                   onTap: () {
                     Navigator.pop(context);
-                    // TODO: Implement navigation to FavouritesPage when available
+                    // TODO: implement favorites
                   },
                 ),
               ],
@@ -242,10 +243,9 @@ class MyListingsPageState extends State<MyListingsPage> {
             final docs = snap.data!.docs;
             if (docs.isEmpty) {
               return const Center(
-                child: Text('Nu ai adaugat inca niciun anunt'),
+                child: Text('Nu ai adăugat încă niciun anunț'),
               );
             }
-
             return SingleChildScrollView(
               child: Center(
                 child: ConstrainedBox(
@@ -286,7 +286,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // image
+                                  // ---- IMAGE STACK WITH EDIT/DELETE ----
                                   Stack(
                                     children: [
                                       ClipRRect(
@@ -315,29 +315,122 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                   ),
                                         ),
                                       ),
+                                      // EDIT & DELETE buttons
                                       Positioned(
-                                        bottom: 8,
-                                        left: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Theme.of(
+                                        top: 8,
+                                        right: 8,
+                                        child: Row(
+                                          children: [
+                                            ElevatedButton.icon(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white70,
+                                                elevation: 0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.edit,
+                                                size: 18,
+                                                color: Colors.black87,
+                                              ),
+                                              label: const Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                Navigator.push(
                                                   context,
-                                                ).colorScheme.primary,
-                                            borderRadius: BorderRadius.circular(
-                                              4,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (_) => EditListingPage(
+                                                          listingId:
+                                                              data['id']
+                                                                  as String,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
                                             ),
-                                          ),
+                                            const SizedBox(width: 4),
+                                            ElevatedButton.icon(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white70,
+                                                elevation: 0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                size: 18,
+                                                color: Colors.redAccent,
+                                              ),
+                                              label: const Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  color: Colors.redAccent,
+                                                ),
+                                              ),
+                                              onPressed: () async {
+                                                final ok = await showDialog<
+                                                  bool
+                                                >(
+                                                  context: context,
+                                                  builder:
+                                                      (ctx) => AlertDialog(
+                                                        title: const Text(
+                                                          'Confirmă ștergerea',
+                                                        ),
+                                                        content: const Text(
+                                                          'Sigur vrei să ștergi acest anunț?',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.pop(
+                                                                      ctx,
+                                                                      false,
+                                                                    ),
+                                                            child: const Text(
+                                                              'Anulează',
+                                                            ),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.pop(
+                                                                      ctx,
+                                                                      true,
+                                                                    ),
+                                                            child: const Text(
+                                                              'Șterge',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                );
+                                                if (ok == true) {
+                                                  await propertiesRef
+                                                      .doc(data['id'] as String)
+                                                      .delete();
+                                                }
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
 
-                                  // details
+                                  // ---- DETAILS & EXPANSIONTILE ----
                                   ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
