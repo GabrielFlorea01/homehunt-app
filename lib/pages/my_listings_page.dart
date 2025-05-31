@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:homehunt/firebase/secrets/api_key.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:homehunt/pages/edit_listing_page.dart';
+import 'package:homehunt/pages/home_page.dart';
 import 'package:http/http.dart' as http;
 
 /// Geocode a plain address into coordinates
 Future<LatLng?> geocodeAddress(String address) async {
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
     'address': '$address, Romania',
-    'key': 'AIzaSyA_61celkZcyTPfToDzE7u4KkhxLtq3xIo',
+    'key': googleMapsApiKey,
   });
   final resp = await http.get(url);
   if (resp.statusCode != 200) return null;
@@ -31,7 +33,6 @@ class MyListingsPage extends StatefulWidget {
 }
 
 class MyListingsPageState extends State<MyListingsPage> {
-  final User? currentUser = FirebaseAuth.instance.currentUser;
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection('properties');
 
@@ -193,7 +194,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                   radius: 40,
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   child: Text(
-                    currentUser?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                    FirebaseAuth.instance.currentUser?.email?.substring(0, 1).toUpperCase() ?? 'U',
                     style: const TextStyle(fontSize: 32, color: Colors.white),
                   ),
                 ),
@@ -202,9 +203,12 @@ class MyListingsPageState extends State<MyListingsPage> {
                   leading: const Icon(Icons.home),
                   title: const Text('Marketplace'),
                   selected: true,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).popUntil((r) => r.isFirst);
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    if (!mounted) return;
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomePage()),
+                    );
                   },
                 ),
                 ListTile(
@@ -225,7 +229,7 @@ class MyListingsPageState extends State<MyListingsPage> {
         child: StreamBuilder<QuerySnapshot>(
           stream:
               propertiesRef
-                  .where('userId', isEqualTo: currentUser!.uid)
+                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
           builder: (ctx, snap) {

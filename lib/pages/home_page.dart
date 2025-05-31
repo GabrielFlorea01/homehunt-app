@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:homehunt/firebase/secrets/api_key.dart';
+import 'package:homehunt/main.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:homehunt/firebase/auth/auth_service.dart';
@@ -17,7 +19,7 @@ import 'package:homehunt/error_widgets/error_banner.dart';
 Future<LatLng?> geocodeAddress(String address) async {
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
     'address': '$address, Romania',
-    'key': 'AIzaSyA_61celkZcyTPfToDzE7u4KkhxLtq3xIo',
+    'key': googleMapsApiKey,
   });
   final resp = await http.get(url);
   if (resp.statusCode != 200) return null;
@@ -36,7 +38,7 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  late final StreamSubscription<QuerySnapshot> snapshot;
+  StreamSubscription<QuerySnapshot>? snapshot;
   User? user;
   bool isLoading = true;
   String? errorMessage;
@@ -59,41 +61,64 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    loadUser();
-    snapshot = FirebaseFirestore.instance
-        .collection('properties')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .listen(
-          (snap) {
-            if (!mounted) return;
-            allListings =
-                snap.docs.map((d) {
-                  final m = Map<String, dynamic>.from(d.data() as Map);
-                  m['id'] = d.id;
-                  return m;
-                }).toList();
-            applyFilters();
-          },
-          onError: (e) {
-            if (!mounted) return;
-            setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
-          },
-        );
+    loadUserAndProperties();
   }
 
   @override
   void dispose() {
-    snapshot.cancel();
+    snapshot?.cancel();
     super.dispose();
   }
 
-  void loadUser() async {
-    if (!mounted) return;
+  Future<void> loadUserAndProperties() async {
     setState(() => isLoading = true);
     user = FirebaseAuth.instance.currentUser;
-    if (!mounted) return;
     setState(() => isLoading = false);
+
+    if (user != null) {
+      snapshot = FirebaseFirestore.instance
+          .collection('properties')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .listen(
+            (snap) {
+              if (!mounted) return;
+              allListings =
+                  snap.docs.map((d) {
+                    final m = Map<String, dynamic>.from(d.data() as Map);
+                    m['id'] = d.id;
+                    return m;
+                  }).toList();
+              applyFilters();
+            },
+            onError: (e) {
+              if (!mounted) return;
+              setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
+            },
+          );
+    }
+  }
+
+  Future<void> signOut() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    try {
+      await AuthService().signOut();
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() => errorMessage = e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => errorMessage = 'Eroare la sign-out');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   void applyFilters() {
@@ -163,54 +188,6 @@ class HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void promptLogin() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Login required'),
-            content: const Text('You must be logged in to favorite.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                  );
-                },
-                child: const Text('Login'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> signOut() async {
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-
-    try {
-      await AuthService().signOut();
-    } on AuthException catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = e.message);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
-  }
-
-
   void clearError() => setState(() => errorMessage = null);
 
   void addListing() {
@@ -239,9 +216,9 @@ class HomePageState extends State<HomePage> {
                 child: const Text('No'),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  signOut();
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await signOut();
                 },
                 child: const Text('Yes'),
               ),
@@ -288,6 +265,7 @@ class HomePageState extends State<HomePage> {
         return SizedBox(
           height: 400,
           child: GoogleMap(
+            key: ValueKey(address),
             initialCameraPosition: CameraPosition(target: loc, zoom: 14),
             markers: {Marker(markerId: MarkerId(address), position: loc)},
             zoomControlsEnabled: false,
@@ -480,26 +458,26 @@ class HomePageState extends State<HomePage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    transactionType = 'De vanzare';
-                    propertyFilter = 'Apartamente';
-                    applyFilters();
-                  },
-                  child: const Text('Apartamente de vanzare'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      transactionType = 'De vanzare';
+                      propertyFilter = 'Apartamente';
+                      applyFilters();
+                    },
+                    child: const Text('Apartamente de vanzare'),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    transactionType = 'De inchiriat';
-                    propertyFilter = 'Apartamente';
-                    applyFilters();
-                  },
-                  child: const Text('Apartamente de inchiriat'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      transactionType = 'De inchiriat';
+                      propertyFilter = 'Apartamente';
+                      applyFilters();
+                    },
+                    child: const Text('Apartamente de inchiriat'),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -1031,109 +1009,123 @@ class HomePageState extends State<HomePage> {
                                                     const SizedBox(height: 20),
                                                     buildMap(fullAddress),
                                                     const SizedBox(height: 20),
-                                                    FutureBuilder<
-                                                      DocumentSnapshot
-                                                    >(
-                                                      future:
-                                                          FirebaseFirestore
-                                                              .instance
-                                                              .collection(
-                                                                'agents',
-                                                              )
-                                                              .doc(
-                                                                data['agentId']
-                                                                    as String,
-                                                              )
-                                                              .get(),
-                                                      builder: (
-                                                        ctx,
-                                                        snapAgent,
-                                                      ) {
-                                                        final name =
-                                                            data['agentName']
-                                                                as String? ??
-                                                            '';
-                                                        final phone =
-                                                            snapAgent.hasData
-                                                                ? (snapAgent.data!['phone']
-                                                                        as String? ??
-                                                                    '')
-                                                                : '';
-                                                        return Row(
-                                                          children: [
-                                                            CircleAvatar(
-                                                              radius: 20,
-                                                              backgroundColor:
-                                                                  Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .primary,
-                                                              child: Text(
-                                                                name.isNotEmpty
-                                                                    ? name[0]
-                                                                        .toUpperCase()
-                                                                    : 'A',
-                                                                style: const TextStyle(
-                                                                  color:
-                                                                      Colors
-                                                                          .white,
+                                                    //agentii din card
+                                                    if (user != null) ...[
+                                                      FutureBuilder<
+                                                        DocumentSnapshot
+                                                      >(
+                                                        future:
+                                                            FirebaseFirestore
+                                                                .instance
+                                                                .collection(
+                                                                  'agents',
+                                                                )
+                                                                .doc(
+                                                                  data['agentId']
+                                                                      as String,
+                                                                )
+                                                                .get(),
+                                                        builder: (
+                                                          ctx,
+                                                          snapAgent,
+                                                        ) {
+                                                          final name =
+                                                              data['agentName']
+                                                                  as String? ??
+                                                              '';
+                                                          final phone =
+                                                              snapAgent.hasData
+                                                                  ? (snapAgent.data!['phone']
+                                                                          as String? ??
+                                                                      '')
+                                                                  : '';
+                                                          return Row(
+                                                            children: [
+                                                              CircleAvatar(
+                                                                radius: 20,
+                                                                backgroundColor:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .primary,
+                                                                child: Text(
+                                                                  name.isNotEmpty
+                                                                      ? name[0]
+                                                                          .toUpperCase()
+                                                                      : 'A',
+                                                                  style: const TextStyle(
+                                                                    color:
+                                                                        Colors
+                                                                            .white,
+                                                                  ),
                                                                 ),
                                                               ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  Text(
-                                                                    name,
-                                                                    style: const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                    ),
-                                                                  ),
-                                                                  if (showPhone[id] ??
-                                                                      false) ...[
-                                                                    const SizedBox(
-                                                                      height: 4,
-                                                                    ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              Expanded(
+                                                                child: Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .start,
+                                                                  children: [
                                                                     Text(
-                                                                      phone,
+                                                                      name,
                                                                       style: const TextStyle(
-                                                                        color:
-                                                                            Colors.grey,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
                                                                       ),
                                                                     ),
-                                                                  ],
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            IconButton(
-                                                              icon: const Icon(
-                                                                Icons.phone,
-                                                              ),
-                                                              color:
-                                                                  Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .primary,
-                                                              onPressed:
-                                                                  () =>
-                                                                      togglePhone(
-                                                                        id,
+                                                                    if (showPhone[id] ??
+                                                                        false) ...[
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            4,
                                                                       ),
-                                                            ),
-                                                          ],
-                                                        );
-                                                      },
-                                                    ),
+                                                                      Text(
+                                                                        phone,
+                                                                        style: const TextStyle(
+                                                                          color:
+                                                                              Colors.grey,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              IconButton(
+                                                                icon: const Icon(
+                                                                  Icons.phone,
+                                                                ),
+                                                                color:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .primary,
+                                                                onPressed:
+                                                                    () =>
+                                                                        togglePhone(
+                                                                          id,
+                                                                        ),
+                                                              ),
+                                                            ],
+                                                          );
+                                                        },
+                                                      ),
+                                                    ] else ...[
+                                                      Text(
+                                                        data['agentName']
+                                                                as String? ??
+                                                            '',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ],
                                                 ),
                                               ],
