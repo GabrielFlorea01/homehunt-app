@@ -6,7 +6,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/firebase/secrets/api_key.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:homehunt/pages/edit_listing_page.dart';
-import 'package:homehunt/pages/home_page.dart';
 import 'package:http/http.dart' as http;
 
 /// Geocode a plain address into coordinates
@@ -166,70 +165,19 @@ class MyListingsPageState extends State<MyListingsPage> {
     }
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(70),
-        child: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          iconTheme: const IconThemeData(color: Colors.white),
-          centerTitle: true,
-          title: Padding(
-            padding: const EdgeInsets.only(top: 15),
-            child: Image.asset('lib/images/logo.png', height: 80),
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 30),
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: Text(
-                    FirebaseAuth.instance.currentUser?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(fontSize: 32, color: Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Marketplace'),
-                  selected: true,
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    if (!mounted) return;
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const HomePage()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.favorite),
-                  title: const Text('Favorite'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    // TODO: implement favorites
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
+        appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: StreamBuilder<QuerySnapshot>(
           stream:
               propertiesRef
-                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
           builder: (ctx, snap) {
@@ -250,7 +198,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 850),
                   child: FractionallySizedBox(
-                    widthFactor: 0.7,
+                    widthFactor: 0.5,
                     child: Column(
                       children:
                           docs.asMap().entries.map((entry) {
@@ -283,7 +231,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // ---- IMAGE STACK WITH EDIT/DELETE ----
+                                  // ---- IMAGE STACK CU EDIT/DELETE ----
                                   Stack(
                                     children: [
                                       ClipRRect(
@@ -427,7 +375,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                     ],
                                   ),
 
-                                  // ---- DETAILS & EXPANSIONTILE ----
+                                  // ---- DETALII & EXPANSIONTILE ----
                                   ExpansionTile(
                                     tilePadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
@@ -589,7 +537,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                       buildMapSection(fullAddress),
                                       const SizedBox(height: 8),
 
-                                      // Agent row with phone toggle
+                                      // Agent row cu toggle telefon
                                       FutureBuilder<DocumentSnapshot>(
                                         future:
                                             FirebaseFirestore.instance

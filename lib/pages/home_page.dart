@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/firebase/secrets/api_key.dart';
+import 'package:homehunt/pages/favourites_page.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:homehunt/firebase/auth/auth_service.dart';
@@ -28,7 +29,7 @@ Future<LatLng?> geocodeAddress(String address) async {
   return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
 }
 
-/// Home page with filters and cards identical to MyListingsPage
+/// Home page with filtre și carduri (acum și cu inimi pentru favorite)
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -36,7 +37,9 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  StreamSubscription<QuerySnapshot>? snapshot;
+  StreamSubscription<QuerySnapshot>? snapshotProperties;
+  StreamSubscription<DocumentSnapshot>? snapshotUserDoc;
+
   User? user;
   bool isLoading = true;
   String? errorMessage;
@@ -52,9 +55,15 @@ class HomePageState extends State<HomePage> {
   // Data
   List<Map<String, dynamic>> allListings = [];
   List<Map<String, dynamic>> filteredListings = [];
-  List<String> favoriteIds = [];
+  List<String> favoriteIds = []; // lista de favorites a user-ului
   Map<String, bool> showPhone = {};
   Map<String, ScrollController> galleryControllers = {};
+
+  final CollectionReference propertiesRef = FirebaseFirestore.instance
+      .collection('properties');
+  final CollectionReference usersRef = FirebaseFirestore.instance.collection(
+    'users',
+  );
 
   @override
   void initState() {
@@ -64,36 +73,92 @@ class HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    snapshot?.cancel();
+    snapshotProperties?.cancel();
+    snapshotUserDoc?.cancel();
     super.dispose();
   }
 
   Future<void> loadUserAndProperties() async {
     setState(() => isLoading = true);
-    user = FirebaseAuth.instance.currentUser;
-    setState(() => isLoading = false);
 
-    if (user != null) {
-      snapshot = FirebaseFirestore.instance
-          .collection('properties')
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .listen(
-            (snap) {
-              if (!mounted) return;
-              allListings =
-                  snap.docs.map((d) {
-                    final m = Map<String, dynamic>.from(d.data() as Map);
-                    m['id'] = d.id;
-                    return m;
-                  }).toList();
-              applyFilters();
-            },
-            onError: (e) {
-              if (!mounted) return;
-              setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
-            },
-          );
+    // 1) preluăm user-ul curent
+    user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // dacă user-ul e null, nu încărcăm nimic
+      setState(() => isLoading = false);
+      return;
+    }
+
+    // 2) ascultăm proprietățile (lista completă, pentru filtrare)
+    snapshotProperties = propertiesRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snap) {
+            if (!mounted) return;
+            allListings =
+                snap.docs.map((d) {
+                  final m = Map<String, dynamic>.from(d.data() as Map);
+                  m['id'] = d.id;
+                  return m;
+                }).toList();
+            applyFilters();
+          },
+          onError: (e) {
+            if (!mounted) return;
+            setState(() => errorMessage = 'Eroare la încărcarea anunțurilor');
+          },
+        );
+
+    // 3) ascultăm documentul user-ului pentru a prelua array-ul de favoriteIds
+    snapshotUserDoc = usersRef.doc(user!.uid).snapshots().listen((docSnap) {
+      if (!mounted) return;
+      final data = docSnap.data() as Map<String, dynamic>? ?? {};
+      final favList = data['favoriteIds'] as List<dynamic>? ?? [];
+      favoriteIds = favList.map((e) => e.toString()).toList();
+      // nu afectează lista allListings, dar va forța rebuild pentru a actualiza iconițele inimioară
+      setState(() {});
+    });
+
+    // 4) terminăm loading
+    setState(() => isLoading = false);
+  }
+
+  /// Toggle între adăugare/scoatere din favorites în Firestore
+  Future<void> toggleFavorite(String propertyId) async {
+    if (user == null) return;
+    final userDoc = usersRef.doc(user!.uid);
+
+    try {
+      if (favoriteIds.contains(propertyId)) {
+        // dacă există deja, scoatem:
+        await userDoc.update({
+          'favoriteIds': FieldValue.arrayRemove([propertyId]),
+        });
+        // actualizăm local:
+        favoriteIds.remove(propertyId);
+      } else {
+        // altfel adăugăm:
+        await userDoc.update({
+          'favoriteIds': FieldValue.arrayUnion([propertyId]),
+        });
+        favoriteIds.add(propertyId);
+      }
+      if (mounted) setState(() {});
+    } catch (e) {
+      // dacă nu există câmpul favoriteIds, putem crea
+      try {
+        await userDoc.set({
+          'favoriteIds': [propertyId],
+        }, SetOptions(merge: true));
+        favoriteIds = [propertyId];
+        if (mounted) setState(() {});
+      } catch (_) {
+        // eroare generică
+        if (mounted) {
+          setState(() => errorMessage = 'Eroare la actualizarea favorite');
+        }
+      }
     }
   }
 
@@ -409,7 +474,8 @@ class HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      // Drawer with full filter list
+
+      // Drawer cu opțiunea de Favorite
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
@@ -437,8 +503,13 @@ class HomePageState extends State<HomePage> {
                 ListTile(
                   leading: const Icon(Icons.favorite),
                   title: const Text('Favorite'),
-                  onTap: () => Navigator.pop(context),
-                  //TODO
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FavoritesPage()),
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.view_stream_rounded),
@@ -462,7 +533,7 @@ class HomePageState extends State<HomePage> {
                       propertyFilter = 'Apartamente';
                       applyFilters();
                     },
-                    child: const Text('Apartamente de vanzare'),
+                    child: const Text('Apartamente de vânzare'),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -475,7 +546,7 @@ class HomePageState extends State<HomePage> {
                       propertyFilter = 'Apartamente';
                       applyFilters();
                     },
-                    child: const Text('Apartamente de inchiriat'),
+                    child: const Text('Apartamente de închiriat'),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -486,7 +557,7 @@ class HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text(
-                    'Adauga anunt',
+                    'Adaugă anunț',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
@@ -505,13 +576,13 @@ class HomePageState extends State<HomePage> {
         ),
       ),
 
-      // Body: Filters + Listings
+      // Body: filtre + listings
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : Column(
                 children: [
-                  // Top filters
+                  // Top filters (identice cu ce aveai)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -582,9 +653,9 @@ class HomePageState extends State<HomePage> {
                               ),
                               const SizedBox(width: 8),
                               buildDropdown(
-                                value: 'Pret',
+                                value: 'Preț',
                                 items: const [
-                                  'Pret',
+                                  'Preț',
                                   '< 50.000',
                                   '50.000 - 100.000',
                                   '100.000 - 200.000',
@@ -625,14 +696,14 @@ class HomePageState extends State<HomePage> {
                     child: Row(
                       children: [
                         Text(
-                          'S-au gasit ${filteredListings.length} rezultate',
+                          'S-au găsit ${filteredListings.length} rezultate',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const Spacer(),
                         DropdownButton<String>(
                           value: 'Cele mai noi',
                           items:
-                              const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
+                              const ['Cele mai noi', 'Preț ↑', 'Preț ↓']
                                   .map(
                                     (t) => DropdownMenuItem(
                                       value: t,
@@ -641,13 +712,13 @@ class HomePageState extends State<HomePage> {
                                   )
                                   .toList(),
                           onChanged: (t) {
-                            if (t == 'Pret ↑') {
+                            if (t == 'Preț ↑') {
                               filteredListings.sort(
                                 (a, b) => (a['price'] as num).compareTo(
                                   b['price'] as num,
                                 ),
                               );
-                            } else if (t == 'Pret ↓') {
+                            } else if (t == 'Preț ↓') {
                               filteredListings.sort(
                                 (a, b) => (b['price'] as num).compareTo(
                                   a['price'] as num,
@@ -670,7 +741,7 @@ class HomePageState extends State<HomePage> {
                   Expanded(
                     child:
                         filteredListings.isEmpty
-                            ? const Center(child: Text('Nu exista anunturi'))
+                            ? const Center(child: Text('Nu există anunțuri'))
                             : SingleChildScrollView(
                               child: Center(
                                 child: FractionallySizedBox(
@@ -755,6 +826,7 @@ class HomePageState extends State<HomePage> {
                                                                 ),
                                                       ),
                                                     ),
+                                                    // Butonul de Favorite (inima)
                                                     Positioned(
                                                       top: 8,
                                                       right: 8,
@@ -785,9 +857,11 @@ class HomePageState extends State<HomePage> {
                                                                     : Colors
                                                                         .grey,
                                                           ),
-                                                          onPressed: () {
-                                                            // TODO: Implement favorite toggle logic
-                                                          },
+                                                          onPressed:
+                                                              () =>
+                                                                  toggleFavorite(
+                                                                    id,
+                                                                  ),
                                                         ),
                                                       ),
                                                     ),
@@ -1007,7 +1081,7 @@ class HomePageState extends State<HomePage> {
                                                     const SizedBox(height: 20),
                                                     buildMap(fullAddress),
                                                     const SizedBox(height: 20),
-                                                    //agentii din card
+                                                    // agentii din card
                                                     if (user != null) ...[
                                                       FutureBuilder<
                                                         DocumentSnapshot
