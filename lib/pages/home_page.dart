@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:homehunt/firebase/secrets/api_key.dart';
+import 'package:homehunt/pages/favourites_page.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/pages/new_listing_page.dart';
 import 'package:homehunt/pages/profile_page.dart';
 import 'package:homehunt/pages/my_listings_page.dart';
@@ -17,7 +18,7 @@ import 'package:homehunt/error_widgets/error_banner.dart';
 Future<LatLng?> geocodeAddress(String address) async {
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
     'address': '$address, Romania',
-    'key': 'AIzaSyA_61celkZcyTPfToDzE7u4KkhxLtq3xIo',
+    'key': googleMapsApiKey,
   });
   final resp = await http.get(url);
   if (resp.statusCode != 200) return null;
@@ -28,7 +29,7 @@ Future<LatLng?> geocodeAddress(String address) async {
   return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
 }
 
-/// Home page with filters and cards identical to MyListingsPage
+/// Home page with filtre și carduri (acum și cu inimi pentru favorite)
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -36,7 +37,9 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  late final StreamSubscription<QuerySnapshot> snapshot;
+  StreamSubscription<QuerySnapshot>? snapshotProperties;
+  StreamSubscription<DocumentSnapshot>? snapshotUserDoc;
+
   User? user;
   bool isLoading = true;
   String? errorMessage;
@@ -52,16 +55,42 @@ class HomePageState extends State<HomePage> {
   // Data
   List<Map<String, dynamic>> allListings = [];
   List<Map<String, dynamic>> filteredListings = [];
-  List<String> favoriteIds = [];
+  List<String> favoriteIds = []; // lista de favorites a user-ului
   Map<String, bool> showPhone = {};
   Map<String, ScrollController> galleryControllers = {};
+
+  final CollectionReference propertiesRef = FirebaseFirestore.instance
+      .collection('properties');
+  final CollectionReference usersRef = FirebaseFirestore.instance.collection(
+    'users',
+  );
 
   @override
   void initState() {
     super.initState();
-    loadUser();
-    snapshot = FirebaseFirestore.instance
-        .collection('properties')
+    loadUserAndProperties();
+  }
+
+  @override
+  void dispose() {
+    snapshotProperties?.cancel();
+    snapshotUserDoc?.cancel();
+    super.dispose();
+  }
+
+  Future<void> loadUserAndProperties() async {
+    setState(() => isLoading = true);
+
+    // 1) preluăm user-ul curent
+    user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // dacă user-ul e null, nu încărcăm nimic
+      setState(() => isLoading = false);
+      return;
+    }
+
+    // 2) ascultăm proprietățile (lista completă, pentru filtrare)
+    snapshotProperties = propertiesRef
         .orderBy('createdAt', descending: true)
         .snapshots()
         .listen(
@@ -77,23 +106,82 @@ class HomePageState extends State<HomePage> {
           },
           onError: (e) {
             if (!mounted) return;
-            setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
+            setState(() => errorMessage = 'Eroare la încărcarea anunțurilor');
           },
         );
-  }
 
-  @override
-  void dispose() {
-    snapshot.cancel();
-    super.dispose();
-  }
+    // 3) ascultăm documentul user-ului pentru a prelua array-ul de favoriteIds
+    snapshotUserDoc = usersRef.doc(user!.uid).snapshots().listen((docSnap) {
+      if (!mounted) return;
+      final data = docSnap.data() as Map<String, dynamic>? ?? {};
+      final favList = data['favoriteIds'] as List<dynamic>? ?? [];
+      favoriteIds = favList.map((e) => e.toString()).toList();
+      // nu afectează lista allListings, dar va forța rebuild pentru a actualiza iconițele inimioară
+      setState(() {});
+    });
 
-  void loadUser() async {
-    if (!mounted) return;
-    setState(() => isLoading = true);
-    user = FirebaseAuth.instance.currentUser;
-    if (!mounted) return;
+    // 4) terminăm loading
     setState(() => isLoading = false);
+  }
+
+  /// Toggle între adăugare/scoatere din favorites în Firestore
+  Future<void> toggleFavorite(String propertyId) async {
+    if (user == null) return;
+    final userDoc = usersRef.doc(user!.uid);
+
+    try {
+      if (favoriteIds.contains(propertyId)) {
+        // dacă există deja, scoatem:
+        await userDoc.update({
+          'favoriteIds': FieldValue.arrayRemove([propertyId]),
+        });
+        // actualizăm local:
+        favoriteIds.remove(propertyId);
+      } else {
+        // altfel adăugăm:
+        await userDoc.update({
+          'favoriteIds': FieldValue.arrayUnion([propertyId]),
+        });
+        favoriteIds.add(propertyId);
+      }
+      if (mounted) setState(() {});
+    } catch (e) {
+      // dacă nu există câmpul favoriteIds, putem crea
+      try {
+        await userDoc.set({
+          'favoriteIds': [propertyId],
+        }, SetOptions(merge: true));
+        favoriteIds = [propertyId];
+        if (mounted) setState(() {});
+      } catch (_) {
+        // eroare generică
+        if (mounted) {
+          setState(() => errorMessage = 'Eroare la actualizarea favorite');
+        }
+      }
+    }
+  }
+
+  Future<void> signOut() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    try {
+      await AuthService().signOut();
+    } on AuthException catch (e) {
+      if (mounted) {
+        setState(() => errorMessage = e.message);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => errorMessage = 'Eroare la sign-out');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   void applyFilters() {
@@ -163,54 +251,6 @@ class HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  void promptLogin() {
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Login required'),
-            content: const Text('You must be logged in to favorite.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                  );
-                },
-                child: const Text('Login'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> signOut() async {
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-
-    try {
-      await AuthService().signOut();
-    } on AuthException catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = e.message);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
-    }
-  }
-
-
   void clearError() => setState(() => errorMessage = null);
 
   void addListing() {
@@ -239,9 +279,9 @@ class HomePageState extends State<HomePage> {
                 child: const Text('No'),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  signOut();
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await signOut();
                 },
                 child: const Text('Yes'),
               ),
@@ -288,6 +328,7 @@ class HomePageState extends State<HomePage> {
         return SizedBox(
           height: 400,
           child: GoogleMap(
+            key: ValueKey(address),
             initialCameraPosition: CameraPosition(target: loc, zoom: 14),
             markers: {Marker(markerId: MarkerId(address), position: loc)},
             zoomControlsEnabled: false,
@@ -433,7 +474,8 @@ class HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      // Drawer with full filter list
+
+      // Drawer cu opțiunea de Favorite
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
@@ -461,8 +503,13 @@ class HomePageState extends State<HomePage> {
                 ListTile(
                   leading: const Icon(Icons.favorite),
                   title: const Text('Favorite'),
-                  onTap: () => Navigator.pop(context),
-                  //TODO
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FavoritesPage()),
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.view_stream_rounded),
@@ -480,26 +527,26 @@ class HomePageState extends State<HomePage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    transactionType = 'De vanzare';
-                    propertyFilter = 'Apartamente';
-                    applyFilters();
-                  },
-                  child: const Text('Apartamente de vanzare'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      transactionType = 'De vanzare';
+                      propertyFilter = 'Apartamente';
+                      applyFilters();
+                    },
+                    child: const Text('Apartamente de vânzare'),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    transactionType = 'De inchiriat';
-                    propertyFilter = 'Apartamente';
-                    applyFilters();
-                  },
-                  child: const Text('Apartamente de inchiriat'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      transactionType = 'De inchiriat';
+                      propertyFilter = 'Apartamente';
+                      applyFilters();
+                    },
+                    child: const Text('Apartamente de închiriat'),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -510,7 +557,7 @@ class HomePageState extends State<HomePage> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text(
-                    'Adauga anunt',
+                    'Adaugă anunț',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
@@ -529,13 +576,13 @@ class HomePageState extends State<HomePage> {
         ),
       ),
 
-      // Body: Filters + Listings
+      // Body: filtre + listings
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : Column(
                 children: [
-                  // Top filters
+                  // Top filters (identice cu ce aveai)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -606,9 +653,9 @@ class HomePageState extends State<HomePage> {
                               ),
                               const SizedBox(width: 8),
                               buildDropdown(
-                                value: 'Pret',
+                                value: 'Preț',
                                 items: const [
-                                  'Pret',
+                                  'Preț',
                                   '< 50.000',
                                   '50.000 - 100.000',
                                   '100.000 - 200.000',
@@ -649,14 +696,14 @@ class HomePageState extends State<HomePage> {
                     child: Row(
                       children: [
                         Text(
-                          'S-au gasit ${filteredListings.length} rezultate',
+                          'S-au găsit ${filteredListings.length} rezultate',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const Spacer(),
                         DropdownButton<String>(
                           value: 'Cele mai noi',
                           items:
-                              const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
+                              const ['Cele mai noi', 'Preț ↑', 'Preț ↓']
                                   .map(
                                     (t) => DropdownMenuItem(
                                       value: t,
@@ -665,13 +712,13 @@ class HomePageState extends State<HomePage> {
                                   )
                                   .toList(),
                           onChanged: (t) {
-                            if (t == 'Pret ↑') {
+                            if (t == 'Preț ↑') {
                               filteredListings.sort(
                                 (a, b) => (a['price'] as num).compareTo(
                                   b['price'] as num,
                                 ),
                               );
-                            } else if (t == 'Pret ↓') {
+                            } else if (t == 'Preț ↓') {
                               filteredListings.sort(
                                 (a, b) => (b['price'] as num).compareTo(
                                   a['price'] as num,
@@ -694,7 +741,7 @@ class HomePageState extends State<HomePage> {
                   Expanded(
                     child:
                         filteredListings.isEmpty
-                            ? const Center(child: Text('Nu exista anunturi'))
+                            ? const Center(child: Text('Nu există anunțuri'))
                             : SingleChildScrollView(
                               child: Center(
                                 child: FractionallySizedBox(
@@ -779,6 +826,7 @@ class HomePageState extends State<HomePage> {
                                                                 ),
                                                       ),
                                                     ),
+                                                    // Butonul de Favorite (inima)
                                                     Positioned(
                                                       top: 8,
                                                       right: 8,
@@ -809,9 +857,11 @@ class HomePageState extends State<HomePage> {
                                                                     : Colors
                                                                         .grey,
                                                           ),
-                                                          onPressed: () {
-                                                            // TODO: Implement favorite toggle logic
-                                                          },
+                                                          onPressed:
+                                                              () =>
+                                                                  toggleFavorite(
+                                                                    id,
+                                                                  ),
                                                         ),
                                                       ),
                                                     ),
@@ -1031,109 +1081,123 @@ class HomePageState extends State<HomePage> {
                                                     const SizedBox(height: 20),
                                                     buildMap(fullAddress),
                                                     const SizedBox(height: 20),
-                                                    FutureBuilder<
-                                                      DocumentSnapshot
-                                                    >(
-                                                      future:
-                                                          FirebaseFirestore
-                                                              .instance
-                                                              .collection(
-                                                                'agents',
-                                                              )
-                                                              .doc(
-                                                                data['agentId']
-                                                                    as String,
-                                                              )
-                                                              .get(),
-                                                      builder: (
-                                                        ctx,
-                                                        snapAgent,
-                                                      ) {
-                                                        final name =
-                                                            data['agentName']
-                                                                as String? ??
-                                                            '';
-                                                        final phone =
-                                                            snapAgent.hasData
-                                                                ? (snapAgent.data!['phone']
-                                                                        as String? ??
-                                                                    '')
-                                                                : '';
-                                                        return Row(
-                                                          children: [
-                                                            CircleAvatar(
-                                                              radius: 20,
-                                                              backgroundColor:
-                                                                  Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .primary,
-                                                              child: Text(
-                                                                name.isNotEmpty
-                                                                    ? name[0]
-                                                                        .toUpperCase()
-                                                                    : 'A',
-                                                                style: const TextStyle(
-                                                                  color:
-                                                                      Colors
-                                                                          .white,
+                                                    // agentii din card
+                                                    if (user != null) ...[
+                                                      FutureBuilder<
+                                                        DocumentSnapshot
+                                                      >(
+                                                        future:
+                                                            FirebaseFirestore
+                                                                .instance
+                                                                .collection(
+                                                                  'agents',
+                                                                )
+                                                                .doc(
+                                                                  data['agentId']
+                                                                      as String,
+                                                                )
+                                                                .get(),
+                                                        builder: (
+                                                          ctx,
+                                                          snapAgent,
+                                                        ) {
+                                                          final name =
+                                                              data['agentName']
+                                                                  as String? ??
+                                                              '';
+                                                          final phone =
+                                                              snapAgent.hasData
+                                                                  ? (snapAgent.data!['phone']
+                                                                          as String? ??
+                                                                      '')
+                                                                  : '';
+                                                          return Row(
+                                                            children: [
+                                                              CircleAvatar(
+                                                                radius: 20,
+                                                                backgroundColor:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .primary,
+                                                                child: Text(
+                                                                  name.isNotEmpty
+                                                                      ? name[0]
+                                                                          .toUpperCase()
+                                                                      : 'A',
+                                                                  style: const TextStyle(
+                                                                    color:
+                                                                        Colors
+                                                                            .white,
+                                                                  ),
                                                                 ),
                                                               ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 8,
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start,
-                                                                children: [
-                                                                  Text(
-                                                                    name,
-                                                                    style: const TextStyle(
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .bold,
-                                                                    ),
-                                                                  ),
-                                                                  if (showPhone[id] ??
-                                                                      false) ...[
-                                                                    const SizedBox(
-                                                                      height: 4,
-                                                                    ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              Expanded(
+                                                                child: Column(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .start,
+                                                                  children: [
                                                                     Text(
-                                                                      phone,
+                                                                      name,
                                                                       style: const TextStyle(
-                                                                        color:
-                                                                            Colors.grey,
+                                                                        fontWeight:
+                                                                            FontWeight.bold,
                                                                       ),
                                                                     ),
-                                                                  ],
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            IconButton(
-                                                              icon: const Icon(
-                                                                Icons.phone,
-                                                              ),
-                                                              color:
-                                                                  Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .primary,
-                                                              onPressed:
-                                                                  () =>
-                                                                      togglePhone(
-                                                                        id,
+                                                                    if (showPhone[id] ??
+                                                                        false) ...[
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            4,
                                                                       ),
-                                                            ),
-                                                          ],
-                                                        );
-                                                      },
-                                                    ),
+                                                                      Text(
+                                                                        phone,
+                                                                        style: const TextStyle(
+                                                                          color:
+                                                                              Colors.grey,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              IconButton(
+                                                                icon: const Icon(
+                                                                  Icons.phone,
+                                                                ),
+                                                                color:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .primary,
+                                                                onPressed:
+                                                                    () =>
+                                                                        togglePhone(
+                                                                          id,
+                                                                        ),
+                                                              ),
+                                                            ],
+                                                          );
+                                                        },
+                                                      ),
+                                                    ] else ...[
+                                                      Text(
+                                                        data['agentName']
+                                                                as String? ??
+                                                            '',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ],
                                                 ),
                                               ],

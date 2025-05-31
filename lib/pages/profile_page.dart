@@ -153,19 +153,19 @@ class ProfilePageState extends State<ProfilePage> {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: 500),
             child: Column(
-              children: [
+                children: [
                 if (errorMessage != null) ...[
                   ErrorBanner(
-                    message: errorMessage!,
-                    messageType: MessageType.error,
-                    onDismiss: () => setState(() => errorMessage = null),
+                  message: errorMessage!,
+                  messageType: MessageType.error,
+                  onDismiss: () => setState(() => errorMessage = null),
                   ),
                   const SizedBox(height: 16),
                 ] else if (successMessage != null) ...[
                   ErrorBanner(
-                    message: successMessage!,
-                    messageType: MessageType.success,
-                    onDismiss: () => setState(() => successMessage = null),
+                  message: successMessage!,
+                  messageType: MessageType.success,
+                  onDismiss: () => setState(() => successMessage = null),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -174,122 +174,120 @@ class ProfilePageState extends State<ProfilePage> {
                 Stack(
                   alignment: Alignment.bottomRight,
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(
-                        0.1,
-                      ),
-                      backgroundImage:
-                          profileImageUrl != null
-                              ? NetworkImage(profileImageUrl!)
-                              : null,
-                      child:
-                          profileImageUrl == null
-                              ? Icon(
-                                Icons.person,
-                                size: 60,
-                                color: theme.colorScheme.primary,
-                              )
-                              : null,
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: theme.colorScheme.primary.withOpacity(
+                    0.1,
                     ),
-                    InkWell(
-                      onTap: imageUploading ? null : uploadProfileImage,
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: theme.colorScheme.primary,
-                        child:
-                            imageUploading
-                                ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                )
-                                : const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                      ),
+                    backgroundImage:
+                      profileImageUrl != null
+                        ? NetworkImage(profileImageUrl!)
+                        : null,
+                    child:
+                      profileImageUrl == null
+                        ? Icon(
+                        Icons.person,
+                        size: 60,
+                        color: theme.colorScheme.primary,
+                        )
+                        : null,
+                  ),
+                  InkWell(
+                    onTap: imageUploading ? null : uploadProfileImage,
+                    child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: theme.colorScheme.primary,
+                    child:
+                      imageUploading
+                        ? const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        )
+                        : const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                     ),
+                  ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Text(
                   user?.displayName ?? nameCtrl.text,
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  user?.email ?? emailCtrl.text,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
+                  fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 24),
-
                 // Formular
                 Card(
                   elevation: 4,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Informatii personale',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: nameCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Nume complet',
-                            prefixIcon: Icon(Icons.person),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: emailCtrl,
-                          enabled: !isGoogleUser,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: const Icon(Icons.email),
-                            helperText:
-                                isGoogleUser
-                                    ? 'Email Google nu poate fi modificat'
-                                    : null,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: phoneCtrl,
-                          decoration: InputDecoration(
-                            labelText: 'Telefon',
-                            prefixIcon: const Icon(Icons.phone),
-                            errorText: phoneError,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: saveProfile,
-                          child:
-                              isLoading
-                                  ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : const Text('Salveaza modificarile'),
-                        ),
-                      ],
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                    Text(
+                      'Informatii personale',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                      labelText: 'Nume complet',
+                      prefixIcon: Icon(Icons.person),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: emailCtrl,
+                      enabled: !isGoogleUser,
+                      decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: const Icon(Icons.email),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: phoneCtrl,
+                      decoration: InputDecoration(
+                      labelText: 'Telefon',
+                      prefixIcon: const Icon(Icons.phone),
+                      errorText: phoneError,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: saveProfile,
+                      child:
+                        isLoading
+                          ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                          )
+                          : const Text('Salveaza modificarile'),
+                    ),
+                    ],
+                  ),
+                  ),
+                ),
+                const Spacer(),
+                //buton inapoi
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Inapoi la marketplace'),
                   ),
                 ),
               ],
