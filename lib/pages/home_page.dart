@@ -665,9 +665,9 @@ class HomePageState extends State<HomePage> {
                               ),
                               const SizedBox(width: 8),
                               buildDropdown(
-                                value: 'Preț',
+                                value: 'Pret',
                                 items: const [
-                                  'Preț',
+                                  'Pret',
                                   '< 50.000',
                                   '50.000 - 100.000',
                                   '100.000 - 200.000',
@@ -715,7 +715,7 @@ class HomePageState extends State<HomePage> {
                         DropdownButton<String>(
                           value: 'Cele mai noi',
                           items:
-                              const ['Cele mai noi', 'Preț ↑', 'Preț ↓']
+                              const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
                                   .map(
                                     (t) => DropdownMenuItem(
                                       value: t,
@@ -724,13 +724,13 @@ class HomePageState extends State<HomePage> {
                                   )
                                   .toList(),
                           onChanged: (t) {
-                            if (t == 'Preț ↑') {
+                            if (t == 'Pret ↑') {
                               filteredListings.sort(
                                 (a, b) => (a['price'] as num).compareTo(
                                   b['price'] as num,
                                 ),
                               );
-                            } else if (t == 'Preț ↓') {
+                            } else if (t == 'Pret ↓') {
                               filteredListings.sort(
                                 (a, b) => (b['price'] as num).compareTo(
                                   a['price'] as num,

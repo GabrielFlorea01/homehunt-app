@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:homehunt/pages/edit_booking_page.dart';
 import 'package:intl/intl.dart';
 
+
+/// Pagina pentru vizualizarea si editarea programarilor
 class MyBookingsPage extends StatefulWidget {
   const MyBookingsPage({super.key});
 
@@ -16,94 +19,183 @@ class MyBookingsPageState extends State<MyBookingsPage> {
   @override
   void initState() {
     super.initState();
+    // Preluam user-ul curent de la FirebaseAuth
     user = FirebaseAuth.instance.currentUser;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Daca utilizatorul nu este logat, afisam un mesaj
+    final isWide = MediaQuery.of(context).size.width >= 900;
+
+    // Daca user-ul nu este logat, afisam un mesaj simplu
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Vizionarile mele'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-        body: const Center(
-          child: Text('Trebuie sa fii autentificat ca sa vezi vizionarile.'),
-        ),
+        appBar: AppBar(title: const Text('Vizionarile mele')),
+        body: const Center(child: Text('Trebuie sa fii autentificat.')),
       );
     }
 
-    // Interogare Firestore: unde userId == uid si sortare dupa campul date
-    final bookingsQuery = FirebaseFirestore.instance
-        .collection('bookings')
-        .where('userId', isEqualTo: user!.uid)
-        .orderBy('date', descending: false);
-
+    // Layout 50/50 pe ecrane late, Column pe ecrane inguste
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vizionarile mele'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: bookingsQuery.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Eroare: ${snapshot.error}'));
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body:
+          isWide
+              ? Row(children: [buildListPane(), buildImagePane()])
+              : Column(children: [buildImagePane(), buildListPane()]),
+    );
+  }
 
-          final docs = snapshot.data!.docs;
-          if (docs.isEmpty) {
-            return const Center(
-              child: Text('Nu ai nicio vizionare programata.'),
-            );
-          }
+  /// Pane-ul cu lista de programari si butonul de inapoi interior
+  Widget buildListPane() {
+    return Expanded(
+      flex: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          // Stil container alb cu colturi rotunjite
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Rand cu sageata de intoarcere si titlu
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Vizionarile mele',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-              final Timestamp ts = data['date'] as Timestamp;
-              final dt = ts.toDate();
-              final formattedDate = DateFormat('dd/MM/yyyy – HH:mm').format(dt);
-              final feedback = data['feedback'] as String? ?? 'pending';
+              // Flux de date din Firestore
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('bookings')
+                          .where('userId', isEqualTo: user!.uid)
+                          .orderBy('date')
+                          .snapshots(),
+                  builder: (context, snap) {
+                    if (snap.hasError) {
+                      // Afisam eroarea
+                      return Center(child: Text('Eroare: ${snap.error}'));
+                    }
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      // Indicator de incarcare
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final docs = snap.data!.docs;
+                    if (docs.isEmpty) {
+                      // Nu exista programari
+                      return const Center(
+                        child: Text('Nicio programare gasita.'),
+                      );
+                    }
 
-              return ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                tileColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                title: Text(
-                  formattedDate,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text('Feedback: $feedback'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  color: Colors.redAccent,
-                  onPressed: () async {
-                    // Stergere booking (optional)
-                    final docId = docs[index].id;
-                    await FirebaseFirestore.instance
-                        .collection('bookings')
-                        .doc(docId)
-                        .delete();
+                    // ListView pentru fiecare booking
+                    return ListView.separated(
+                      itemCount: docs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (ctx, i) {
+                        final data = docs[i].data()! as Map<String, dynamic>;
+                        final bookingId = docs[i].id;
+                        final ts = data['date'] as Timestamp;
+                        final dt = ts.toDate();
+                        final formatted = DateFormat(
+                          'dd/MM/yyyy – HH:mm',
+                        ).format(dt);
+
+                        // Preluam ID-ul proprietatii
+                        final propertyId = data['properties'] as String;
+
+                        // FutureBuilder pentru a lua numele proprietatii
+                        return FutureBuilder<DocumentSnapshot>(
+                          future:
+                              FirebaseFirestore.instance
+                                  .collection('properties')
+                                  .doc(propertyId)
+                                  .get(),
+                          builder: (context, propSnap) {
+                            String propertyName = 'Proprietate';
+                            if (propSnap.hasData && propSnap.data!.exists) {
+                              final propData =
+                                  propSnap.data!.data() as Map<String, dynamic>;
+                              propertyName = propData['title'] ?? propertyName;
+                            }
+
+                            // ListTile care afiseaza data, numele proprietatii si buton edit
+                            return ListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              tileColor: Colors.grey.shade100,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              title: Text(
+                                formatted,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(propertyName),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.edit),
+                                color: Colors.blueAccent,
+                                onPressed: () {
+                                  // Navigam la pagina de editare, trimitand si numele proprietatii
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) => EditBookingPage(
+                                            bookingId: bookingId,
+                                            initialDateTime: dt,
+                                            propertyName: propertyName,
+                                          ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
                   },
                 ),
-              );
-            },
-          );
-        },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Pane-ul cu imaginea decorativa
+  Widget buildImagePane() {
+    return Expanded(
+      flex: 1,
+      child: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/images/homehuntlogin.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
       ),
     );
   }
 }
+
+/// Pagina pentru editarea unei programari existente
+

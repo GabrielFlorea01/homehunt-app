@@ -114,6 +114,12 @@ class NewListingPageState extends State<NewListingPage> {
     'Bucuresti',
   ];
 
+  // schimbare din dupa tipul de tranzactie
+  String get priceLabel =>
+      transactionType == 'De inchiriat'
+          ? 'Pret chirie (EUR/luna)'
+          : 'Pret (EUR)';
+
   @override
   void initState() {
     super.initState();
@@ -393,49 +399,50 @@ class NewListingPageState extends State<NewListingPage> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: (imageUrls.isEmpty && selectedImageBytes.isEmpty)
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.cloud_upload_outlined,
-                              size: 50,
+                  child:
+                      (imageUrls.isEmpty && selectedImageBytes.isEmpty)
+                          ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 50,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(height: 16),
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Incarca fotografii',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          '\n\nMaxim 15 poze. PNG, JPG. Dimensiune maxima 10MB',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                          : Center(
+                            child: Icon(
+                              Icons.add_photo_alternate,
+                              size: 30,
                               color: Theme.of(context).primaryColor,
                             ),
-                            const SizedBox(height: 16),
-                            RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade700,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Incarca fotografii',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).primaryColor,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const TextSpan(
-                                    text:
-                                        '\n\nMaxim 15 poze. PNG, JPG. Dimensiune maxima 10MB',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Center(
-                          child: Icon(
-                            Icons.add_photo_alternate,
-                            size: 30,
-                            color: Theme.of(context).primaryColor,
                           ),
-                        ),
                 ),
               ),
 
@@ -459,11 +466,15 @@ class NewListingPageState extends State<NewListingPage> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(imageUrls[i], fit: BoxFit.cover),
+                              child: Image.network(
+                                imageUrls[i],
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           Positioned(
-                            top: 4, right: 4,
+                            top: 4,
+                            right: 4,
                             child: GestureDetector(
                               onTap: () => removeImage(i),
                               child: Container(
@@ -471,7 +482,12 @@ class NewListingPageState extends State<NewListingPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow:[BoxShadow(color:Colors.black26,blurRadius:3)]
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 3,
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(Icons.close, size: 16),
                               ),
@@ -500,7 +516,8 @@ class NewListingPageState extends State<NewListingPage> {
                             ),
                           ),
                           Positioned(
-                            top: 4, right: 4,
+                            top: 4,
+                            right: 4,
                             child: GestureDetector(
                               onTap: () => removeImage(imageUrls.length + j),
                               child: Container(
@@ -508,7 +525,12 @@ class NewListingPageState extends State<NewListingPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow:[BoxShadow(color:Colors.black26,blurRadius:3)]
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 3,
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(Icons.close, size: 16),
                               ),
@@ -526,7 +548,6 @@ class NewListingPageState extends State<NewListingPage> {
       ],
     );
   }
-
 
   Widget buildApartmentForm() {
     return Column(
@@ -594,16 +615,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -616,9 +640,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -687,16 +709,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu numarul de etaje' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -709,9 +734,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -771,16 +794,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata teren' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -793,9 +819,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -840,16 +864,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -862,9 +889,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );

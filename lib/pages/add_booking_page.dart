@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:homehunt/error_widgets/error_banner.dart';
 
+/// Pagina pentru adaugarea unei programari de vizionare
 class AddBookingPage extends StatefulWidget {
   final String agentId;
   final String propertyId;
@@ -17,56 +19,40 @@ class AddBookingPage extends StatefulWidget {
 }
 
 class AddBookingPageState extends State<AddBookingPage> {
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
-  bool isSaving = false;
-  String? errorMessage;
+  DateTime? selectedDate; // Data selectata
+  TimeOfDay? selectedTime; // Ora selectata
+  bool isSaving = false; // Flag pentru indicatorul de salvare
+  String? errorMessage; // Mesaj de eroare
+  String? successMessage; // Mesaj de succes
 
+  /// Afiseaza picker pentru alegerea datei (nu permite trecutul)
   Future<void> pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: now,
-      firstDate: now,
+      firstDate: now, // nu permite trecutul
       lastDate: DateTime(now.year + 1),
     );
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
+    if (picked != null) setState(() => selectedDate = picked);
   }
 
+  /// Afiseaza picker pentru alegerea orei
   Future<void> pickTime() async {
     final picked = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 9, minute: 0),
     );
-    if (picked != null) {
-      setState(() {
-        selectedTime = picked;
-      });
-    }
+    if (picked != null) setState(() => selectedTime = picked);
   }
 
-  Future<void> saveBooking() async {
+  /// Verifica daca exista deja o programare pentru aceeasi proprietate si utilizator
+  Future<void> checkExistingBooking() async {
+    // Combina data+ora si verificare trecut
     if (selectedDate == null || selectedTime == null) {
-      setState(() {
-        errorMessage = 'Te rog alege data si ora vizionarii';
-      });
+      setState(() => errorMessage = 'Alege mai intai data si ora');
       return;
     }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() {
-        errorMessage =
-            'Trebuie sa fii autentificat pentru a programa o vizionare.';
-      });
-      return;
-    }
-
-    // Combinam data si ora intr-un singur DateTime
     final dateTime = DateTime(
       selectedDate!.year,
       selectedDate!.month,
@@ -74,112 +60,206 @@ class AddBookingPageState extends State<AddBookingPage> {
       selectedTime!.hour,
       selectedTime!.minute,
     );
+    if (dateTime.isBefore(DateTime.now())) {
+      setState(() => errorMessage = 'Nu poti programa in trecut.');
+      return;
+    }
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => errorMessage = 'Trebuie sa fii autentificat.');
+      return;
+    }
+
+    final snap =
+        await FirebaseFirestore.instance
+            .collection('bookings')
+            .where('userId', isEqualTo: user.uid)
+            .where('properties', isEqualTo: widget.propertyId)
+            .get();
+
+    if (snap.docs.isNotEmpty) {
+      setState(
+        () =>
+            errorMessage =
+                'Exista deja o programare pentru aceasta proprietate.',
+      );
+    } else {
+      saveBooking(dateTime);
+    }
+  }
+
+  /// Salveaza programarea in Firestore
+  Future<void> saveBooking(DateTime dateTime) async {
     setState(() {
       isSaving = true;
       errorMessage = null;
     });
 
     try {
+      final user = FirebaseAuth.instance.currentUser!;
       await FirebaseFirestore.instance.collection('bookings').add({
         'agentId': widget.agentId,
         'properties': widget.propertyId,
         'userId': user.uid,
         'date': Timestamp.fromDate(dateTime),
-        'feedback': 'pending',
       });
-
+      setState(() => successMessage = 'Vizionare programata cu succes!');
       if (!mounted) return;
       Navigator.of(context).pop();
-      
-    } catch (e) {
-      setState(() {
-        errorMessage = 'A aparut o eroare la salvarea vizionarii.';
-      });
+    } catch (_) {
+      setState(() => errorMessage = 'Eroare la salvarea vizionarii.');
     } finally {
-      if (mounted) {
-        setState(() {
-          isSaving = false;
-        });
-      }
+      if (mounted) setState(() => isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width >= 900;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Programeaza o vizionare'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+      // Fara AppBar global
+      body: LayoutBuilder(
+        builder:
+            (ctx, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child:
+                      isWide
+                          ? Row(
+                            children: [buildFormContainer(), buildImagePane()],
+                          )
+                          : Column(
+                            children: [buildImagePane(), buildFormContainer()],
+                          ),
+                ),
+              ),
+            ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Afisam eventuale mesaje de eroare
-            if (errorMessage != null) ...[
-              Text(errorMessage!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 12),
-            ],
+    );
+  }
 
-            // 1) Buton de alegere data
-            ElevatedButton.icon(
-              onPressed: pickDate,
-              icon: const Icon(Icons.calendar_today),
-              label: Text(
-                selectedDate == null
-                    ? 'Alege data'
-                    : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+  /// Containerul formularului (jumatatea stanga/dreapta)
+  Widget buildFormContainer() {
+    return Expanded(
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(32),
+          margin: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Sageata inapoi + titlu in container
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Programeaza o vizionare',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-              ),
-            ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-            // 2) Buton de alegere ora
-            ElevatedButton.icon(
-              onPressed: pickTime,
-              icon: const Icon(Icons.access_time),
-              label: Text(
-                selectedTime == null
-                    ? 'Alege ora'
-                    : selectedTime!.format(context),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+              // Banner eroare
+              if (errorMessage != null) ...[
+                ErrorBanner(
+                  message: errorMessage!,
+                  onDismiss: () => setState(() => errorMessage = null),
+                ),
+                const SizedBox(height: 16),
+              ],
 
-            const Spacer(),
+              // Banner succes
+              if (successMessage != null) ...[
+                ErrorBanner(
+                  message: successMessage!,
+                  messageType: MessageType.success,
+                  onDismiss: () => setState(() => successMessage = null),
+                ),
+                const SizedBox(height: 16),
+              ],
 
-            // 3) Buton "Programeaza"
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isSaving ? null : saveBooking,
+              // Buton Alege data
+              ElevatedButton.icon(
+                onPressed: pickDate,
+                icon: const Icon(Icons.calendar_today),
+                label: Text(
+                  selectedDate == null
+                      ? 'Alege data'
+                      : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                ),
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Buton Alege ora
+              ElevatedButton.icon(
+                onPressed: pickTime,
+                icon: const Icon(Icons.access_time),
+                label: Text(
+                  selectedTime == null
+                      ? 'Alege ora'
+                      : selectedTime!.format(context),
+                ),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Buton Programeaza
+              FilledButton(
+                onPressed: isSaving ? null : checkExistingBooking,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
                   backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
                 child:
                     isSaving
                         ? const SizedBox(
-                          height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Text(
-                          'Programeaza',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        : const Text('Programeaza'),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Containerul cu imagine (jumatatea opusa formularului)
+  Widget buildImagePane() {
+    return Expanded(
+      child: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('lib/images/homehuntlogin.png'),
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
