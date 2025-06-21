@@ -132,9 +132,6 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await auth.signOut();
-      if (kIsWeb) {
-        await auth.signOut();
-      }
     } catch (e) {
       throw AuthException('Eroare la sign out. Incearca din nou');
     }
