@@ -37,11 +37,6 @@ class LoginPageState extends State<LoginPage> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
-      );
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
     } finally {
@@ -59,11 +54,6 @@ class LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService().googleSignIn();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
-      );
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -90,11 +80,6 @@ class LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService().facebookSignIn();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
-      );
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {

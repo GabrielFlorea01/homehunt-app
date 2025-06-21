@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/firebase/secrets/api_key.dart';
 import 'package:homehunt/pages/add_booking_page.dart';
 import 'package:homehunt/pages/favourites_page.dart';
 import 'package:homehunt/pages/gallery_view.dart';
+import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/pages/my_bookings_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:homehunt/firebase/auth/auth_service.dart';
@@ -47,12 +49,13 @@ class HomePageState extends State<HomePage> {
   String? errorMessage;
 
   // Filters
-  String transactionType = 'De vanzare';
+  String transactionType = 'Toate';
   String propertyFilter = 'Tip de proprietate';
   String? roomFilter;
   String? locationFilter;
   double? minPrice;
   double? maxPrice;
+  String? titleFilter;
 
   // Data
   List<Map<String, dynamic>> allListings = [];
@@ -169,20 +172,21 @@ class HomePageState extends State<HomePage> {
       isLoading = true;
       errorMessage = null;
     });
+
     try {
       await AuthService().signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+          (route) => false,
+        );
+      }
     } on AuthException catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = e.message);
-      }
+      setState(() => errorMessage = e.message);
     } catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = 'Eroare la sign-out');
-      }
+      setState(() => errorMessage = 'Eroare la sign-out');
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -190,11 +194,7 @@ class HomePageState extends State<HomePage> {
     filteredListings =
         allListings.where((data) {
           // transaction
-          if (transactionType == 'De vanzare' && data['type'] != 'De vanzare') {
-            return false;
-          }
-          if (transactionType == 'De inchiriat' &&
-              data['type'] != 'De inchiriat') {
+            if (transactionType != 'Toate' && data['type'] != transactionType) {
             return false;
           }
           // category mapping
@@ -212,12 +212,26 @@ class HomePageState extends State<HomePage> {
               return false;
             }
           }
-          // rooms
-          final apt = (data['apartmentDetails'] as Map?) ?? {};
-          if (roomFilter != null &&
-              roomFilter != 'Tip de proprietate' &&
-              apt['rooms'].toString() != roomFilter) {
+          //titlu
+          final title = (data['title'] as String? ?? '').toLowerCase();
+          if (titleFilter?.isNotEmpty == true &&
+              !title.contains(titleFilter!.toLowerCase())) {
             return false;
+          }
+          // rooms
+          if (roomFilter != null && roomFilter!.isNotEmpty) {
+            final cat = data['category'] as String? ?? '';
+            if (cat == 'Apartament' || cat == 'Garsoniera' || cat == 'Casa') {
+              final details =
+                  (cat == 'Casa'
+                          ? data['houseDetails']
+                          : data['apartmentDetails'])
+                      as Map? ??
+                  {};
+              if (details['rooms']?.toString() != roomFilter) {
+                return false;
+              }
+            }
           }
           // location substring
           if (locationFilter?.isNotEmpty == true) {
@@ -613,9 +627,19 @@ class HomePageState extends State<HomePage> {
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
+                              buildTextField(
+                                hint: 'Titlu',
+                                width: 150,
+                                height: 51,
+                                onChanged: (v) {
+                                  titleFilter = v;
+                                  applyFilters();
+                                },
+                              ),
+                              const SizedBox(width: 8),
                               buildDropdown(
                                 value: transactionType,
-                                items: const ['De vanzare', 'De inchiriat'],
+                                items: const ['Toate', 'De vanzare', 'De inchiriat'],
                                 onChanged: (v) {
                                   transactionType = v!;
                                   applyFilters();
@@ -649,17 +673,16 @@ class HomePageState extends State<HomePage> {
                                 },
                               ),
                               const SizedBox(width: 8),
-                              buildDropdown(
-                                value: roomFilter ?? 'Nr. camere',
-                                items: const [
-                                  'Nr. camere',
-                                  '1',
-                                  '2',
-                                  '3',
-                                  '4+',
+                              buildTextField(
+                                hint: 'Camere',
+                                width: 150,
+                                height: 51,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
                                 ],
                                 onChanged: (v) {
-                                  roomFilter = v == 'Nr. camere' ? null : v;
+                                  roomFilter = v.isEmpty ? null : v;
                                   applyFilters();
                                 },
                               ),
@@ -1413,6 +1436,8 @@ class HomePageState extends State<HomePage> {
     required double width,
     required double height,
     required ValueChanged<String> onChanged,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       width: width,
@@ -1425,6 +1450,8 @@ class HomePageState extends State<HomePage> {
       ),
       child: TextField(
         textAlign: TextAlign.center,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,

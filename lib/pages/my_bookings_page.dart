@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:homehunt/pages/edit_booking_page.dart';
 import 'package:intl/intl.dart';
-
+import 'package:homehunt/error_widgets/error_banner.dart';
 
 /// Pagina pentru vizualizarea si editarea programarilor
 class MyBookingsPage extends StatefulWidget {
@@ -15,12 +15,25 @@ class MyBookingsPage extends StatefulWidget {
 
 class MyBookingsPageState extends State<MyBookingsPage> {
   User? user;
+  String? errorMessage;
 
   @override
   void initState() {
     super.initState();
     // Preluam user-ul curent de la FirebaseAuth
     user = FirebaseAuth.instance.currentUser;
+  }
+
+  Future<void> deleteBooking(String bookingId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(bookingId)
+          .delete();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => errorMessage = 'Eroare la stergerea vizionarii');
+    }
   }
 
   @override
@@ -76,6 +89,15 @@ class MyBookingsPageState extends State<MyBookingsPage> {
               ),
               const SizedBox(height: 16),
 
+              if (errorMessage != null) ...[
+                ErrorBanner(
+                  message: errorMessage!,
+                  messageType: MessageType.error,
+                  onDismiss: () => setState(() => errorMessage = null),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // Flux de date din Firestore
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
@@ -98,7 +120,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                     if (docs.isEmpty) {
                       // Nu exista programari
                       return const Center(
-                        child: Text('Nicio programare gasita.'),
+                        child: Text('Nu ai vizionari inregistrate'),
                       );
                     }
 
@@ -149,22 +171,32 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                                 ),
                               ),
                               subtitle: Text(propertyName),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.edit),
-                                color: Colors.blueAccent,
-                                onPressed: () {
-                                  // Navigam la pagina de editare, trimitand si numele proprietatii
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (_) => EditBookingPage(
-                                            bookingId: bookingId,
-                                            initialDateTime: dt,
-                                            propertyName: propertyName,
-                                          ),
-                                    ),
-                                  );
-                                },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit),
+                                    color: Colors.blueAccent,
+                                    onPressed: () {
+                                      // Navigam la pagina de editare, trimitand si numele proprietatii
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder:
+                                              (_) => EditBookingPage(
+                                                bookingId: bookingId,
+                                                initialDateTime: dt,
+                                                propertyName: propertyName,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete),
+                                    color: Colors.redAccent,
+                                    onPressed: () => deleteBooking(bookingId),
+                                  ),
+                                ],
                               ),
                             );
                           },
@@ -196,6 +228,3 @@ class MyBookingsPageState extends State<MyBookingsPage> {
     );
   }
 }
-
-/// Pagina pentru editarea unei programari existente
-

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 
 /// Home page with filters and cards identical to MyListingsPage
@@ -12,7 +11,6 @@ class AdminPage extends StatefulWidget {
 }
 
 class AdminPageState extends State<AdminPage> {
-  late final StreamSubscription<QuerySnapshot> snapshot;
   User? user;
   bool isLoading = true;
   String? errorMessage;
@@ -25,7 +23,6 @@ class AdminPageState extends State<AdminPage> {
 
   @override
   void dispose() {
-    snapshot.cancel();
     super.dispose();
   }
 

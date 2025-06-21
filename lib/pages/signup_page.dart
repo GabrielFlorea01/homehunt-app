@@ -40,8 +40,8 @@ class SignupPageState extends State<SignupPage> {
     try {
       await AuthService().signUp(
         emailController.text.trim(),
-        nameController.text.trim(),
         passwordController.text.trim(),
+        nameController.text.trim(),
         phoneController.text.trim(),
       );
       if (mounted) {
