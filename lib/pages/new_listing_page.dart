@@ -18,7 +18,7 @@ class NewListingPageState extends State<NewListingPage> {
   String? successMessage;
 
   // common
-  List<String> categories = ['Apartament', 'Casa', 'Teren', 'Spatiu comercial'];
+  List<String> categories = ['Apartament', 'Garsoniera', 'Casa', 'Teren', 'Spatiu comercial'];
   String selectedCategory = 'Apartament';
   String transactionType = 'De vanzare';
 
@@ -45,6 +45,11 @@ class NewListingPageState extends State<NewListingPage> {
   final etajController = TextEditingController();
   final suprafataUtilaApartController = TextEditingController();
   final anConstructieApartController = TextEditingController();
+
+  // Garsoniera fields
+  final etajGarsonieraController = TextEditingController();
+  final suprafataUtilaGarsonieraController = TextEditingController();
+  final anConstructieGarsonieraController = TextEditingController();
 
   // Casa fields
   String? selectedNumarCamereCasa;
@@ -217,6 +222,13 @@ class NewListingPageState extends State<NewListingPage> {
             'floor': etajController.text,
             'area': int.parse(suprafataUtilaApartController.text),
             'yearBuilt': int.parse(anConstructieApartController.text),
+          };
+          break;
+        case 'Garsoniera':
+          data['garsonieraDetails'] = {
+            'floor': etajGarsonieraController.text,
+            'area': int.parse(suprafataUtilaGarsonieraController.text),
+            'yearBuilt': int.parse(anConstructieGarsonieraController.text),
           };
           break;
         case 'Casa':
@@ -646,6 +658,80 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  Widget buildGarsonieraForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: etajGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'Etaj',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu etaj' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataUtilaGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata utila (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: anConstructieGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
+        ),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
+        TextFormField(
+          controller: priceController,
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 30),
+        buildLocalizareFields(),
+      ],
+    );
+  }
+
   Widget buildCasaForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -899,6 +985,8 @@ class NewListingPageState extends State<NewListingPage> {
     switch (selectedCategory) {
       case 'Apartament':
         return buildApartmentForm();
+      case 'Garsoniera':
+        return buildGarsonieraForm();
       case 'Casa':
         return buildCasaForm();
       case 'Teren':

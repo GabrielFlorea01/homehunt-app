@@ -220,18 +220,25 @@ class HomePageState extends State<HomePage> {
             return false;
           }
           // rooms
-          if (roomFilter != null && roomFilter!.isNotEmpty) {
+          if (roomFilter?.isNotEmpty == true) {
             final cat = data['category'] as String? ?? '';
-            if (cat == 'Apartament' || cat == 'Garsoniera' || cat == 'Casa') {
-              final details =
-                  (cat == 'Casa'
-                          ? data['houseDetails']
-                          : data['apartmentDetails'])
-                      as Map? ??
-                  {};
-              if (details['rooms']?.toString() != roomFilter) {
-                return false;
-              }
+            String actualRooms;
+
+            if (cat == 'Garsoniera') {
+              actualRooms = '1';
+            } else if (cat == 'Apartament') {
+              actualRooms =
+                  ((data['apartmentDetails'] as Map?)?['rooms'] ?? '')
+                      .toString();
+            } else if (cat == 'Casa') {
+              actualRooms =
+                  ((data['houseDetails'] as Map?)?['rooms'] ?? '').toString();
+            } else {
+              actualRooms = '';
+            }
+
+            if (actualRooms != roomFilter) {
+              return false;
             }
           }
           // location substring
@@ -378,6 +385,24 @@ class HomePageState extends State<HomePage> {
             visualDensity: VisualDensity.compact,
           ),
         ];
+        case 'Garsoniera':
+        final g = (data['garsonieraDetails'] as Map?) ?? {};
+        return [
+          Chip(label: Text('1 cameră'), visualDensity: VisualDensity.compact),
+          Chip(
+            label: Text('${g['area']} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('Etaj ${g['floor']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('An ${g['yearBuilt']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
+
       case 'Casa':
         final c = (data['houseDetails'] as Map?) ?? {};
         return [
@@ -775,7 +800,7 @@ class HomePageState extends State<HomePage> {
                               }
                             });
                           },
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -1020,7 +1045,7 @@ class HomePageState extends State<HomePage> {
                                                         ),
                                                       ),
                                                     ],
-                                                    if (images.length > 1) ...[
+                                                    if (images.isNotEmpty) ...[
                                                       const SizedBox(
                                                         height: 20,
                                                       ),
