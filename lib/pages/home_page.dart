@@ -56,6 +56,7 @@ class HomePageState extends State<HomePage> {
   double? minPrice;
   double? maxPrice;
   String? titleFilter;
+  String selectedSort = 'Cele mai noi';
 
   // Data
   List<Map<String, dynamic>> allListings = [];
@@ -194,7 +195,7 @@ class HomePageState extends State<HomePage> {
     filteredListings =
         allListings.where((data) {
           // transaction
-            if (transactionType != 'Toate' && data['type'] != transactionType) {
+          if (transactionType != 'Toate' && data['type'] != transactionType) {
             return false;
           }
           // category mapping
@@ -639,7 +640,11 @@ class HomePageState extends State<HomePage> {
                               const SizedBox(width: 8),
                               buildDropdown(
                                 value: transactionType,
-                                items: const ['Toate', 'De vanzare', 'De inchiriat'],
+                                items: const [
+                                  'Toate',
+                                  'De vanzare',
+                                  'De inchiriat',
+                                ],
                                 onChanged: (v) {
                                   transactionType = v!;
                                   applyFilters();
@@ -736,7 +741,7 @@ class HomePageState extends State<HomePage> {
                         ),
                         const Spacer(),
                         DropdownButton<String>(
-                          value: 'Cele mai noi',
+                          value: selectedSort,
                           items:
                               const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
                                   .map(
@@ -747,27 +752,30 @@ class HomePageState extends State<HomePage> {
                                   )
                                   .toList(),
                           onChanged: (t) {
-                            if (t == 'Pret ↑') {
-                              filteredListings.sort(
-                                (a, b) => (a['price'] as num).compareTo(
-                                  b['price'] as num,
-                                ),
-                              );
-                            } else if (t == 'Pret ↓') {
-                              filteredListings.sort(
-                                (a, b) => (b['price'] as num).compareTo(
-                                  a['price'] as num,
-                                ),
-                              );
-                            } else {
-                              filteredListings.sort(
-                                (a, b) => (b['createdAt'] as Timestamp)
-                                    .compareTo(a['createdAt'] as Timestamp),
-                              );
-                            }
-                            setState(() {});
+                            if (t == null) return;
+                            setState(() {
+                              selectedSort = t;
+                              if (selectedSort == 'Pret ↑') {
+                                filteredListings.sort(
+                                  (a, b) => (a['price'] as num).compareTo(
+                                    b['price'] as num,
+                                  ),
+                                );
+                              } else if (selectedSort == 'Pret ↓') {
+                                filteredListings.sort(
+                                  (a, b) => (b['price'] as num).compareTo(
+                                    a['price'] as num,
+                                  ),
+                                );
+                              } else {
+                                filteredListings.sort(
+                                  (a, b) => (b['createdAt'] as Timestamp)
+                                      .compareTo(a['createdAt'] as Timestamp),
+                                );
+                              }
+                            });
                           },
-                        ),
+                        )
                       ],
                     ),
                   ),
