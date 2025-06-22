@@ -9,7 +9,6 @@ import 'package:homehunt/firebase/secrets/api_key.dart';
 import 'package:homehunt/pages/add_booking_page.dart';
 import 'package:homehunt/pages/favourites_page.dart';
 import 'package:homehunt/pages/gallery_view.dart';
-import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/pages/my_bookings_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:homehunt/firebase/auth/auth_service.dart';
@@ -176,12 +175,6 @@ class HomePageState extends State<HomePage> {
 
     try {
       await AuthService().signOut();
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
-      }
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
     } catch (e) {
