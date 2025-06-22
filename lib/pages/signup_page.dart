@@ -44,11 +44,7 @@ class SignupPageState extends State<SignupPage> {
         nameController.text.trim(),
         phoneController.text.trim(),
       );
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-      }
+      if (mounted) Navigator.of(context).pop();
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
     } finally {
