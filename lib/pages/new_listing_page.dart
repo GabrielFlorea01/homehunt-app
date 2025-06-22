@@ -18,7 +18,7 @@ class NewListingPageState extends State<NewListingPage> {
   String? successMessage;
 
   // common
-  List<String> categories = ['Apartament', 'Casa', 'Teren', 'Spatiu comercial'];
+  List<String> categories = ['Apartament', 'Garsoniera', 'Casa', 'Teren', 'Spatiu comercial'];
   String selectedCategory = 'Apartament';
   String transactionType = 'De vanzare';
 
@@ -45,6 +45,11 @@ class NewListingPageState extends State<NewListingPage> {
   final etajController = TextEditingController();
   final suprafataUtilaApartController = TextEditingController();
   final anConstructieApartController = TextEditingController();
+
+  // Garsoniera fields
+  final etajGarsonieraController = TextEditingController();
+  final suprafataUtilaGarsonieraController = TextEditingController();
+  final anConstructieGarsonieraController = TextEditingController();
 
   // Casa fields
   String? selectedNumarCamereCasa;
@@ -114,6 +119,12 @@ class NewListingPageState extends State<NewListingPage> {
     'Bucuresti',
   ];
 
+  // schimbare din dupa tipul de tranzactie
+  String get priceLabel =>
+      transactionType == 'De inchiriat'
+          ? 'Pret chirie (EUR/luna)'
+          : 'Pret (EUR)';
+
   @override
   void initState() {
     super.initState();
@@ -130,6 +141,34 @@ class NewListingPageState extends State<NewListingPage> {
               .toList();
     });
   }
+
+  Widget buildAgentDropdown() {
+    return DropdownButtonFormField<String>(
+      decoration: const InputDecoration(
+        labelText: 'Alege agentul',
+        border: OutlineInputBorder(),
+      ),
+      isExpanded: true,
+      value: selectedAgentId,
+      validator: (v) => v == null ? 'Selecteaza agentul' : null,
+      items: agents.map((a) {
+        return DropdownMenuItem<String>(
+          value: a['id'] as String,
+          child: Text(a['name'] as String),
+        );
+      }).toList(),
+      onChanged: (id) {
+        setState(() {
+          selectedAgentId   = id;
+          selectedAgentName = agents
+            .firstWhere((a) => a['id'] == id)['name']
+            as String;
+        });
+      },
+    );
+  }
+
+
 
   Future<void> pickImages() async {
     final pics = await picker.pickMultiImage(maxWidth: 1200, imageQuality: 80);
@@ -213,6 +252,13 @@ class NewListingPageState extends State<NewListingPage> {
             'yearBuilt': int.parse(anConstructieApartController.text),
           };
           break;
+        case 'Garsoniera':
+          data['garsonieraDetails'] = {
+            'floor': etajGarsonieraController.text,
+            'area': int.parse(suprafataUtilaGarsonieraController.text),
+            'yearBuilt': int.parse(anConstructieGarsonieraController.text),
+          };
+          break;
         case 'Casa':
           data['houseDetails'] = {
             'rooms': selectedNumarCamereCasa,
@@ -236,17 +282,26 @@ class NewListingPageState extends State<NewListingPage> {
           };
           break;
       }
-
+//adaugam datele pentru proprietate
       final docRef = await FirebaseFirestore.instance
           .collection('properties')
           .add(data);
 
+//actualizam imaginile pentru proprietate
       final allUrls = await uploadImages(docRef.id);
       await docRef.update({'images': allUrls});
 
+//actualizam lista cu prop pentru agenti
+      await FirebaseFirestore.instance
+      .collection('agents')
+      .doc(selectedAgentId)
+      .update({
+        'properties': FieldValue.arrayUnion([docRef.id]),
+      });
+
       if (!mounted) return;
       setState(() => successMessage = 'Anunt publicat cu succes');
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
@@ -393,49 +448,50 @@ class NewListingPageState extends State<NewListingPage> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: (imageUrls.isEmpty && selectedImageBytes.isEmpty)
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.cloud_upload_outlined,
-                              size: 50,
+                  child:
+                      (imageUrls.isEmpty && selectedImageBytes.isEmpty)
+                          ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.cloud_upload_outlined,
+                                size: 50,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(height: 16),
+                              RichText(
+                                textAlign: TextAlign.center,
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Incarca fotografii',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(context).primaryColor,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const TextSpan(
+                                      text:
+                                          '\n\nMaxim 15 poze. PNG, JPG. Dimensiune maxima 10MB',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                          : Center(
+                            child: Icon(
+                              Icons.add_photo_alternate,
+                              size: 30,
                               color: Theme.of(context).primaryColor,
                             ),
-                            const SizedBox(height: 16),
-                            RichText(
-                              textAlign: TextAlign.center,
-                              text: TextSpan(
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade700,
-                                ),
-                                children: [
-                                  TextSpan(
-                                    text: 'Incarca fotografii',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).primaryColor,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const TextSpan(
-                                    text:
-                                        '\n\nMaxim 15 poze. PNG, JPG. Dimensiune maxima 10MB',
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      : Center(
-                          child: Icon(
-                            Icons.add_photo_alternate,
-                            size: 30,
-                            color: Theme.of(context).primaryColor,
                           ),
-                        ),
                 ),
               ),
 
@@ -459,11 +515,15 @@ class NewListingPageState extends State<NewListingPage> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(imageUrls[i], fit: BoxFit.cover),
+                              child: Image.network(
+                                imageUrls[i],
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                           Positioned(
-                            top: 4, right: 4,
+                            top: 4,
+                            right: 4,
                             child: GestureDetector(
                               onTap: () => removeImage(i),
                               child: Container(
@@ -471,7 +531,12 @@ class NewListingPageState extends State<NewListingPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow:[BoxShadow(color:Colors.black26,blurRadius:3)]
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 3,
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(Icons.close, size: 16),
                               ),
@@ -500,7 +565,8 @@ class NewListingPageState extends State<NewListingPage> {
                             ),
                           ),
                           Positioned(
-                            top: 4, right: 4,
+                            top: 4,
+                            right: 4,
                             child: GestureDetector(
                               onTap: () => removeImage(imageUrls.length + j),
                               child: Container(
@@ -508,7 +574,12 @@ class NewListingPageState extends State<NewListingPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow:[BoxShadow(color:Colors.black26,blurRadius:3)]
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 3,
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(Icons.close, size: 16),
                               ),
@@ -527,7 +598,6 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
-
   Widget buildApartmentForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -543,7 +613,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         buildChoiceChips(
           'Numar camere',
-          ['1', '2', '3', '4', '5'],
+          ['1', '2', '3', '4', '5', '5+'],
           selectedNumarCamereApartament,
           (v) => setState(() => selectedNumarCamereApartament = v),
         ),
@@ -594,16 +664,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -616,9 +689,81 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
+        const SizedBox(height: 30),
+        buildLocalizareFields(),
+      ],
+    );
+  }
+
+  Widget buildGarsonieraForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
+        ),
         const SizedBox(height: 10),
+        TextFormField(
+          controller: etajGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'Etaj',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu etaj' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataUtilaGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'Suprafata utila (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: anConstructieGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
+        ),
+        const SizedBox(height: 20),
         buildTransactionTypeChips(),
         const SizedBox(height: 20),
+        TextFormField(
+          controller: priceController,
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -639,7 +784,10 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         buildChoiceChips(
           'Numar camere',
-          List.generate(10, (i) => '${i + 1}'),
+          [
+            for (var i = 1; i <= 10; i++) '$i',
+            '10+'                                    
+          ],
           selectedNumarCamereCasa,
           (v) => setState(() => selectedNumarCamereCasa = v),
         ),
@@ -687,16 +835,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu numarul de etaje' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -709,9 +860,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -771,16 +920,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata teren' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -793,9 +945,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -840,16 +990,19 @@ class NewListingPageState extends State<NewListingPage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
+        buildTransactionTypeChips(),
+        const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          decoration: const InputDecoration(
-            labelText: 'Pret (EUR)',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: priceLabel,
+            border: const OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+          validator:
+              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -862,9 +1015,7 @@ class NewListingPageState extends State<NewListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 30),
         buildLocalizareFields(),
       ],
     );
@@ -874,6 +1025,8 @@ class NewListingPageState extends State<NewListingPage> {
     switch (selectedCategory) {
       case 'Apartament':
         return buildApartmentForm();
+      case 'Garsoniera':
+        return buildGarsonieraForm();
       case 'Casa':
         return buildCasaForm();
       case 'Teren':
@@ -961,32 +1114,7 @@ class NewListingPageState extends State<NewListingPage> {
                 const SizedBox(height: 30),
 
                 // agent dropdown
-                agents.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Alege agentul',
-                        border: OutlineInputBorder(),
-                      ),
-                      value: selectedAgentName,
-                      validator: (v) => v == null ? 'Selecteaza agentul' : null,
-                      items:
-                          agents
-                              .map(
-                                (a) => DropdownMenuItem<String>(
-                                  value: a['name'] as String,
-                                  child: Text(a['name'] as String),
-                                ),
-                              )
-                              .toList(),
-                      onChanged:
-                          (v) => setState(() {
-                            selectedAgentName = v;
-                            selectedAgentId =
-                                agents.firstWhere((a) => a['name'] == v)['id']
-                                    as String;
-                          }),
-                    ),
+                buildAgentDropdown(),
                 const SizedBox(height: 40),
 
                 // publish button

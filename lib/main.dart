@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/firebase/config/firebase_options.dart';
+import 'package:homehunt/firebase/secrets/admin_key.dart';
+import 'package:homehunt/pages/admin_page.dart';
 import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/login_page.dart';
 
@@ -79,20 +81,25 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder(
       stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
-        // While waiting for auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // Logged in
-        if (snapshot.hasData) {
-          return const HomePage();
+        //inapoi la login daca e null
+        final user = snapshot.data;
+        if (user == null) {
+          return const LoginPage();
         }
 
-        // Not logged in
-        return const LoginPage();
+        //daca e admin
+        if (user.uid == adminUUID) {
+          return const AdminPage();
+        }
+
+        //user normal
+        return const HomePage();
       },
     );
   }

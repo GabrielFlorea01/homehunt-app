@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/forgot_password_page.dart';
-import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/signup_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 
@@ -37,11 +36,6 @@ class LoginPageState extends State<LoginPage> {
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
-      );
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
     } finally {
@@ -59,11 +53,6 @@ class LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService().googleSignIn();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
-      );
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -90,11 +79,6 @@ class LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService().facebookSignIn();
-      if (!mounted) return;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
-        (route) => false,
-      );
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {

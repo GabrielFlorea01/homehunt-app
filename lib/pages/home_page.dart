@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/firebase/secrets/api_key.dart';
+import 'package:homehunt/pages/add_booking_page.dart';
 import 'package:homehunt/pages/favourites_page.dart';
 import 'package:homehunt/pages/gallery_view.dart';
+import 'package:homehunt/pages/my_bookings_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/new_listing_page.dart';
@@ -45,12 +48,14 @@ class HomePageState extends State<HomePage> {
   String? errorMessage;
 
   // Filters
-  String transactionType = 'De vanzare';
+  String transactionType = 'Toate';
   String propertyFilter = 'Tip de proprietate';
   String? roomFilter;
   String? locationFilter;
   double? minPrice;
   double? maxPrice;
+  String? titleFilter;
+  String selectedSort = 'Cele mai noi';
 
   // Data
   List<Map<String, dynamic>> allListings = [];
@@ -81,15 +86,15 @@ class HomePageState extends State<HomePage> {
   Future<void> loadUserAndProperties() async {
     setState(() => isLoading = true);
 
-    // 1) preluăm user-ul curent
+    // 1) user-ul curent
     user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // dacă user-ul e null, nu încărcăm nimic
+      // daca user e null, nu afisam nimic
       setState(() => isLoading = false);
       return;
     }
 
-    // 2) ascultăm proprietățile (lista completă, pentru filtrare)
+    // 2)  proprietatile (lista completa, pentru filtrare)
     snapshotProperties = propertiesRef
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -106,7 +111,7 @@ class HomePageState extends State<HomePage> {
           },
           onError: (e) {
             if (!mounted) return;
-            setState(() => errorMessage = 'Eroare la încărcarea anunțurilor');
+            setState(() => errorMessage = 'Eroare la incărcarea anunyurilor');
           },
         );
 
@@ -167,20 +172,15 @@ class HomePageState extends State<HomePage> {
       isLoading = true;
       errorMessage = null;
     });
+
     try {
       await AuthService().signOut();
     } on AuthException catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = e.message);
-      }
+      setState(() => errorMessage = e.message);
     } catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = 'Eroare la sign-out');
-      }
+      setState(() => errorMessage = 'Eroare la sign-out');
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -188,11 +188,7 @@ class HomePageState extends State<HomePage> {
     filteredListings =
         allListings.where((data) {
           // transaction
-          if (transactionType == 'De vanzare' && data['type'] != 'De vanzare') {
-            return false;
-          }
-          if (transactionType == 'De inchiriat' &&
-              data['type'] != 'De inchiriat') {
+          if (transactionType != 'Toate' && data['type'] != transactionType) {
             return false;
           }
           // category mapping
@@ -210,12 +206,33 @@ class HomePageState extends State<HomePage> {
               return false;
             }
           }
-          // rooms
-          final apt = (data['apartmentDetails'] as Map?) ?? {};
-          if (roomFilter != null &&
-              roomFilter != 'Tip de proprietate' &&
-              apt['rooms'].toString() != roomFilter) {
+          //titlu
+          final title = (data['title'] as String? ?? '').toLowerCase();
+          if (titleFilter?.isNotEmpty == true &&
+              !title.contains(titleFilter!.toLowerCase())) {
             return false;
+          }
+          // rooms
+          if (roomFilter?.isNotEmpty == true) {
+            final cat = data['category'] as String? ?? '';
+            String actualRooms;
+
+            if (cat == 'Garsoniera') {
+              actualRooms = '1';
+            } else if (cat == 'Apartament') {
+              actualRooms =
+                  ((data['apartmentDetails'] as Map?)?['rooms'] ?? '')
+                      .toString();
+            } else if (cat == 'Casa') {
+              actualRooms =
+                  ((data['houseDetails'] as Map?)?['rooms'] ?? '').toString();
+            } else {
+              actualRooms = '';
+            }
+
+            if (actualRooms != roomFilter) {
+              return false;
+            }
           }
           // location substring
           if (locationFilter?.isNotEmpty == true) {
@@ -272,7 +289,7 @@ class HomePageState extends State<HomePage> {
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('Sign out?'),
+            title: const Text('Sigur te deconectezi?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -361,6 +378,24 @@ class HomePageState extends State<HomePage> {
             visualDensity: VisualDensity.compact,
           ),
         ];
+      case 'Garsoniera':
+        final g = (data['garsonieraDetails'] as Map?) ?? {};
+        return [
+          Chip(label: Text('1 cameră'), visualDensity: VisualDensity.compact),
+          Chip(
+            label: Text('${g['area']} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('Etaj ${g['floor']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('An ${g['yearBuilt']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
+
       case 'Casa':
         final c = (data['houseDetails'] as Map?) ?? {};
         return [
@@ -479,99 +514,130 @@ class HomePageState extends State<HomePage> {
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 30),
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: Text(
-                    user?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(fontSize: 32, color: Colors.white),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 30),
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: Text(
+                          user?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                      ListTile(
+                        leading: const Icon(Icons.home),
+                        title: const Text('Marketplace'),
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.favorite),
+                        title: const Text('Favorite'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const FavoritesPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.list_rounded),
+                        title: const Text('Anunturile mele'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyListingsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.assignment_outlined),
+                        title: const Text('Vizionari'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyBookingsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(),
+                      // quick filters
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De vanzare';
+                            propertyFilter = 'Apartamente';
+                            applyFilters();
+                          },
+                          child: const Text('Apartamente de vânzare'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De inchiriat';
+                            propertyFilter = 'Apartamente';
+                            applyFilters();
+                          },
+                          child: const Text('Apartamente de închiriat'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 50),
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Marketplace'),
-                  selected: true,
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.favorite),
-                  title: const Text('Favorite'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FavoritesPage()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.view_stream_rounded),
-                  title: const Text('Anunturile mele'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyListingsPage()),
-                    );
-                  },
-                ),
-                const Divider(),
-                // quick filters
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      transactionType = 'De vanzare';
-                      propertyFilter = 'Apartamente';
-                      applyFilters();
-                    },
-                    child: const Text('Apartamente de vânzare'),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      transactionType = 'De inchiriat';
-                      propertyFilter = 'Apartamente';
-                      applyFilters();
-                    },
-                    child: const Text('Apartamente de închiriat'),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
+              ),
+              const SizedBox(height: 30),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ElevatedButton(
                   onPressed: addListing,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)
                   ),
                   child: const Text(
-                    'Adaugă anunț',
+                    'Adauga anunt nou',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
-                const SizedBox(height: 20),
-                TextButton(
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextButton(
                   onPressed: confirmSignOut,
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: const Text('Deconectare'),
                 ),
-                const SizedBox(height: 30),
-              ],
-            ),
+              ),
+              const SizedBox(height: 30),
+            ],
           ),
         ),
       ),
@@ -601,9 +667,23 @@ class HomePageState extends State<HomePage> {
                           scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
+                              buildTextField(
+                                hint: 'Titlu',
+                                width: 150,
+                                height: 51,
+                                onChanged: (v) {
+                                  titleFilter = v;
+                                  applyFilters();
+                                },
+                              ),
+                              const SizedBox(width: 8),
                               buildDropdown(
                                 value: transactionType,
-                                items: const ['De vanzare', 'De inchiriat'],
+                                items: const [
+                                  'Toate',
+                                  'De vanzare',
+                                  'De inchiriat',
+                                ],
                                 onChanged: (v) {
                                   transactionType = v!;
                                   applyFilters();
@@ -637,25 +717,24 @@ class HomePageState extends State<HomePage> {
                                 },
                               ),
                               const SizedBox(width: 8),
-                              buildDropdown(
-                                value: roomFilter ?? 'Nr. camere',
-                                items: const [
-                                  'Nr. camere',
-                                  '1',
-                                  '2',
-                                  '3',
-                                  '4+',
+                              buildTextField(
+                                hint: 'Camere',
+                                width: 150,
+                                height: 51,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
                                 ],
                                 onChanged: (v) {
-                                  roomFilter = v == 'Nr. camere' ? null : v;
+                                  roomFilter = v.isEmpty ? null : v;
                                   applyFilters();
                                 },
                               ),
                               const SizedBox(width: 8),
                               buildDropdown(
-                                value: 'Preț',
+                                value: 'Pret',
                                 items: const [
-                                  'Preț',
+                                  'Pret',
                                   '< 50.000',
                                   '50.000 - 100.000',
                                   '100.000 - 200.000',
@@ -696,14 +775,14 @@ class HomePageState extends State<HomePage> {
                     child: Row(
                       children: [
                         Text(
-                          'S-au găsit ${filteredListings.length} rezultate',
+                          'S-au gasit ${filteredListings.length} rezultate',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         const Spacer(),
                         DropdownButton<String>(
-                          value: 'Cele mai noi',
+                          value: selectedSort,
                           items:
-                              const ['Cele mai noi', 'Preț ↑', 'Preț ↓']
+                              const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
                                   .map(
                                     (t) => DropdownMenuItem(
                                       value: t,
@@ -712,25 +791,28 @@ class HomePageState extends State<HomePage> {
                                   )
                                   .toList(),
                           onChanged: (t) {
-                            if (t == 'Preț ↑') {
-                              filteredListings.sort(
-                                (a, b) => (a['price'] as num).compareTo(
-                                  b['price'] as num,
-                                ),
-                              );
-                            } else if (t == 'Preț ↓') {
-                              filteredListings.sort(
-                                (a, b) => (b['price'] as num).compareTo(
-                                  a['price'] as num,
-                                ),
-                              );
-                            } else {
-                              filteredListings.sort(
-                                (a, b) => (b['createdAt'] as Timestamp)
-                                    .compareTo(a['createdAt'] as Timestamp),
-                              );
-                            }
-                            setState(() {});
+                            if (t == null) return;
+                            setState(() {
+                              selectedSort = t;
+                              if (selectedSort == 'Pret ↑') {
+                                filteredListings.sort(
+                                  (a, b) => (a['price'] as num).compareTo(
+                                    b['price'] as num,
+                                  ),
+                                );
+                              } else if (selectedSort == 'Pret ↓') {
+                                filteredListings.sort(
+                                  (a, b) => (b['price'] as num).compareTo(
+                                    a['price'] as num,
+                                  ),
+                                );
+                              } else {
+                                filteredListings.sort(
+                                  (a, b) => (b['createdAt'] as Timestamp)
+                                      .compareTo(a['createdAt'] as Timestamp),
+                                );
+                              }
+                            });
                           },
                         ),
                       ],
@@ -741,7 +823,7 @@ class HomePageState extends State<HomePage> {
                   Expanded(
                     child:
                         filteredListings.isEmpty
-                            ? const Center(child: Text('Nu există anunțuri'))
+                            ? const Center(child: Text('Nu exista anunturi'))
                             : SingleChildScrollView(
                               child: Center(
                                 child: FractionallySizedBox(
@@ -750,6 +832,8 @@ class HomePageState extends State<HomePage> {
                                     children:
                                         filteredListings.map((data) {
                                           final id = data['id'] as String;
+                                          final agentId =
+                                              data['agentId'] as String;
                                           galleryControllers.putIfAbsent(
                                             id,
                                             () => ScrollController(),
@@ -975,7 +1059,7 @@ class HomePageState extends State<HomePage> {
                                                         ),
                                                       ),
                                                     ],
-                                                    if (images.length > 1) ...[
+                                                    if (images.isNotEmpty) ...[
                                                       const SizedBox(
                                                         height: 20,
                                                       ),
@@ -1083,119 +1167,262 @@ class HomePageState extends State<HomePage> {
                                                     const SizedBox(height: 20),
                                                     // agentii din card
                                                     if (user != null) ...[
-                                                      FutureBuilder<
-                                                        DocumentSnapshot
-                                                      >(
-                                                        future:
-                                                            FirebaseFirestore
-                                                                .instance
-                                                                .collection(
-                                                                  'agents',
-                                                                )
-                                                                .doc(
-                                                                  data['agentId']
-                                                                      as String,
-                                                                )
-                                                                .get(),
-                                                        builder: (
-                                                          ctx,
-                                                          snapAgent,
-                                                        ) {
-                                                          final name =
-                                                              data['agentName']
-                                                                  as String? ??
-                                                              '';
-                                                          final phone =
-                                                              snapAgent.hasData
-                                                                  ? (snapAgent.data!['phone']
-                                                                          as String? ??
-                                                                      '')
-                                                                  : '';
-                                                          return Row(
+                                                    FutureBuilder<DocumentSnapshot>(
+                                                      future: FirebaseFirestore.instance
+                                                          .collection('agents')
+                                                          .doc(data['agentId'] as String)
+                                                          .get(),
+                                                      builder: (ctx, snapAgent) {
+                                                        if (snapAgent.hasError) {
+                                                          return const Text('Eroare la agent');
+                                                        }
+                                                        if (!snapAgent.hasData || !snapAgent.data!.exists) {
+                                                          // agentul a fost sters sau nu exista
+                                                          return const Text('Agent inexistent');
+                                                        }
+                                                        final agentDoc = snapAgent.data!;
+                                                        final name = agentDoc.get('name') as String;
+                                                        final phone = agentDoc.get('phone') as String;
+                                                          // Înlocuim return-ul simplu cu un Column
+                                                          return Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .stretch,
                                                             children: [
-                                                              CircleAvatar(
-                                                                radius: 20,
-                                                                backgroundColor:
-                                                                    Theme.of(
+                                                              // —–––––––––––– Rândul cu avatar, nume și buton telefon ––––––––––––
+                                                              Row(
+                                                                children: [
+                                                                  CircleAvatar(
+                                                                    radius: 20,
+                                                                    backgroundColor:
+                                                                        Theme.of(
                                                                           context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .primary,
+                                                                        ).colorScheme.primary,
+                                                                    child: Text(
+                                                                      name.isNotEmpty
+                                                                          ? name[0]
+                                                                              .toUpperCase()
+                                                                          : 'A',
+                                                                      style: const TextStyle(
+                                                                        color:
+                                                                            Colors.white,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 8,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Column(
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .start,
+                                                                      children: [
+                                                                        Text(
+                                                                          name,
+                                                                          style: const TextStyle(
+                                                                            fontWeight:
+                                                                                FontWeight.bold,
+                                                                          ),
+                                                                        ),
+                                                                        if (showPhone[id] ??
+                                                                            false) ...[
+                                                                          const SizedBox(
+                                                                            height:
+                                                                                4,
+                                                                          ),
+                                                                          Text(
+                                                                            phone,
+                                                                            style: const TextStyle(
+                                                                              color:
+                                                                                  Colors.grey,
+                                                                            ),
+                                                                          ),
+                                                                        ],
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                  IconButton(
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .phone,
+                                                                    ),
+                                                                    color:
+                                                                        Theme.of(
+                                                                          context,
+                                                                        ).colorScheme.primary,
+                                                                    onPressed:
+                                                                        () =>
+                                                                            togglePhone(
+                                                                              id,
+                                                                            ),
+                                                                  ),
+                                                                ],
+                                                              ),
+
+                                                              const SizedBox(
+                                                                height: 7,
+                                                              ),
+
+                                                              // —–––––––––––– Textul „sau” centrat ––––––––––––
+                                                              const Center(
                                                                 child: Text(
-                                                                  name.isNotEmpty
-                                                                      ? name[0]
-                                                                          .toUpperCase()
-                                                                      : 'A',
-                                                                  style: const TextStyle(
+                                                                  'sau',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontStyle:
+                                                                        FontStyle
+                                                                            .italic,
                                                                     color:
                                                                         Colors
-                                                                            .white,
+                                                                            .grey,
                                                                   ),
                                                                 ),
                                                               ),
+
                                                               const SizedBox(
-                                                                width: 8,
+                                                                height: 12,
                                                               ),
-                                                              Expanded(
-                                                                child: Column(
-                                                                  crossAxisAlignment:
-                                                                      CrossAxisAlignment
-                                                                          .start,
-                                                                  children: [
-                                                                    Text(
-                                                                      name,
-                                                                      style: const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
+
+                                                              // —–––––––––––– Butonul „Programează o vizionare” ––––––––––––
+                                                              Center(
+                                                                child: ElevatedButton(
+                                                                  onPressed: () {
+                                                                    Navigator.push(
+                                                                      context,
+                                                                      MaterialPageRoute(
+                                                                        builder:
+                                                                            (
+                                                                              _,
+                                                                            ) => AddBookingPage(
+                                                                              agentId:
+                                                                                  agentId,
+                                                                              propertyId:
+                                                                                  id,
+                                                                            ),
                                                                       ),
-                                                                    ),
-                                                                    if (showPhone[id] ??
-                                                                        false) ...[
-                                                                      const SizedBox(
-                                                                        height:
-                                                                            4,
-                                                                      ),
-                                                                      Text(
-                                                                        phone,
-                                                                        style: const TextStyle(
-                                                                          color:
-                                                                              Colors.grey,
-                                                                        ),
-                                                                      ),
-                                                                    ],
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                              IconButton(
-                                                                icon: const Icon(
-                                                                  Icons.phone,
-                                                                ),
-                                                                color:
-                                                                    Theme.of(
+                                                                    );
+                                                                  },
+                                                                  style: ElevatedButton.styleFrom(
+                                                                    backgroundColor:
+                                                                        Theme.of(
                                                                           context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .primary,
-                                                                onPressed:
-                                                                    () =>
-                                                                        togglePhone(
-                                                                          id,
-                                                                        ),
+                                                                        ).colorScheme.primary,
+                                                                    padding: const EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          24,
+                                                                      vertical:
+                                                                          12,
+                                                                    ),
+                                                                    shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                            8,
+                                                                          ),
+                                                                    ),
+                                                                  ),
+                                                                  child: const Text(
+                                                                    'Programeaza o vizionare',
+                                                                    style: TextStyle(
+                                                                      fontSize:
+                                                                          14,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              SizedBox(
+                                                                height: 10,
                                                               ),
                                                             ],
                                                           );
                                                         },
                                                       ),
                                                     ] else ...[
-                                                      Text(
-                                                        data['agentName']
-                                                                as String? ??
-                                                            '',
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 14,
-                                                        ),
+                                                      // Dacă nu avem user logat, afișăm tot „nume agent + sau + buton”
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .stretch,
+                                                        children: [
+                                                          Text(
+                                                            data['agentName']
+                                                                    as String? ??
+                                                                '',
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 14,
+                                                                ),
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 7,
+                                                          ),
+                                                          //sau text
+                                                          const Center(
+                                                            child: Text(
+                                                              'sau',
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontStyle:
+                                                                    FontStyle
+                                                                        .italic,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                            ),
+                                                          ),
+
+                                                          const SizedBox(
+                                                            height: 12,
+                                                          ),
+
+                                                          Center(
+                                                            child: ElevatedButton(
+                                                              onPressed: () {
+                                                                Navigator.push(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder:
+                                                                        (_) =>
+                                                                            const FavoritesPage(),
+                                                                  ),
+                                                                );
+                                                              },
+                                                              style: ElevatedButton.styleFrom(
+                                                                backgroundColor:
+                                                                    Theme.of(
+                                                                          context,
+                                                                        )
+                                                                        .colorScheme
+                                                                        .primary,
+                                                                padding:
+                                                                    const EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          24,
+                                                                      vertical:
+                                                                          12,
+                                                                    ),
+                                                                shape: RoundedRectangleBorder(
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(
+                                                                        8,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: const Text(
+                                                                'Programeaza o vizionare',
+                                                                style:
+                                                                    TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ],
                                                   ],
@@ -1243,6 +1470,8 @@ class HomePageState extends State<HomePage> {
     required double width,
     required double height,
     required ValueChanged<String> onChanged,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       width: width,
@@ -1255,6 +1484,8 @@ class HomePageState extends State<HomePage> {
       ),
       child: TextField(
         textAlign: TextAlign.center,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,

@@ -146,6 +146,26 @@ class FavoritesPageState extends State<FavoritesPage> {
   /// Creaza o lista de Chip-uri in functie de categoria proprietatii
   List<Widget> buildChips(Map<String, dynamic> data) {
     switch (data['category'] as String? ?? '') {
+        case 'Garsoniera':
+        final g = data['garsonieraDetails'] as Map<String, dynamic>? ?? {};
+        return [
+          const Chip(
+            label: Text('1 camera'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${g['area'] ?? ''} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('Etaj ${g['floor'] ?? ''}'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('An ${g['yearBuilt'] ?? ''}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
       case 'Apartament':
         final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
         return [

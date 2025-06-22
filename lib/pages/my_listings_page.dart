@@ -96,6 +96,26 @@ class MyListingsPageState extends State<MyListingsPage> {
 
   List<Widget> buildChips(Map<String, dynamic> data) {
     switch (data['category'] as String? ?? '') {
+      case 'Garsoniera':
+        final g = data['garsonieraDetails'] as Map<String, dynamic>? ?? {};
+        return [
+          const Chip(
+            label: Text('1 camera'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('${g['area'] ?? ''} mp'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('Etaj ${g['floor'] ?? ''}'),
+            visualDensity: VisualDensity.compact,
+          ),
+          Chip(
+            label: Text('An ${g['yearBuilt'] ?? ''}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ];
       case 'Apartament':
         final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
         return [
@@ -165,10 +185,10 @@ class MyListingsPageState extends State<MyListingsPage> {
     }
   }
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
+      appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -177,7 +197,10 @@ class MyListingsPageState extends State<MyListingsPage> {
         child: StreamBuilder<QuerySnapshot>(
           stream:
               propertiesRef
-                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where(
+                    'userId',
+                    isEqualTo: FirebaseAuth.instance.currentUser?.uid,
+                  )
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
           builder: (ctx, snap) {
@@ -231,7 +254,6 @@ class MyListingsPageState extends State<MyListingsPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // ---- IMAGE STACK CU EDIT/DELETE ----
                                   Stack(
                                     children: [
                                       ClipRRect(
@@ -516,9 +538,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                   final newOffset =
                                                       (c.offset + 100).clamp(
                                                         0.0,
-                                                        c
-                                                            .position
-                                                            .maxScrollExtent,
+                                                        c.position.maxScrollExtent,
                                                       );
                                                   c.animateTo(
                                                     newOffset,

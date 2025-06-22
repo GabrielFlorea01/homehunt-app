@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -132,9 +131,6 @@ class AuthService {
   Future<void> signOut() async {
     try {
       await auth.signOut();
-      if (kIsWeb) {
-        await auth.signOut();
-      }
     } catch (e) {
       throw AuthException('Eroare la sign out. Incearca din nou');
     }

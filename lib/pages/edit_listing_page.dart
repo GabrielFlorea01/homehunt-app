@@ -347,30 +347,6 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
-  Widget buildTransactionTypeChips() {
-    final types = ['De vanzare', 'De inchiriat'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Tip tranzactie'),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children:
-              types
-                  .map(
-                    (t) => ChoiceChip(
-                      label: Text(t),
-                      selected: transactionType == t,
-                      onSelected: (_) => setState(() => transactionType = t),
-                    ),
-                  )
-                  .toList(),
-        ),
-      ],
-    );
-  }
-
   Widget buildLocalizareFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,7 +602,6 @@ class EditListingPageState extends State<EditListingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- same as in AddNewListingPage ---
         TextFormField(
           controller: titleController,
           decoration: const InputDecoration(
@@ -711,8 +686,6 @@ class EditListingPageState extends State<EditListingPage> {
           maxLines: 5,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
         const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
@@ -806,8 +779,6 @@ class EditListingPageState extends State<EditListingPage> {
           maxLength: 200,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
         const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
@@ -892,8 +863,6 @@ class EditListingPageState extends State<EditListingPage> {
           maxLength: 200,
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
-        const SizedBox(height: 10),
-        buildTransactionTypeChips(),
         const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
@@ -964,8 +933,6 @@ class EditListingPageState extends State<EditListingPage> {
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
         const SizedBox(height: 10),
-        buildTransactionTypeChips(),
-        const SizedBox(height: 20),
         buildLocalizareFields(),
       ],
     );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 import 'package:intl_phone_field/country_picker_dialog.dart';
@@ -40,15 +39,11 @@ class SignupPageState extends State<SignupPage> {
     try {
       await AuthService().signUp(
         emailController.text.trim(),
-        nameController.text.trim(),
         passwordController.text.trim(),
+        nameController.text.trim(),
         phoneController.text.trim(),
       );
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-      }
+      if (mounted) Navigator.of(context).pop();
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
     } finally {
