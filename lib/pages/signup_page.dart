@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/home_page.dart';
 import 'package:homehunt/pages/login_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 import 'package:intl_phone_field/country_picker_dialog.dart';
