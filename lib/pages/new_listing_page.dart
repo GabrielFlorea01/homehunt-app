@@ -576,7 +576,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         buildChoiceChips(
           'Numar camere',
-          ['1', '2', '3', '4', '5'],
+          ['1', '2', '3', '4', '5', '5+'],
           selectedNumarCamereApartament,
           (v) => setState(() => selectedNumarCamereApartament = v),
         ),
@@ -747,7 +747,10 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         buildChoiceChips(
           'Numar camere',
-          List.generate(10, (i) => '${i + 1}'),
+          [
+            for (var i = 1; i <= 10; i++) '$i',
+            '10+'                                    
+          ],
           selectedNumarCamereCasa,
           (v) => setState(() => selectedNumarCamereCasa = v),
         ),
