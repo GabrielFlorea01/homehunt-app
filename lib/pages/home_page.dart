@@ -86,15 +86,15 @@ class HomePageState extends State<HomePage> {
   Future<void> loadUserAndProperties() async {
     setState(() => isLoading = true);
 
-    // 1) preluăm user-ul curent
+    // 1) user-ul curent
     user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // dacă user-ul e null, nu încărcăm nimic
+      // daca user e null, nu afisam nimic
       setState(() => isLoading = false);
       return;
     }
 
-    // 2) ascultăm proprietățile (lista completă, pentru filtrare)
+    // 2)  proprietatile (lista completa, pentru filtrare)
     snapshotProperties = propertiesRef
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -111,7 +111,7 @@ class HomePageState extends State<HomePage> {
           },
           onError: (e) {
             if (!mounted) return;
-            setState(() => errorMessage = 'Eroare la încărcarea anunțurilor');
+            setState(() => errorMessage = 'Eroare la incărcarea anunyurilor');
           },
         );
 
@@ -289,7 +289,7 @@ class HomePageState extends State<HomePage> {
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('Sign out?'),
+            title: const Text('Sigur te deconectezi?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -378,7 +378,7 @@ class HomePageState extends State<HomePage> {
             visualDensity: VisualDensity.compact,
           ),
         ];
-        case 'Garsoniera':
+      case 'Garsoniera':
         final g = (data['garsonieraDetails'] as Map?) ?? {};
         return [
           Chip(label: Text('1 cameră'), visualDensity: VisualDensity.compact),
@@ -514,109 +514,130 @@ class HomePageState extends State<HomePage> {
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 30),
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: Text(
-                    user?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(fontSize: 32, color: Colors.white),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 30),
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: Text(
+                          user?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                      ListTile(
+                        leading: const Icon(Icons.home),
+                        title: const Text('Marketplace'),
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.favorite),
+                        title: const Text('Favorite'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const FavoritesPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.list_rounded),
+                        title: const Text('Anunturile mele'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyListingsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.assignment_outlined),
+                        title: const Text('Vizionari'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MyBookingsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(),
+                      // quick filters
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De vanzare';
+                            propertyFilter = 'Apartamente';
+                            applyFilters();
+                          },
+                          child: const Text('Apartamente de vânzare'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De inchiriat';
+                            propertyFilter = 'Apartamente';
+                            applyFilters();
+                          },
+                          child: const Text('Apartamente de închiriat'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 50),
-                ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Marketplace'),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.favorite),
-                  title: const Text('Favorite'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const FavoritesPage()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.list_rounded),
-                  title: const Text('Anunturile mele'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyListingsPage()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.assignment_outlined),
-                  title: const Text('Vizionari'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyBookingsPage()),
-                    );
-                  },
-                ),
-                const Divider(),
-                // quick filters
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      transactionType = 'De vanzare';
-                      propertyFilter = 'Apartamente';
-                      applyFilters();
-                    },
-                    child: const Text('Apartamente de vânzare'),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      transactionType = 'De inchiriat';
-                      propertyFilter = 'Apartamente';
-                      applyFilters();
-                    },
-                    child: const Text('Apartamente de închiriat'),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
+              ),
+              const SizedBox(height: 30),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ElevatedButton(
                   onPressed: addListing,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)
                   ),
                   child: const Text(
-                    'Adaugă anunț',
+                    'Adauga anunt nou',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
-                const SizedBox(height: 20),
-                TextButton(
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TextButton(
                   onPressed: confirmSignOut,
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).colorScheme.primary,
                   ),
                   child: const Text('Deconectare'),
                 ),
-                const SizedBox(height: 30),
-              ],
-            ),
+              ),
+              const SizedBox(height: 30),
+            ],
           ),
         ),
       ),
@@ -1146,35 +1167,22 @@ class HomePageState extends State<HomePage> {
                                                     const SizedBox(height: 20),
                                                     // agentii din card
                                                     if (user != null) ...[
-                                                      FutureBuilder<
-                                                        DocumentSnapshot
-                                                      >(
-                                                        future:
-                                                            FirebaseFirestore
-                                                                .instance
-                                                                .collection(
-                                                                  'agents',
-                                                                )
-                                                                .doc(
-                                                                  data['agentId']
-                                                                      as String,
-                                                                )
-                                                                .get(),
-                                                        builder: (
-                                                          ctx,
-                                                          snapAgent,
-                                                        ) {
-                                                          final name =
-                                                              data['agentName']
-                                                                  as String? ??
-                                                              '';
-                                                          final phone =
-                                                              snapAgent.hasData
-                                                                  ? (snapAgent.data!['phone']
-                                                                          as String? ??
-                                                                      '')
-                                                                  : '';
-
+                                                    FutureBuilder<DocumentSnapshot>(
+                                                      future: FirebaseFirestore.instance
+                                                          .collection('agents')
+                                                          .doc(data['agentId'] as String)
+                                                          .get(),
+                                                      builder: (ctx, snapAgent) {
+                                                        if (snapAgent.hasError) {
+                                                          return const Text('Eroare la agent');
+                                                        }
+                                                        if (!snapAgent.hasData || !snapAgent.data!.exists) {
+                                                          // agentul a fost sters sau nu exista
+                                                          return const Text('Agent inexistent');
+                                                        }
+                                                        final agentDoc = snapAgent.data!;
+                                                        final name = agentDoc.get('name') as String;
+                                                        final phone = agentDoc.get('phone') as String;
                                                           // Înlocuim return-ul simplu cu un Column
                                                           return Column(
                                                             crossAxisAlignment:

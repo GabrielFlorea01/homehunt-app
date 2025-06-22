@@ -142,6 +142,34 @@ class NewListingPageState extends State<NewListingPage> {
     });
   }
 
+  Widget buildAgentDropdown() {
+    return DropdownButtonFormField<String>(
+      decoration: const InputDecoration(
+        labelText: 'Alege agentul',
+        border: OutlineInputBorder(),
+      ),
+      isExpanded: true,
+      value: selectedAgentId,
+      validator: (v) => v == null ? 'Selecteaza agentul' : null,
+      items: agents.map((a) {
+        return DropdownMenuItem<String>(
+          value: a['id'] as String,
+          child: Text(a['name'] as String),
+        );
+      }).toList(),
+      onChanged: (id) {
+        setState(() {
+          selectedAgentId   = id;
+          selectedAgentName = agents
+            .firstWhere((a) => a['id'] == id)['name']
+            as String;
+        });
+      },
+    );
+  }
+
+
+
   Future<void> pickImages() async {
     final pics = await picker.pickMultiImage(maxWidth: 1200, imageQuality: 80);
     if (pics.isEmpty) return;
@@ -254,17 +282,26 @@ class NewListingPageState extends State<NewListingPage> {
           };
           break;
       }
-
+//adaugam datele pentru proprietate
       final docRef = await FirebaseFirestore.instance
           .collection('properties')
           .add(data);
 
+//actualizam imaginile pentru proprietate
       final allUrls = await uploadImages(docRef.id);
       await docRef.update({'images': allUrls});
 
+//actualizam lista cu prop pentru agenti
+      await FirebaseFirestore.instance
+      .collection('agents')
+      .doc(selectedAgentId)
+      .update({
+        'properties': FieldValue.arrayUnion([docRef.id]),
+      });
+
       if (!mounted) return;
       setState(() => successMessage = 'Anunt publicat cu succes');
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
@@ -1077,32 +1114,7 @@ class NewListingPageState extends State<NewListingPage> {
                 const SizedBox(height: 30),
 
                 // agent dropdown
-                agents.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Alege agentul',
-                        border: OutlineInputBorder(),
-                      ),
-                      value: selectedAgentName,
-                      validator: (v) => v == null ? 'Selecteaza agentul' : null,
-                      items:
-                          agents
-                              .map(
-                                (a) => DropdownMenuItem<String>(
-                                  value: a['name'] as String,
-                                  child: Text(a['name'] as String),
-                                ),
-                              )
-                              .toList(),
-                      onChanged:
-                          (v) => setState(() {
-                            selectedAgentName = v;
-                            selectedAgentId =
-                                agents.firstWhere((a) => a['name'] == v)['id']
-                                    as String;
-                          }),
-                    ),
+                buildAgentDropdown(),
                 const SizedBox(height: 40),
 
                 // publish button
