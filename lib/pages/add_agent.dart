@@ -27,6 +27,8 @@ class AddAgentPageState extends State<AddAgentPage> {
       'properties': <String>[]
     });
 
+    if(!mounted) return;
+
     setState(() => isSaving = false);
     Navigator.of(context).pop();
   }
