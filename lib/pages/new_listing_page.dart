@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:intl/intl.dart';
 
 class NewListingPage extends StatefulWidget {
   const NewListingPage({super.key});
@@ -311,6 +312,19 @@ class NewListingPageState extends State<NewListingPage> {
       if (!mounted) return;
       setState(() => isLoading = false);
     }
+  }
+
+    void formatPrice(String text) {
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      priceController.clear();
+      return;
+    }
+    final formatted = NumberFormat.decimalPattern('ro').format(int.parse(digits));
+    priceController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 
   Widget buildChoiceChips(
@@ -669,6 +683,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
+          onChanged: formatPrice,
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -743,6 +758,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
+          onChanged: formatPrice,
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -840,6 +856,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
+          onChanged: formatPrice,
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -925,6 +942,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
+          onChanged: formatPrice,
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -995,6 +1013,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
+          onChanged: formatPrice,
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),

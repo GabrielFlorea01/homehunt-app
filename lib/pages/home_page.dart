@@ -16,6 +16,7 @@ import 'package:homehunt/pages/new_listing_page.dart';
 import 'package:homehunt/pages/profile_page.dart';
 import 'package:homehunt/pages/my_listings_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:intl/intl.dart';
 
 /// Geocode a plain address into coordinates
 Future<LatLng?> geocodeAddress(String address) async {
@@ -1003,7 +1004,7 @@ class HomePageState extends State<HomePage> {
                                                     ),
                                                   ),
                                                   subtitle: Text(
-                                                    '€ ${(data['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                                    '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
                                                   ),
                                                   childrenPadding:
                                                       const EdgeInsets.symmetric(

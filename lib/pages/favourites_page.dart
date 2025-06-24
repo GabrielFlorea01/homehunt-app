@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:homehunt/firebase/secrets/api_key.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 /// Converteste o adresa text intr-un obiect LatLng (latitudine/longitudine)
 Future<LatLng?> geocodeAddress(String address) async {
@@ -460,7 +461,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                                             ),
                                           ),
                                           subtitle: Text(
-                                            '€ ${(data['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                            '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
                                           ),
                                           childrenPadding:
                                               const EdgeInsets.symmetric(

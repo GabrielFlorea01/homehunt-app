@@ -7,6 +7,7 @@ import 'package:homehunt/firebase/secrets/api_key.dart';
 import 'package:homehunt/pages/gallery_view.dart';
 import 'package:homehunt/pages/edit_listing_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 /// Geocode a plain address into coordinates
 Future<LatLng?> geocodeAddress(String address) async {
@@ -410,7 +411,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                       ),
                                     ),
                                     subtitle: Text(
-                                      '€ ${(data['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                      '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
                                     ),
                                     childrenPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
