@@ -51,7 +51,7 @@ class RapoartePage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Selectează raportul',
+                'Selecteaza raportul',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
