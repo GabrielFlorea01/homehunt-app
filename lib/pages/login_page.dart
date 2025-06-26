@@ -70,32 +70,6 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-    Future<void> facebookSignIn() async {
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-
-    try {
-      await AuthService().facebookSignIn();
-    } on AuthException catch (e) {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          errorMessage = e.message;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          errorMessage = "A aparut o eroare";
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -221,21 +195,6 @@ class LoginPageState extends State<LoginPage> {
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
                     side: const BorderSide(color: Colors.black, width: 0.5),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                FilledButton.icon(
-                  onPressed: isLoading ? null : facebookSignIn,
-                  icon: Image.asset(
-                    'lib/images/facebook.png',
-                    width: 20,
-                    height: 22,
-                  ),
-                  label: const Text('Continua cu Facebook'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.blueAccent, width: 0.5),
                   ),
                 ),
                 const SizedBox(height: 32),

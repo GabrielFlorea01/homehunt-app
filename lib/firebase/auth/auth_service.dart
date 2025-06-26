@@ -86,32 +86,6 @@ class AuthService {
     }
   }
 
-  Future<void> facebookSignIn() async {
-    try {
-      final facebookProvider = FacebookAuthProvider();
-      facebookProvider.setCustomParameters({'display': 'popup'});
-
-      final userCredential = await auth.signInWithPopup(facebookProvider);
-      final user = userCredential.user;
-
-      if (user == null) {
-        throw AuthException('Nu s-a returnat niciun user de la Facebook.');
-      }
-
-      final doc = await firestore.collection('users').doc(user.uid).get();
-      if (!doc.exists) {
-        await firestore.collection('users').doc(user.uid).set({
-          'email': user.email,
-          'name': user.displayName ?? '',
-          'phone': user.phoneNumber ?? '',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      throw AuthException('Logarea cu Facebook a esuat');
-    }
-  }
-
   Future<void> forgotPassword(String email) async {
     try {
       await auth.sendPasswordResetEmail(email: email);
