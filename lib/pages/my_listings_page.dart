@@ -220,9 +220,7 @@ class MyListingsPageState extends State<MyListingsPage> {
             return SingleChildScrollView(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 850),
-                  child: FractionallySizedBox(
-                    widthFactor: 0.5,
+                  constraints: const BoxConstraints(maxWidth: 600),
                     child: Column(
                       children:
                           docs.asMap().entries.map((entry) {
@@ -398,252 +396,264 @@ class MyListingsPageState extends State<MyListingsPage> {
                                     ],
                                   ),
 
-                                  // ---- DETALII & EXPANSIONTILE ----
-                                  ExpansionTile(
-                                    tilePadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    title: Text(
-                                      data['title'] as String? ?? '',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                    // ---- DETALII & EXPANSIONTILE ----
+                                    ExpansionTile(
+                                      tilePadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
                                       ),
-                                    ),
-                                    subtitle: Text(
-                                      '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
-                                    ),
-                                    childrenPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    children: [
-                                      if (fullAddress.isNotEmpty)
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on,
-                                              size: 16,
-                                              color: Colors.grey,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                fullAddress,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                      title: Text(
+                                        data['title'] as String? ?? '',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                      const SizedBox(height: 8),
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 4,
-                                        children: buildChips(data),
                                       ),
-                                      if ((data['description'] as String?)
-                                              ?.isNotEmpty ??
-                                          false) ...[
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          data['description'] as String,
-                                          style: const TextStyle(fontSize: 14),
-                                        ),
-                                      ],
-                                      if (images.length > 1) ...[
-                                        const SizedBox(height: 8),
-                                        SizedBox(
-                                          height: 100,
-                                          child: Row(
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.arrow_back_ios,
-                                                ),
-                                                onPressed: () {
-                                                  final c =
-                                                      scrollControllers[i]!;
-                                                  final newOffset =
-                                                      (c.offset - 100).clamp(
-                                                        0.0,
-                                                        c
-                                                            .position
-                                                            .maxScrollExtent,
-                                                      );
-                                                  c.animateTo(
-                                                    newOffset,
-                                                    duration: const Duration(
-                                                      milliseconds: 300,
-                                                    ),
-                                                    curve: Curves.easeInOut,
-                                                  );
-                                                },
-                                              ),
-                                              Expanded(
-                                                child: ListView.separated(
-                                                  controller:
-                                                      scrollControllers[i]!,
-                                                  scrollDirection:
-                                                      Axis.horizontal,
-                                                  itemCount: images.length,
-                                                  separatorBuilder:
-                                                      (_, __) => const SizedBox(
-                                                        width: 8,
-                                                      ),
-                                                  itemBuilder:
-                                                      (
-                                                        _,
-                                                        idx,
-                                                      ) => GestureDetector(
-                                                        onTap:
-                                                            () => openGallery(
-                                                              context,
-                                                              images,
-                                                              idx,
-                                                            ),
-                                                        child: ClipRRect(
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                6,
-                                                              ),
-                                                          child: Image.network(
-                                                            images[idx],
-                                                            width: 100,
-                                                            height: 100,
-                                                            fit: BoxFit.cover,
-                                                            errorBuilder:
-                                                                (
-                                                                  _,
-                                                                  __,
-                                                                  ___,
-                                                                ) => Container(
-                                                                  color:
-                                                                      Colors
-                                                                          .grey
-                                                                          .shade300,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(
-                                                  Icons.arrow_forward_ios,
-                                                ),
-                                                onPressed: () {
-                                                  final c =
-                                                      scrollControllers[i]!;
-                                                  final newOffset =
-                                                      (c.offset + 100).clamp(
-                                                        0.0,
-                                                        c.position.maxScrollExtent,
-                                                      );
-                                                  c.animateTo(
-                                                    newOffset,
-                                                    duration: const Duration(
-                                                      milliseconds: 300,
-                                                    ),
-                                                    curve: Curves.easeInOut,
-                                                  );
-                                                },
-                                              ),
-                                            ],
+                                      subtitle: Text(
+                                        '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
+                                      ),
+                                      childrenPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
                                           ),
-                                        ),
-                                      ],
-                                      const SizedBox(height: 8),
-                                      buildMapSection(fullAddress),
-                                      const SizedBox(height: 8),
-
-                                      // Agent row cu toggle telefon
-                                      FutureBuilder<DocumentSnapshot>(
-                                        future:
-                                            FirebaseFirestore.instance
-                                                .collection('agents')
-                                                .doc(data['agentId'] as String)
-                                                .get(),
-                                        builder: (ctx, snapAgent) {
-                                          final name =
-                                              data['agentName'] as String? ??
-                                              '';
-                                          final phone =
-                                              snapAgent.hasData
-                                                  ? (snapAgent.data!['phone']
-                                                          as String? ??
-                                                      '')
-                                                  : '';
-                                          return Row(
+                                      children: [
+                                        if (fullAddress.isNotEmpty)
+                                          Row(
                                             children: [
-                                              CircleAvatar(
-                                                radius: 20,
-                                                backgroundColor:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
+                                              const Icon(
+                                                Icons.location_on,
+                                                size: 16,
+                                                color: Colors.grey,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
                                                 child: Text(
-                                                  name.isNotEmpty
-                                                      ? name[0].toUpperCase()
-                                                      : 'A',
+                                                  fullAddress,
                                                   style: const TextStyle(
-                                                    color: Colors.white,
+                                                    fontSize: 14,
                                                   ),
                                                 ),
                                               ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      name,
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                            ],
+                                          ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: buildChips(data),
+                                        ),
+                                        if ((data['description'] as String?)
+                                                ?.isNotEmpty ??
+                                            false) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            data['description'] as String,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                        if (images.length > 1) ...[
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            height: 100,
+                                            child: Row(
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.arrow_back_ios,
+                                                  ),
+                                                  onPressed: () {
+                                                    final c =
+                                                        scrollControllers[i]!;
+                                                    final newOffset =
+                                                        (c.offset - 100).clamp(
+                                                          0.0,
+                                                          c
+                                                              .position
+                                                              .maxScrollExtent,
+                                                        );
+                                                    c.animateTo(
+                                                      newOffset,
+                                                      duration: const Duration(
+                                                        milliseconds: 300,
                                                       ),
+                                                      curve: Curves.easeInOut,
+                                                    );
+                                                  },
+                                                ),
+                                                Expanded(
+                                                  child: ListView.separated(
+                                                    controller:
+                                                        scrollControllers[i]!,
+                                                    scrollDirection:
+                                                        Axis.horizontal,
+                                                    itemCount: images.length,
+                                                    separatorBuilder:
+                                                        (_, __) =>
+                                                            const SizedBox(
+                                                              width: 8,
+                                                            ),
+                                                    itemBuilder:
+                                                        (
+                                                          _,
+                                                          idx,
+                                                        ) => GestureDetector(
+                                                          onTap:
+                                                              () => openGallery(
+                                                                context,
+                                                                images,
+                                                                idx,
+                                                              ),
+                                                          child: ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  6,
+                                                                ),
+                                                            child: Image.network(
+                                                              images[idx],
+                                                              width: 100,
+                                                              height: 100,
+                                                              fit: BoxFit.cover,
+                                                              errorBuilder:
+                                                                  (
+                                                                    _,
+                                                                    __,
+                                                                    ___,
+                                                                  ) => Container(
+                                                                    color:
+                                                                        Colors
+                                                                            .grey
+                                                                            .shade300,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.arrow_forward_ios,
+                                                  ),
+                                                  onPressed: () {
+                                                    final c =
+                                                        scrollControllers[i]!;
+                                                    final newOffset =
+                                                        (c.offset + 100).clamp(
+                                                          0.0,
+                                                          c
+                                                              .position
+                                                              .maxScrollExtent,
+                                                        );
+                                                    c.animateTo(
+                                                      newOffset,
+                                                      duration: const Duration(
+                                                        milliseconds: 300,
+                                                      ),
+                                                      curve: Curves.easeInOut,
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 8),
+                                        buildMapSection(fullAddress),
+                                        const SizedBox(height: 8),
+
+                                        // Agent row cu toggle telefon
+                                        FutureBuilder<DocumentSnapshot>(
+                                          future:
+                                              FirebaseFirestore.instance
+                                                  .collection('agents')
+                                                  .doc(
+                                                    data['agentId'] as String,
+                                                  )
+                                                  .get(),
+                                          builder: (ctx, snapAgent) {
+                                            final name =
+                                                data['agentName'] as String? ??
+                                                '';
+                                            final phone =
+                                                snapAgent.hasData
+                                                    ? (snapAgent.data!['phone']
+                                                            as String? ??
+                                                        '')
+                                                    : '';
+                                            return Row(
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 20,
+                                                  backgroundColor:
+                                                      Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                  child: Text(
+                                                    name.isNotEmpty
+                                                        ? name[0].toUpperCase()
+                                                        : 'A',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
                                                     ),
-                                                    if (showPhone[data['id']] ??
-                                                        false) ...[
-                                                      const SizedBox(height: 4),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
                                                       Text(
-                                                        phone,
+                                                        name,
                                                         style: const TextStyle(
-                                                          color: Colors.grey,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
                                                       ),
+                                                      if (showPhone[data['id']] ??
+                                                          false) ...[
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          phone,
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                        ),
+                                                      ],
                                                     ],
-                                                  ],
+                                                  ),
                                                 ),
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.phone),
-                                                color:
-                                                    Theme.of(
-                                                      context,
-                                                    ).colorScheme.primary,
-                                                onPressed:
-                                                    () => togglePhone(
-                                                      data['id'] as String,
-                                                    ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
+                                                IconButton(
+                                                  icon: const Icon(Icons.phone),
+                                                  color:
+                                                      Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                  onPressed:
+                                                      () => togglePhone(
+                                                        data['id'] as String,
+                                                      ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
                           }).toList(),
                     ),
                   ),
                 ),
-              ),
-            );
+              );
           },
         ),
       ),

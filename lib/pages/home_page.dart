@@ -457,7 +457,6 @@ class HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
@@ -618,7 +617,10 @@ class HomePageState extends State<HomePage> {
                   onPressed: addListing,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 15,
+                    ),
                   ),
                   child: const Text(
                     'Adauga anunt nou',
@@ -647,334 +649,348 @@ class HomePageState extends State<HomePage> {
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Column(
-                children: [
-                  // Top filters (identice cu ce aveai)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Column(
-                      children: [
-                        if (errorMessage != null) ...[
-                          ErrorBanner(
-                            message: errorMessage!,
-                            onDismiss: clearError,
+              : Center(
+                child: Column(
+                  children: [
+                    // Top filters
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Column(
+                        children: [
+                          if (errorMessage != null) ...[
+                            ErrorBanner(
+                              message: errorMessage!,
+                              onDismiss: clearError,
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                buildTextField(
+                                  hint: 'Titlu',
+                                  width: 150,
+                                  height: 51,
+                                  onChanged: (v) {
+                                    titleFilter = v;
+                                    applyFilters();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                buildDropdown(
+                                  value: transactionType,
+                                  items: const [
+                                    'Toate',
+                                    'De vanzare',
+                                    'De inchiriat',
+                                  ],
+                                  onChanged: (v) {
+                                    transactionType = v!;
+                                    applyFilters();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                buildTextField(
+                                  hint: 'Localitate',
+                                  width: 150,
+                                  height: 51,
+                                  onChanged: (v) {
+                                    locationFilter = v;
+                                    applyFilters();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                buildDropdown(
+                                  value: propertyFilter,
+                                  items: const [
+                                    'Tip de proprietate',
+                                    'Apartamente',
+                                    'Garsoniere',
+                                    'Case',
+                                    'Teren',
+                                    'Spatii comerciale',
+                                    'Birouri',
+                                  ],
+                                  onChanged: (v) {
+                                    propertyFilter = v!;
+                                    applyFilters();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                buildTextField(
+                                  hint: 'Camere',
+                                  width: 150,
+                                  height: 51,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  onChanged: (v) {
+                                    roomFilter = v.isEmpty ? null : v;
+                                    applyFilters();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                buildDropdown(
+                                  value: 'Pret',
+                                  items: const [
+                                    'Pret',
+                                    '< 50.000',
+                                    '50.000 - 100.000',
+                                    '100.000 - 200.000',
+                                    '> 200.000',
+                                  ],
+                                  onChanged: (v) {
+                                    if (v == '< 50.000') {
+                                      minPrice = 0;
+                                      maxPrice = 50000;
+                                    } else if (v == '50.000 - 100.000') {
+                                      minPrice = 50000;
+                                      maxPrice = 100000;
+                                    } else if (v == '100.000 - 200.000') {
+                                      minPrice = 100000;
+                                      maxPrice = 200000;
+                                    } else if (v == '> 200.000') {
+                                      minPrice = 200000;
+                                      maxPrice = null;
+                                    } else {
+                                      minPrice = maxPrice = null;
+                                    }
+                                    applyFilters();
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 8),
                         ],
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              buildTextField(
-                                hint: 'Titlu',
-                                width: 150,
-                                height: 51,
-                                onChanged: (v) {
-                                  titleFilter = v;
-                                  applyFilters();
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              buildDropdown(
-                                value: transactionType,
-                                items: const [
-                                  'Toate',
-                                  'De vanzare',
-                                  'De inchiriat',
-                                ],
-                                onChanged: (v) {
-                                  transactionType = v!;
-                                  applyFilters();
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              buildTextField(
-                                hint: 'Localitate',
-                                width: 150,
-                                height: 51,
-                                onChanged: (v) {
-                                  locationFilter = v;
-                                  applyFilters();
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              buildDropdown(
-                                value: propertyFilter,
-                                items: const [
-                                  'Tip de proprietate',
-                                  'Apartamente',
-                                  'Garsoniere',
-                                  'Case',
-                                  'Teren',
-                                  'Spatii comerciale',
-                                  'Birouri',
-                                ],
-                                onChanged: (v) {
-                                  propertyFilter = v!;
-                                  applyFilters();
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              buildTextField(
-                                hint: 'Camere',
-                                width: 150,
-                                height: 51,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                onChanged: (v) {
-                                  roomFilter = v.isEmpty ? null : v;
-                                  applyFilters();
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              buildDropdown(
-                                value: 'Pret',
-                                items: const [
-                                  'Pret',
-                                  '< 50.000',
-                                  '50.000 - 100.000',
-                                  '100.000 - 200.000',
-                                  '> 200.000',
-                                ],
-                                onChanged: (v) {
-                                  if (v == '< 50.000') {
-                                    minPrice = 0;
-                                    maxPrice = 50000;
-                                  } else if (v == '50.000 - 100.000') {
-                                    minPrice = 50000;
-                                    maxPrice = 100000;
-                                  } else if (v == '100.000 - 200.000') {
-                                    minPrice = 100000;
-                                    maxPrice = 200000;
-                                  } else if (v == '> 200.000') {
-                                    minPrice = 200000;
-                                    maxPrice = null;
-                                  } else {
-                                    minPrice = maxPrice = null;
-                                  }
-                                  applyFilters();
-                                },
-                              ),
-                            ],
+                      ),
+                    ),
+
+                    // Results count & sort
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'S-au gasit ${filteredListings.length} rezultate',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Results count & sort
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          'S-au gasit ${filteredListings.length} rezultate',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const Spacer(),
-                        DropdownButton<String>(
-                          value: selectedSort,
-                          items:
-                              const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
-                                  .map(
-                                    (t) => DropdownMenuItem(
-                                      value: t,
-                                      child: Text(t),
+                          const Spacer(),
+                          DropdownButton<String>(
+                            value: selectedSort,
+                            items:
+                                const ['Cele mai noi', 'Pret ↑', 'Pret ↓']
+                                    .map(
+                                      (t) => DropdownMenuItem(
+                                        value: t,
+                                        child: Text(t),
+                                      ),
+                                    )
+                                    .toList(),
+                            onChanged: (t) {
+                              if (t == null) return;
+                              setState(() {
+                                selectedSort = t;
+                                if (selectedSort == 'Pret ↑') {
+                                  filteredListings.sort(
+                                    (a, b) => (a['price'] as num).compareTo(
+                                      b['price'] as num,
                                     ),
-                                  )
-                                  .toList(),
-                          onChanged: (t) {
-                            if (t == null) return;
-                            setState(() {
-                              selectedSort = t;
-                              if (selectedSort == 'Pret ↑') {
-                                filteredListings.sort(
-                                  (a, b) => (a['price'] as num).compareTo(
-                                    b['price'] as num,
-                                  ),
-                                );
-                              } else if (selectedSort == 'Pret ↓') {
-                                filteredListings.sort(
-                                  (a, b) => (b['price'] as num).compareTo(
-                                    a['price'] as num,
-                                  ),
-                                );
-                              } else {
-                                filteredListings.sort(
-                                  (a, b) => (b['createdAt'] as Timestamp)
-                                      .compareTo(a['createdAt'] as Timestamp),
-                                );
-                              }
-                            });
-                          },
-                        ),
-                      ],
+                                  );
+                                } else if (selectedSort == 'Pret ↓') {
+                                  filteredListings.sort(
+                                    (a, b) => (b['price'] as num).compareTo(
+                                      a['price'] as num,
+                                    ),
+                                  );
+                                } else {
+                                  filteredListings.sort(
+                                    (a, b) => (b['createdAt'] as Timestamp)
+                                        .compareTo(a['createdAt'] as Timestamp),
+                                  );
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // Listings
-                  Expanded(
-                    child:
-                        filteredListings.isEmpty
-                            ? const Center(child: Text('Nu exista anunturi'))
-                            : SingleChildScrollView(
-                              child: Center(
-                                child: FractionallySizedBox(
-                                  widthFactor: 0.5,
-                                  child: Column(
-                                    children:
-                                        filteredListings.map((data) {
-                                          final id = data['id'] as String;
-                                          final agentId =
-                                              data['agentId'] as String;
-                                          galleryControllers.putIfAbsent(
-                                            id,
-                                            () => ScrollController(),
-                                          );
+                    // Listings
+                    Expanded(
+                      child:
+                          filteredListings.isEmpty
+                              ? const Center(child: Text('Nu exista anunturi'))
+                              : SingleChildScrollView(
+                                child: Center(
+                                  child: FractionallySizedBox(
+                                    widthFactor: 0.5,
+                                    child: Column(
+                                      children:
+                                          filteredListings.map((data) {
+                                            final id = data['id'] as String;
+                                            final agentId =
+                                                data['agentId'] as String;
+                                            galleryControllers.putIfAbsent(
+                                              id,
+                                              () => ScrollController(),
+                                            );
 
-                                          // build full address
-                                          final loc =
-                                              (data['location'] as Map?) ?? {};
-                                          final fullAddress = [
-                                                loc['street'] ?? '',
-                                                loc['number'] ?? '',
-                                                if ((loc['sector'] ?? '')
-                                                    .toString()
-                                                    .isNotEmpty)
-                                                  'Sector ${loc['sector']}',
-                                                loc['city'] ?? '',
-                                                loc['county'] ?? '',
-                                              ]
-                                              .where((s) => s.trim().isNotEmpty)
-                                              .join(', ');
+                                            // build full address
+                                            final loc =
+                                                (data['location'] as Map?) ??
+                                                {};
+                                            final fullAddress = [
+                                                  loc['street'] ?? '',
+                                                  loc['number'] ?? '',
+                                                  if ((loc['sector'] ?? '')
+                                                      .toString()
+                                                      .isNotEmpty)
+                                                    'Sector ${loc['sector']}',
+                                                  loc['city'] ?? '',
+                                                  loc['county'] ?? '',
+                                                ]
+                                                .where(
+                                                  (s) => s.trim().isNotEmpty,
+                                                )
+                                                .join(', ');
 
-                                          final images = List<String>.from(
-                                            data['images'] as List? ?? [],
-                                          );
+                                            final images = List<String>.from(
+                                              data['images'] as List? ?? [],
+                                            );
 
-                                          return Card(
-                                            margin: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            elevation: 2,
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                // Image + favorite + tag
-                                                Stack(
+                                            return ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                maxWidth: 700,
+                                              ),
+                                              child: Card(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                elevation: 2,
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
-                                                    ClipRRect(
-                                                      borderRadius:
-                                                          const BorderRadius.vertical(
-                                                            top:
-                                                                Radius.circular(
-                                                                  12,
-                                                                ),
+                                                    // Image + favorite + tag
+                                                    Stack(
+                                                      children: [
+                                                        ClipRRect(
+                                                          borderRadius:
+                                                              const BorderRadius.vertical(
+                                                                top:
+                                                                    Radius.circular(
+                                                                      12,
+                                                                    ),
+                                                              ),
+                                                          child: AspectRatio(
+                                                            aspectRatio: 16 / 9,
+                                                            child:
+                                                                images.isNotEmpty
+                                                                    ? Image.network(
+                                                                      images
+                                                                          .first,
+                                                                      fit:
+                                                                          BoxFit
+                                                                              .cover,
+                                                                      errorBuilder:
+                                                                          (
+                                                                            _,
+                                                                            __,
+                                                                            ___,
+                                                                          ) => Container(
+                                                                            color:
+                                                                                Colors.grey.shade300,
+                                                                          ),
+                                                                    )
+                                                                    : Container(
+                                                                      color:
+                                                                          Colors
+                                                                              .grey
+                                                                              .shade300,
+                                                                    ),
                                                           ),
-                                                      child: AspectRatio(
-                                                        aspectRatio: 16 / 9,
-                                                        child:
-                                                            images.isNotEmpty
-                                                                ? Image.network(
-                                                                  images.first,
-                                                                  fit:
-                                                                      BoxFit
-                                                                          .cover,
-                                                                  errorBuilder:
-                                                                      (
-                                                                        _,
-                                                                        __,
-                                                                        ___,
-                                                                      ) => Container(
-                                                                        color:
-                                                                            Colors.grey.shade300,
-                                                                      ),
-                                                                )
-                                                                : Container(
+                                                        ),
+                                                        // Butonul de Favorite (inima)
+                                                        Positioned(
+                                                          top: 8,
+                                                          right: 8,
+                                                          child: Container(
+                                                            decoration:
+                                                                const BoxDecoration(
                                                                   color:
                                                                       Colors
-                                                                          .grey
-                                                                          .shade300,
+                                                                          .white,
+                                                                  shape:
+                                                                      BoxShape
+                                                                          .circle,
                                                                 ),
-                                                      ),
-                                                    ),
-                                                    // Butonul de Favorite (inima)
-                                                    Positioned(
-                                                      top: 8,
-                                                      right: 8,
-                                                      child: Container(
-                                                        decoration:
-                                                            const BoxDecoration(
-                                                              color:
-                                                                  Colors.white,
-                                                              shape:
-                                                                  BoxShape
-                                                                      .circle,
-                                                            ),
-                                                        child: IconButton(
-                                                          icon: Icon(
-                                                            favoriteIds
-                                                                    .contains(
-                                                                      id,
-                                                                    )
-                                                                ? Icons.favorite
-                                                                : Icons
-                                                                    .favorite_border,
-                                                            color:
+                                                            child: IconButton(
+                                                              icon: Icon(
                                                                 favoriteIds
                                                                         .contains(
                                                                           id,
                                                                         )
-                                                                    ? Colors.red
-                                                                    : Colors
-                                                                        .grey,
-                                                          ),
-                                                          onPressed:
-                                                              () =>
-                                                                  toggleFavorite(
-                                                                    id,
-                                                                  ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    Positioned(
-                                                      bottom: 8,
-                                                      left: 8,
-                                                      child: Container(
-                                                        padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 8,
-                                                              vertical: 4,
-                                                            ),
-                                                        decoration: BoxDecoration(
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .primary,
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                4,
+                                                                    ? Icons
+                                                                        .favorite
+                                                                    : Icons
+                                                                        .favorite_border,
+                                                                color:
+                                                                    favoriteIds
+                                                                            .contains(
+                                                                              id,
+                                                                            )
+                                                                        ? Colors
+                                                                            .red
+                                                                        : Colors
+                                                                            .grey,
                                                               ),
+                                                              onPressed:
+                                                                  () =>
+                                                                      toggleFavorite(
+                                                                        id,
+                                                                      ),
+                                                            ),
+                                                          ),
                                                         ),
-                                                        child: Text(
-                                                          data['type']
-                                                                  as String? ??
-                                                              '',
-                                                          style:
-                                                              const TextStyle(
+                                                        Positioned(
+                                                          bottom: 8,
+                                                          left: 8,
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  Theme.of(
+                                                                        context,
+                                                                      )
+                                                                      .colorScheme
+                                                                      .primary,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    4,
+                                                                  ),
+                                                            ),
+                                                            child: Text(
+                                                              data['type']
+                                                                      as String? ??
+                                                                  '',
+                                                              style: const TextStyle(
                                                                 color:
                                                                     Colors
                                                                         .white,
@@ -982,290 +998,419 @@ class HomePageState extends State<HomePage> {
                                                                     FontWeight
                                                                         .bold,
                                                               ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+
+                                                    // Details & ExpansionTile
+                                                    ExpansionTile(
+                                                      tilePadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8,
+                                                          ),
+                                                      title: Text(
+                                                        data['title']
+                                                                as String? ??
+                                                            '',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
                                                       ),
-                                                    ),
-                                                  ],
-                                                ),
-
-                                                // Details & ExpansionTile
-                                                ExpansionTile(
-                                                  tilePadding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 16,
-                                                        vertical: 8,
+                                                      subtitle: Text(
+                                                        '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
                                                       ),
-                                                  title: Text(
-                                                    data['title'] as String? ??
-                                                        '',
-                                                    style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                  subtitle: Text(
-                                                    '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
-                                                  ),
-                                                  childrenPadding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 16,
-                                                        vertical: 8,
-                                                      ),
-                                                  children: [
-                                                    if (fullAddress
-                                                        .isNotEmpty) ...[
-                                                      Row(
-                                                        children: [
-                                                          const Icon(
-                                                            Icons.location_on,
-                                                            size: 16,
-                                                            color: Colors.grey,
+                                                      childrenPadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8,
                                                           ),
-                                                          const SizedBox(
-                                                            width: 8,
-                                                          ),
-                                                          Expanded(
-                                                            child: Text(
-                                                              fullAddress,
-                                                              style:
-                                                                  const TextStyle(
-                                                                    fontSize:
-                                                                        14,
-                                                                  ),
-                                                            ),
+                                                      children: [
+                                                        if (fullAddress
+                                                            .isNotEmpty) ...[
+                                                          Row(
+                                                            children: [
+                                                              const Icon(
+                                                                Icons
+                                                                    .location_on,
+                                                                size: 16,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  fullAddress,
+                                                                  style:
+                                                                      const TextStyle(
+                                                                        fontSize:
+                                                                            14,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
                                                         ],
-                                                      ),
-                                                    ],
-                                                    const SizedBox(height: 15),
-                                                    Wrap(
-                                                      spacing: 8,
-                                                      runSpacing: 4,
-                                                      children: buildChips(
-                                                        data,
-                                                      ),
-                                                    ),
-                                                    if ((data['description']
-                                                                as String?)
-                                                            ?.isNotEmpty ??
-                                                        false) ...[
-                                                      const SizedBox(
-                                                        height: 20,
-                                                      ),
-                                                      Text(
-                                                        data['description']
-                                                            as String,
-                                                        style: const TextStyle(
-                                                          fontSize: 14,
+                                                        const SizedBox(
+                                                          height: 15,
                                                         ),
-                                                      ),
-                                                    ],
-                                                    if (images.isNotEmpty) ...[
-                                                      const SizedBox(
-                                                        height: 20,
-                                                      ),
-                                                      SizedBox(
-                                                        height: 150,
-                                                        child: Row(
-                                                          children: [
-                                                            IconButton(
-                                                              icon: const Icon(
-                                                                Icons
-                                                                    .arrow_back_ios,
-                                                              ),
-                                                              onPressed:
-                                                                  () => galleryControllers[id]!.animateTo(
-                                                                    galleryControllers[id]!
-                                                                            .offset -
-                                                                        100,
-                                                                    duration: const Duration(
-                                                                      milliseconds:
-                                                                          300,
-                                                                    ),
-                                                                    curve:
-                                                                        Curves
-                                                                            .easeInOut,
+                                                        Wrap(
+                                                          spacing: 8,
+                                                          runSpacing: 4,
+                                                          children: buildChips(
+                                                            data,
+                                                          ),
+                                                        ),
+                                                        if ((data['description']
+                                                                    as String?)
+                                                                ?.isNotEmpty ??
+                                                            false) ...[
+                                                          const SizedBox(
+                                                            height: 20,
+                                                          ),
+                                                          Text(
+                                                            data['description']
+                                                                as String,
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize: 14,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                        if (images
+                                                            .isNotEmpty) ...[
+                                                          const SizedBox(
+                                                            height: 20,
+                                                          ),
+                                                          SizedBox(
+                                                            height: 150,
+                                                            child: Row(
+                                                              children: [
+                                                                IconButton(
+                                                                  icon: const Icon(
+                                                                    Icons
+                                                                        .arrow_back_ios,
                                                                   ),
-                                                            ),
-                                                            Expanded(
-                                                              child: ListView.separated(
-                                                                controller:
-                                                                    galleryControllers[id],
-                                                                scrollDirection:
-                                                                    Axis.horizontal,
-                                                                itemCount:
-                                                                    images
-                                                                        .length,
-                                                                separatorBuilder:
-                                                                    (_, __) =>
-                                                                        const SizedBox(
+                                                                  onPressed:
+                                                                      () => galleryControllers[id]!.animateTo(
+                                                                        galleryControllers[id]!.offset -
+                                                                            100,
+                                                                        duration: const Duration(
+                                                                          milliseconds:
+                                                                              300,
+                                                                        ),
+                                                                        curve:
+                                                                            Curves.easeInOut,
+                                                                      ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: ListView.separated(
+                                                                    controller:
+                                                                        galleryControllers[id],
+                                                                    scrollDirection:
+                                                                        Axis.horizontal,
+                                                                    itemCount:
+                                                                        images
+                                                                            .length,
+                                                                    separatorBuilder:
+                                                                        (
+                                                                          _,
+                                                                          __,
+                                                                        ) => const SizedBox(
                                                                           width:
                                                                               8,
                                                                         ),
-                                                                itemBuilder:
-                                                                    (
-                                                                      _,
-                                                                      idx,
-                                                                    ) => GestureDetector(
-                                                                      onTap:
-                                                                          () => openGallery(
-                                                                            context,
-                                                                            images,
-                                                                            idx,
-                                                                          ),
-                                                                      child: ClipRRect(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(
+                                                                    itemBuilder:
+                                                                        (
+                                                                          _,
+                                                                          idx,
+                                                                        ) => GestureDetector(
+                                                                          onTap:
+                                                                              () => openGallery(
+                                                                                context,
+                                                                                images,
+                                                                                idx,
+                                                                              ),
+                                                                          child: ClipRRect(
+                                                                            borderRadius: BorderRadius.circular(
                                                                               6,
                                                                             ),
-                                                                        child: Image.network(
-                                                                          images[idx],
-                                                                          width:
-                                                                              100,
-                                                                          height:
-                                                                              100,
-                                                                          fit:
-                                                                              BoxFit.cover,
-                                                                          errorBuilder:
-                                                                              (
-                                                                                _,
-                                                                                __,
-                                                                                ___,
-                                                                              ) => Container(
-                                                                                color:
-                                                                                    Colors.grey.shade300,
+                                                                            child: Image.network(
+                                                                              images[idx],
+                                                                              width:
+                                                                                  100,
+                                                                              height:
+                                                                                  100,
+                                                                              fit:
+                                                                                  BoxFit.cover,
+                                                                              errorBuilder:
+                                                                                  (
+                                                                                    _,
+                                                                                    __,
+                                                                                    ___,
+                                                                                  ) => Container(
+                                                                                    color:
+                                                                                        Colors.grey.shade300,
+                                                                                  ),
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                IconButton(
+                                                                  icon: const Icon(
+                                                                    Icons
+                                                                        .arrow_forward_ios,
+                                                                  ),
+                                                                  onPressed:
+                                                                      () => galleryControllers[id]!.animateTo(
+                                                                        galleryControllers[id]!.offset +
+                                                                            100,
+                                                                        duration: const Duration(
+                                                                          milliseconds:
+                                                                              300,
+                                                                        ),
+                                                                        curve:
+                                                                            Curves.easeInOut,
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                        const SizedBox(
+                                                          height: 20,
+                                                        ),
+                                                        buildMap(fullAddress),
+                                                        const SizedBox(
+                                                          height: 20,
+                                                        ),
+                                                        // agentii din card
+                                                        if (user != null) ...[
+                                                          FutureBuilder<
+                                                            DocumentSnapshot
+                                                          >(
+                                                            future:
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                      'agents',
+                                                                    )
+                                                                    .doc(
+                                                                      data['agentId']
+                                                                          as String,
+                                                                    )
+                                                                    .get(),
+                                                            builder: (
+                                                              ctx,
+                                                              snapAgent,
+                                                            ) {
+                                                              if (snapAgent
+                                                                  .hasError) {
+                                                                return const Text(
+                                                                  'Eroare la agent',
+                                                                );
+                                                              }
+                                                              if (!snapAgent
+                                                                      .hasData ||
+                                                                  !snapAgent
+                                                                      .data!
+                                                                      .exists) {
+                                                                // agentul a fost sters sau nu exista
+                                                                return const Text(
+                                                                  'Agent inexistent',
+                                                                );
+                                                              }
+                                                              final agentDoc =
+                                                                  snapAgent
+                                                                      .data!;
+                                                              final name =
+                                                                  agentDoc.get(
+                                                                        'name',
+                                                                      )
+                                                                      as String;
+                                                              final phone =
+                                                                  agentDoc.get(
+                                                                        'phone',
+                                                                      )
+                                                                      as String;
+                                                              // Înlocuim return-ul simplu cu un Column
+                                                              return Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .stretch,
+                                                                children: [
+                                                                  // —–––––––––––– Rândul cu avatar, nume și buton telefon ––––––––––––
+                                                                  Row(
+                                                                    children: [
+                                                                      CircleAvatar(
+                                                                        radius:
+                                                                            20,
+                                                                        backgroundColor:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                        child: Text(
+                                                                          name.isNotEmpty
+                                                                              ? name[0].toUpperCase()
+                                                                              : 'A',
+                                                                          style: const TextStyle(
+                                                                            color:
+                                                                                Colors.white,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        width:
+                                                                            8,
+                                                                      ),
+                                                                      Expanded(
+                                                                        child: Column(
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            Text(
+                                                                              name,
+                                                                              style: const TextStyle(
+                                                                                fontWeight:
+                                                                                    FontWeight.bold,
+                                                                              ),
+                                                                            ),
+                                                                            if (showPhone[id] ??
+                                                                                false) ...[
+                                                                              const SizedBox(
+                                                                                height:
+                                                                                    4,
+                                                                              ),
+                                                                              Text(
+                                                                                phone,
+                                                                                style: const TextStyle(
+                                                                                  color:
+                                                                                      Colors.grey,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ],
+                                                                        ),
+                                                                      ),
+                                                                      IconButton(
+                                                                        icon: const Icon(
+                                                                          Icons
+                                                                              .phone,
+                                                                        ),
+                                                                        color:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                        onPressed:
+                                                                            () => togglePhone(
+                                                                              id,
+                                                                            ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+
+                                                                  const SizedBox(
+                                                                    height: 7,
+                                                                  ),
+
+                                                                  // —–––––––––––– Textul „sau” centrat ––––––––––––
+                                                                  const Center(
+                                                                    child: Text(
+                                                                      'sau',
+                                                                      style: TextStyle(
+                                                                        fontSize:
+                                                                            14,
+                                                                        fontStyle:
+                                                                            FontStyle.italic,
+                                                                        color:
+                                                                            Colors.grey,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+
+                                                                  const SizedBox(
+                                                                    height: 12,
+                                                                  ),
+
+                                                                  // —–––––––––––– Butonul „Programează o vizionare” ––––––––––––
+                                                                  Center(
+                                                                    child: ElevatedButton(
+                                                                      onPressed: () {
+                                                                        Navigator.push(
+                                                                          context,
+                                                                          MaterialPageRoute(
+                                                                            builder:
+                                                                                (_) => AddBookingPage(
+                                                                                  agentId:
+                                                                                      agentId,
+                                                                                  propertyId:
+                                                                                      id,
+                                                                                ),
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                        padding: const EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              24,
+                                                                          vertical:
+                                                                              12,
+                                                                        ),
+                                                                        shape: RoundedRectangleBorder(
+                                                                          borderRadius:
+                                                                              BorderRadius.circular(
+                                                                                8,
                                                                               ),
                                                                         ),
                                                                       ),
+                                                                      child: const Text(
+                                                                        'Programeaza o vizionare',
+                                                                        style: TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                        ),
+                                                                      ),
                                                                     ),
-                                                              ),
-                                                            ),
-                                                            IconButton(
-                                                              icon: const Icon(
-                                                                Icons
-                                                                    .arrow_forward_ios,
-                                                              ),
-                                                              onPressed:
-                                                                  () => galleryControllers[id]!.animateTo(
-                                                                    galleryControllers[id]!
-                                                                            .offset +
-                                                                        100,
-                                                                    duration: const Duration(
-                                                                      milliseconds:
-                                                                          300,
-                                                                    ),
-                                                                    curve:
-                                                                        Curves
-                                                                            .easeInOut,
                                                                   ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
-                                                    const SizedBox(height: 20),
-                                                    buildMap(fullAddress),
-                                                    const SizedBox(height: 20),
-                                                    // agentii din card
-                                                    if (user != null) ...[
-                                                    FutureBuilder<DocumentSnapshot>(
-                                                      future: FirebaseFirestore.instance
-                                                          .collection('agents')
-                                                          .doc(data['agentId'] as String)
-                                                          .get(),
-                                                      builder: (ctx, snapAgent) {
-                                                        if (snapAgent.hasError) {
-                                                          return const Text('Eroare la agent');
-                                                        }
-                                                        if (!snapAgent.hasData || !snapAgent.data!.exists) {
-                                                          // agentul a fost sters sau nu exista
-                                                          return const Text('Agent inexistent');
-                                                        }
-                                                        final agentDoc = snapAgent.data!;
-                                                        final name = agentDoc.get('name') as String;
-                                                        final phone = agentDoc.get('phone') as String;
-                                                          // Înlocuim return-ul simplu cu un Column
-                                                          return Column(
+                                                                  SizedBox(
+                                                                    height: 10,
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            },
+                                                          ),
+                                                        ] else ...[
+                                                          // Dacă nu avem user logat, afișăm tot „nume agent + sau + buton”
+                                                          Column(
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
                                                                     .stretch,
                                                             children: [
-                                                              // —–––––––––––– Rândul cu avatar, nume și buton telefon ––––––––––––
-                                                              Row(
-                                                                children: [
-                                                                  CircleAvatar(
-                                                                    radius: 20,
-                                                                    backgroundColor:
-                                                                        Theme.of(
-                                                                          context,
-                                                                        ).colorScheme.primary,
-                                                                    child: Text(
-                                                                      name.isNotEmpty
-                                                                          ? name[0]
-                                                                              .toUpperCase()
-                                                                          : 'A',
-                                                                      style: const TextStyle(
-                                                                        color:
-                                                                            Colors.white,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    width: 8,
-                                                                  ),
-                                                                  Expanded(
-                                                                    child: Column(
-                                                                      crossAxisAlignment:
-                                                                          CrossAxisAlignment
-                                                                              .start,
-                                                                      children: [
-                                                                        Text(
-                                                                          name,
-                                                                          style: const TextStyle(
-                                                                            fontWeight:
-                                                                                FontWeight.bold,
-                                                                          ),
-                                                                        ),
-                                                                        if (showPhone[id] ??
-                                                                            false) ...[
-                                                                          const SizedBox(
-                                                                            height:
-                                                                                4,
-                                                                          ),
-                                                                          Text(
-                                                                            phone,
-                                                                            style: const TextStyle(
-                                                                              color:
-                                                                                  Colors.grey,
-                                                                            ),
-                                                                          ),
-                                                                        ],
-                                                                      ],
-                                                                    ),
-                                                                  ),
-                                                                  IconButton(
-                                                                    icon: const Icon(
-                                                                      Icons
-                                                                          .phone,
-                                                                    ),
-                                                                    color:
-                                                                        Theme.of(
-                                                                          context,
-                                                                        ).colorScheme.primary,
-                                                                    onPressed:
-                                                                        () =>
-                                                                            togglePhone(
-                                                                              id,
-                                                                            ),
-                                                                  ),
-                                                                ],
+                                                              Text(
+                                                                data['agentName']
+                                                                        as String? ??
+                                                                    '',
+                                                                style: const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 14,
+                                                                ),
                                                               ),
-
                                                               const SizedBox(
                                                                 height: 7,
                                                               ),
-
-                                                              // —–––––––––––– Textul „sau” centrat ––––––––––––
+                                                              //sau text
                                                               const Center(
                                                                 child: Text(
                                                                   'sau',
@@ -1286,7 +1431,6 @@ class HomePageState extends State<HomePage> {
                                                                 height: 12,
                                                               ),
 
-                                                              // —–––––––––––– Butonul „Programează o vizionare” ––––––––––––
                                                               Center(
                                                                 child: ElevatedButton(
                                                                   onPressed: () {
@@ -1296,12 +1440,8 @@ class HomePageState extends State<HomePage> {
                                                                         builder:
                                                                             (
                                                                               _,
-                                                                            ) => AddBookingPage(
-                                                                              agentId:
-                                                                                  agentId,
-                                                                              propertyId:
-                                                                                  id,
-                                                                            ),
+                                                                            ) =>
+                                                                                const FavoritesPage(),
                                                                       ),
                                                                     );
                                                                   },
@@ -1327,117 +1467,28 @@ class HomePageState extends State<HomePage> {
                                                                     'Programeaza o vizionare',
                                                                     style: TextStyle(
                                                                       fontSize:
-                                                                          14,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              SizedBox(
-                                                                height: 10,
-                                                              ),
-                                                            ],
-                                                          );
-                                                        },
-                                                      ),
-                                                    ] else ...[
-                                                      // Dacă nu avem user logat, afișăm tot „nume agent + sau + buton”
-                                                      Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .stretch,
-                                                        children: [
-                                                          Text(
-                                                            data['agentName']
-                                                                    as String? ??
-                                                                '',
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 14,
-                                                                ),
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 7,
-                                                          ),
-                                                          //sau text
-                                                          const Center(
-                                                            child: Text(
-                                                              'sau',
-                                                              style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontStyle:
-                                                                    FontStyle
-                                                                        .italic,
-                                                                color:
-                                                                    Colors.grey,
-                                                              ),
-                                                            ),
-                                                          ),
-
-                                                          const SizedBox(
-                                                            height: 12,
-                                                          ),
-
-                                                          Center(
-                                                            child: ElevatedButton(
-                                                              onPressed: () {
-                                                                Navigator.push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder:
-                                                                        (_) =>
-                                                                            const FavoritesPage(),
-                                                                  ),
-                                                                );
-                                                              },
-                                                              style: ElevatedButton.styleFrom(
-                                                                backgroundColor:
-                                                                    Theme.of(
-                                                                          context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .primary,
-                                                                padding:
-                                                                    const EdgeInsets.symmetric(
-                                                                      horizontal:
-                                                                          24,
-                                                                      vertical:
-                                                                          12,
-                                                                    ),
-                                                                shape: RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        8,
-                                                                      ),
-                                                                ),
-                                                              ),
-                                                              child: const Text(
-                                                                'Programeaza o vizionare',
-                                                                style:
-                                                                    TextStyle(
-                                                                      fontSize:
                                                                           16,
                                                                     ),
+                                                                  ),
+                                                                ),
                                                               ),
-                                                            ),
+                                                            ],
                                                           ),
                                                         ],
-                                                      ),
-                                                    ],
+                                                      ],
+                                                    ),
                                                   ],
                                                 ),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
+                                              ),
+                                            );
+                                          }).toList(),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
     );
   }

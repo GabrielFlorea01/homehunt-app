@@ -9,8 +9,7 @@ class AdminListingsPage extends StatefulWidget {
 }
 
 class AdminListingsPageState extends State<AdminListingsPage> {
-  final CollectionReference propertiesRef =
-      FirebaseFirestore.instance.collection('properties');
+  final CollectionReference propertiesRef = FirebaseFirestore.instance.collection('properties');
 
   String searchQuery = '';
   final TextEditingController searchController = TextEditingController();
@@ -21,7 +20,6 @@ class AdminListingsPageState extends State<AdminListingsPage> {
     super.dispose();
   }
 
-  /// Partea cu lista, acum are maxWidth stabilit
   Widget buildListingsContainer() {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 600),
@@ -98,10 +96,6 @@ class AdminListingsPageState extends State<AdminListingsPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      '€ ${(data['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
                                   ],
                                 ),
                               ),
