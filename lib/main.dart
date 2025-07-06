@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/firebase/config/firebase_options.dart';
 import 'package:homehunt/firebase/secrets/admin_key.dart';
-import 'package:homehunt/pages/admin_page.dart';
-import 'package:homehunt/pages/home_page.dart';
-import 'package:homehunt/pages/login_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_page.dart';
+import 'package:homehunt/pages/user_pages/home_page.dart';
+import 'package:homehunt/pages/auth_pages/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

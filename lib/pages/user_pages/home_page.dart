@@ -1,37 +1,19 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:homehunt/firebase/secrets/api_key.dart';
-import 'package:homehunt/pages/add_booking_page.dart';
-import 'package:homehunt/pages/favourites_page.dart';
-import 'package:homehunt/pages/gallery_view.dart';
-import 'package:homehunt/pages/my_bookings_page.dart';
-import 'package:http/http.dart' as http;
+import 'package:homehunt/pages/user_pages/add_booking_page.dart';
+import 'package:homehunt/pages/user_pages/favourites_page.dart';
+import 'package:homehunt/pages/gallery/gallery_view.dart';
+import 'package:homehunt/pages/map/map.dart';
+import 'package:homehunt/pages/user_pages/my_bookings_page.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/new_listing_page.dart';
-import 'package:homehunt/pages/profile_page.dart';
-import 'package:homehunt/pages/my_listings_page.dart';
+import 'package:homehunt/pages/user_pages/new_listing_page.dart';
+import 'package:homehunt/pages/user_pages/profile_page.dart';
+import 'package:homehunt/pages/user_pages/my_listings_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 import 'package:intl/intl.dart';
-
-/// Geocode a plain address into coordinates
-Future<LatLng?> geocodeAddress(String address) async {
-  final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
-    'address': '$address, Romania',
-    'key': googleMapsApiKey,
-  });
-  final resp = await http.get(url);
-  if (resp.statusCode != 200) return null;
-  final body = json.decode(resp.body) as Map<String, dynamic>;
-  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) return null;
-  final loc =
-      body['results'][0]['geometry']['location'] as Map<String, dynamic>;
-  return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
-}
 
 /// Home page with filtre și carduri (acum și cu inimi pentru favorite)
 class HomePage extends StatefulWidget {
@@ -325,35 +307,6 @@ class HomePageState extends State<HomePage> {
               body: GalleryView(images: imgs, initialIndex: idx),
             ),
       ),
-    );
-  }
-
-  Widget buildMap(String address) {
-    return FutureBuilder<LatLng?>(
-      future: geocodeAddress(address),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return Text(
-            'Map error: ${snap.error}',
-            style: const TextStyle(color: Colors.red),
-          );
-        }
-        if (snap.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final loc = snap.data;
-        if (loc == null) return const Text('Nu se poate afisa harta');
-        return SizedBox(
-          height: 400,
-          child: GoogleMap(
-            key: ValueKey(address),
-            initialCameraPosition: CameraPosition(target: loc, zoom: 14),
-            markers: {Marker(markerId: MarkerId(address), position: loc)},
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-          ),
-        );
-      },
     );
   }
 
@@ -1186,7 +1139,7 @@ class HomePageState extends State<HomePage> {
                                                         const SizedBox(
                                                           height: 20,
                                                         ),
-                                                        buildMap(fullAddress),
+                                                        buildMapSection(fullAddress),
                                                         const SizedBox(
                                                           height: 20,
                                                         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:homehunt/pages/edit_booking_page.dart';
+import 'package:homehunt/pages/user_pages/edit_booking_page.dart';
 import 'package:intl/intl.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 

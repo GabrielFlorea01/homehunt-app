@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/forgot_password_page.dart';
-import 'package:homehunt/pages/signup_page.dart';
+import 'package:homehunt/pages/auth_pages/forgot_password_page.dart';
+import 'package:homehunt/pages/auth_pages/signup_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 
 class LoginPage extends StatefulWidget {

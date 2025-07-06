@@ -1,30 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:homehunt/firebase/secrets/api_key.dart';
-import 'package:homehunt/pages/gallery_view.dart';
-import 'package:homehunt/pages/edit_listing_page.dart';
-import 'package:http/http.dart' as http;
+import 'package:homehunt/pages/gallery/gallery_view.dart';
+import 'package:homehunt/pages/user_pages/edit_listing_page.dart';
+import 'package:homehunt/pages/map/map.dart';
 import 'package:intl/intl.dart';
-
-/// Geocode a plain address into coordinates
-Future<LatLng?> geocodeAddress(String address) async {
-  final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
-    'address': '$address, Romania',
-    'key': googleMapsApiKey,
-  });
-  final resp = await http.get(url);
-  if (resp.statusCode != 200) return null;
-  final body = json.decode(resp.body) as Map<String, dynamic>;
-  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) {
-    return null;
-  }
-  final loc =
-      body['results'][0]['geometry']['location'] as Map<String, dynamic>;
-  return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
-}
 
 class MyListingsPage extends StatefulWidget {
   const MyListingsPage({super.key});
@@ -65,34 +45,6 @@ class MyListingsPageState extends State<MyListingsPage> {
   void togglePhone(String id) {
     showPhone[id] = !(showPhone[id] ?? false);
     setState(() {});
-  }
-
-  Widget buildMapSection(String address) {
-    return FutureBuilder<LatLng?>(
-      future: geocodeAddress(address),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return Text(
-            'Map error: ${snap.error}',
-            style: const TextStyle(color: Colors.red),
-          );
-        }
-        if (snap.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final loc = snap.data;
-        if (loc == null) return const Text('Cannot display map');
-        return SizedBox(
-          height: 200,
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: loc, zoom: 14),
-            markers: {Marker(markerId: MarkerId(address), position: loc)},
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-          ),
-        );
-      },
-    );
   }
 
   List<Widget> buildChips(Map<String, dynamic> data) {

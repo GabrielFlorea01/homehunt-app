@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:homehunt/pages/add_agent.dart';
+import 'package:homehunt/pages/admin_pages/add_agent.dart';
 
 class EditAgentsPage extends StatefulWidget {
   const EditAgentsPage({super.key});

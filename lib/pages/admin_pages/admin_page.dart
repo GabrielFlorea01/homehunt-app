@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:homehunt/admin_listings_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_listings_page.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/edit_agents_page.dart';
-import 'package:homehunt/pages/rapoarte_page.dart';
+import 'package:homehunt/pages/admin_pages/edit_agents_page.dart';
+import 'package:homehunt/pages/reports/reports_models/rapoarte_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
