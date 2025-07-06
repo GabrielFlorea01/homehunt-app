@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
       title: 'Home Hunt',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        cardColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
           primary: Colors.deepPurple,
