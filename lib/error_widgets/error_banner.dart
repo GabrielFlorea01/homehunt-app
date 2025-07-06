@@ -10,13 +10,13 @@ class ErrorBanner extends StatelessWidget {
   const ErrorBanner({
     super.key,
     required this.message,
-    this.messageType = MessageType.error, // Default is error
+    this.messageType = MessageType.error,
     this.onDismiss,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Set color scheme based on message type
+    //setare culori pe baza tipului de eroare
     final colorScheme = Theme.of(context).colorScheme;
     Color backgroundColor;
     Color textColor;
@@ -25,11 +25,11 @@ class ErrorBanner extends StatelessWidget {
     if (messageType == MessageType.success) {
       backgroundColor = colorScheme.secondaryContainer;
       textColor = colorScheme.onSecondaryContainer;
-      icon = Icons.check_circle_outline; // Success icon
+      icon = Icons.check_circle_outline;
     } else {
       backgroundColor = colorScheme.errorContainer;
       textColor = colorScheme.onErrorContainer;
-      icon = Icons.error_outline; // Error icon
+      icon = Icons.error_outline;
     }
 
     return Container(

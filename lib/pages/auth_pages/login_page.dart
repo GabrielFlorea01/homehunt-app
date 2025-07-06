@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/forgot_password_page.dart';
-import 'package:homehunt/pages/signup_page.dart';
+import 'package:homehunt/pages/auth_pages/forgot_password_page.dart';
+import 'package:homehunt/pages/auth_pages/signup_page.dart';
 import 'package:homehunt/error_widgets/error_banner.dart';
 
 class LoginPage extends StatefulWidget {
@@ -53,32 +53,6 @@ class LoginPageState extends State<LoginPage> {
 
     try {
       await AuthService().googleSignIn();
-    } on AuthException catch (e) {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          errorMessage = e.message;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-          errorMessage = "A aparut o eroare";
-        });
-      }
-    }
-  }
-
-    Future<void> facebookSignIn() async {
-    if (!mounted) return;
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
-
-    try {
-      await AuthService().facebookSignIn();
     } on AuthException catch (e) {
       if (mounted) {
         setState(() {
@@ -221,21 +195,6 @@ class LoginPageState extends State<LoginPage> {
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
                     side: const BorderSide(color: Colors.black, width: 0.5),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                FilledButton.icon(
-                  onPressed: isLoading ? null : facebookSignIn,
-                  icon: Image.asset(
-                    'lib/images/facebook.png',
-                    width: 20,
-                    height: 22,
-                  ),
-                  label: const Text('Continua cu Facebook'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.blueAccent, width: 0.5),
                   ),
                 ),
                 const SizedBox(height: 32),

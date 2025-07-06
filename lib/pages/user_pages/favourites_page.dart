@@ -1,30 +1,10 @@
-import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:homehunt/firebase/secrets/api_key.dart';
-import 'package:homehunt/pages/gallery_view.dart';
-import 'package:http/http.dart' as http;
-
-/// Converteste o adresa text intr-un obiect LatLng (latitudine/longitudine)
-Future<LatLng?> geocodeAddress(String address) async {
-  final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
-    'address': '$address, Romania',
-    'key': googleMapsApiKey,
-  });
-  final resp = await http.get(url);
-  if (resp.statusCode != 200) return null;
-
-  final body = json.decode(resp.body) as Map<String, dynamic>;
-  if (body['status'] != 'OK' || (body['results'] as List).isEmpty) {
-    return null;
-  }
-  final loc =
-      body['results'][0]['geometry']['location'] as Map<String, dynamic>;
-  return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
-}
+import 'package:homehunt/images/gallery/gallery_view.dart';
+import 'package:homehunt/pages/map/map.dart';
+import 'package:intl/intl.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -111,35 +91,6 @@ class FavoritesPageState extends State<FavoritesPage> {
               body: GalleryView(images: imgs, initialIndex: idx),
             ),
       ),
-    );
-  }
-
-  /// Construiește widget-ul GoogleMap pe baza adresei
-  Widget buildMapSection(String address) {
-    return FutureBuilder<LatLng?>(
-      future: geocodeAddress(address),
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return Text(
-            'Map error: ${snap.error}',
-            style: const TextStyle(color: Colors.red),
-          );
-        }
-        if (snap.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final loc = snap.data;
-        if (loc == null) return const Text('Cannot display map');
-        return SizedBox(
-          height: 200,
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: loc, zoom: 14),
-            markers: {Marker(markerId: MarkerId(address), position: loc)},
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-          ),
-        );
-      },
     );
   }
 
@@ -297,9 +248,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                   return SingleChildScrollView(
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 850),
-                        child: FractionallySizedBox(
-                          widthFactor: 0.5,
+                        constraints: const BoxConstraints(maxWidth: 600),
                           child: Column(
                             children:
                                 docs.map((doc) {
@@ -460,7 +409,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                                             ),
                                           ),
                                           subtitle: Text(
-                                            '€ ${(data['price'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                            '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
                                           ),
                                           childrenPadding:
                                               const EdgeInsets.symmetric(
@@ -673,8 +622,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                           ),
                         ),
                       ),
-                    ),
-                  );
+                    );
                 },
               ),
     );
