@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:homehunt/pages/user_pages/add_booking_page.dart';
 import 'package:homehunt/pages/user_pages/favourites_page.dart';
-import 'package:homehunt/pages/gallery/gallery_view.dart';
+import 'package:homehunt/images/gallery/gallery_view.dart';
 import 'package:homehunt/pages/map/map.dart';
 import 'package:homehunt/pages/user_pages/my_bookings_page.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';

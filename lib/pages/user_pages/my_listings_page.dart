@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:homehunt/pages/gallery/gallery_view.dart';
+import 'package:homehunt/images/gallery/gallery_view.dart';
 import 'package:homehunt/pages/user_pages/edit_listing_page.dart';
 import 'package:homehunt/pages/map/map.dart';
 import 'package:intl/intl.dart';

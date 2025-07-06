@@ -2,11 +2,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
+  // instanta FirebaseAuth
   final FirebaseAuth auth = FirebaseAuth.instance;
+  // instanta FirebaseFirestore
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  // stream pentru schimbari stare de autentificare
   Stream<User?> get authStateChanges => auth.authStateChanges();
 
+  // metoda clasica de signUp cu email si parola
   Future<void> signUp(
     String email,
     String password,
@@ -42,6 +46,7 @@ class AuthService {
     }
   }
 
+  // metoda clasica de login cu email si parola
   Future<void> login(String email, String password) async {
     try {
       await auth.signInWithEmailAndPassword(email: email, password: password);
@@ -60,6 +65,7 @@ class AuthService {
     }
   }
 
+  // metoda de autentificare cu Google
   Future<void> googleSignIn() async {
     try {
       final googleProvider = GoogleAuthProvider();
@@ -86,6 +92,7 @@ class AuthService {
     }
   }
 
+  // metoda de resetare parola
   Future<void> forgotPassword(String email) async {
     try {
       await auth.sendPasswordResetEmail(email: email);
@@ -102,6 +109,7 @@ class AuthService {
     }
   }
 
+  // metoda de logout
   Future<void> signOut() async {
     try {
       await auth.signOut();
@@ -111,6 +119,7 @@ class AuthService {
   }
 }
 
+// exceptie custom pentru erorile din AuthService
 class AuthException implements Exception {
   final String message;
   AuthException(this.message);

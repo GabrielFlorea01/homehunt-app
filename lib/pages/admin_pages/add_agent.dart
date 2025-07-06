@@ -9,12 +9,16 @@ class AddAgentPage extends StatefulWidget {
 }
 
 class AddAgentPageState extends State<AddAgentPage> {
+  // colectia agents din Firestore
   final agentsColl = FirebaseFirestore.instance.collection('agents');
+  // controller pentru campurile de input
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
+  // flag pentru starea de salvare
   bool isSaving = false;
 
+  // functie pentru salvarea agentului
   Future<void> saveAgent() async {
     if (isSaving) return;
     setState(() => isSaving = true);
@@ -24,22 +28,23 @@ class AddAgentPageState extends State<AddAgentPage> {
       'email': emailCtrl.text.trim(),
       'phone': phoneCtrl.text.trim(),
       'createdAt': FieldValue.serverTimestamp(),
-      'properties': <String>[]
+      'properties': <String>[],
     });
 
-    if(!mounted) return;
-
+    if (!mounted) return;
     setState(() => isSaving = false);
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(); // inchidem pagina dupa salvare
   }
 
   @override
   Widget build(BuildContext context) {
+    // verific daca ecranul e suficient de lat
     final isWide = MediaQuery.of(context).size.width >= 900;
 
     return Scaffold(
       body: LayoutBuilder(
         builder: (ctx, constraints) {
+          // pe ecrane mari form + imagine alaturat
           if (isWide) {
             return SizedBox(
               height: constraints.maxHeight,
@@ -51,6 +56,7 @@ class AddAgentPageState extends State<AddAgentPage> {
               ),
             );
           } else {
+            // pe ecrane inguste scroll cu imagine sus
             return SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -66,6 +72,7 @@ class AddAgentPageState extends State<AddAgentPage> {
     );
   }
 
+  //partea de formular
   Widget buildFormPane() {
     return Center(
       child: Container(
@@ -87,6 +94,7 @@ class AddAgentPageState extends State<AddAgentPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // header cu back si titlu
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -103,6 +111,7 @@ class AddAgentPageState extends State<AddAgentPage> {
                     ),
                   ],
                 ),
+                // buton adauga
                 TextButton(
                   onPressed: saveAgent,
                   child: isSaving
@@ -116,6 +125,7 @@ class AddAgentPageState extends State<AddAgentPage> {
               ],
             ),
             const SizedBox(height: 24),
+            // camp nume
             TextField(
               controller: nameCtrl,
               decoration: const InputDecoration(
@@ -124,6 +134,7 @@ class AddAgentPageState extends State<AddAgentPage> {
               ),
             ),
             const SizedBox(height: 16),
+            // camp email
             TextField(
               controller: emailCtrl,
               decoration: const InputDecoration(
@@ -133,6 +144,7 @@ class AddAgentPageState extends State<AddAgentPage> {
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
+            // camp telefon
             TextField(
               controller: phoneCtrl,
               decoration: const InputDecoration(
@@ -147,6 +159,7 @@ class AddAgentPageState extends State<AddAgentPage> {
     );
   }
 
+  // pane pentru afisare imagine
   Widget buildImagePane({double? height}) {
     return Container(
       height: height,
