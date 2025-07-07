@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:homehunt/models/gallery/gallery_model.dart';
 import 'package:homehunt/models/map/map_model.dart';
 import 'package:homehunt/models/property_card/property_card_model.dart';
-import 'package:intl/intl.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});

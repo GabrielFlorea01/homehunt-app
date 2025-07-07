@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminSoldRentedPage extends StatefulWidget {
-  const AdminSoldRentedPage({Key? key}) : super(key: key);
+  const AdminSoldRentedPage({super.key});
 
   @override
   AdminSoldRentedPageState createState() => AdminSoldRentedPageState();
