@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:homehunt/pages/user_pages/edit_booking_page.dart';
 import 'package:intl/intl.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
 
 /// Pagina pentru vizualizarea si editarea programarilor
 class MyBookingsPage extends StatefulWidget {

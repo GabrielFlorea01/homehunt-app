@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Fullscreen gallery view for pics
+
 class GalleryView extends StatefulWidget {
   final List<String> images;
   final int initialIndex;

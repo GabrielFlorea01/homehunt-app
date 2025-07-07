@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:homehunt/pages/admin_pages/admin_listings_page.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/admin_pages/admin_sold_rented_page.dart';
 import 'package:homehunt/pages/admin_pages/edit_agents_page.dart';
-import 'package:homehunt/pages/reports/reports_models/rapoarte_page.dart';
+import 'package:homehunt/pages/reports_pages/rapoarte_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -133,6 +134,19 @@ class AdminPageState extends State<AdminPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const AdminListingsPage(),
+                              ),
+                            );
+                          },
+                        ),
+                          ListTile(
+                          leading: const Icon(Icons.playlist_add_check_circle),
+                          title: const Text('Vandut/inchiriat'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AdminSoldRentedPage(),
                               ),
                             );
                           },

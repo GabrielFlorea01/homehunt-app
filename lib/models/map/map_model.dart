@@ -37,7 +37,7 @@ Future<LatLng?> geocodeAddress(String address) async {
         final loc = snap.data;
         if (loc == null) return const Text('Cannot display map');
         return SizedBox(
-          height: 200,
+          height: 500,
           child: GoogleMap(
             initialCameraPosition: CameraPosition(target: loc, zoom: 14),
             markers: {Marker(markerId: MarkerId(address), position: loc)},

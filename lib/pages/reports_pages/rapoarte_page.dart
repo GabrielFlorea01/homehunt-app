@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../properties_reports_page.dart';
-import '../users_report_page.dart';
+import 'properties_reports_page.dart';
+import 'users_report_page.dart';
 
 class RapoartePage extends StatelessWidget {
   const RapoartePage({super.key});
