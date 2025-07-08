@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:homehunt/firebase/auth/auth_gate.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_gate.dart';
 import 'package:homehunt/firebase/config/firebase_options.dart';
 
 Future<void> main() async {

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:homehunt/pages/admin_pages/admin_listings_page.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 import 'package:homehunt/pages/admin_pages/admin_sold_rented_page.dart';
 import 'package:homehunt/pages/admin_pages/edit_agents_page.dart';
 import 'package:homehunt/pages/reports_pages/rapoarte_page.dart';

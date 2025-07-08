@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 import 'package:homehunt/pages/auth_pages/forgot_password_page.dart';
 import 'package:homehunt/pages/auth_pages/signup_page.dart';
 import 'package:homehunt/models/error_widgets/error_banner.dart';

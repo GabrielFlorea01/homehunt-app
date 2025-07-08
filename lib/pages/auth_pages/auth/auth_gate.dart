@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 import 'package:homehunt/firebase/secrets/admin_key.dart';
 import 'package:homehunt/pages/admin_pages/admin_page.dart';
 import 'package:homehunt/pages/auth_pages/login_page.dart';

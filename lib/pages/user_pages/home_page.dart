@@ -9,7 +9,7 @@ import 'package:homehunt/models/map/map_model.dart';
 import 'package:homehunt/pages/user_pages/add_booking_page.dart';
 import 'package:homehunt/pages/user_pages/favourites_page.dart';
 import 'package:homehunt/pages/user_pages/my_bookings_page.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 import 'package:homehunt/pages/user_pages/new_listing_page.dart';
 import 'package:homehunt/pages/user_pages/profile_page.dart';
 import 'package:homehunt/pages/user_pages/my_listings_page.dart';
