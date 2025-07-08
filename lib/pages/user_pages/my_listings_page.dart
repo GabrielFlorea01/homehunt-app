@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:homehunt/models/gallery/gallery_model.dart';
-import 'package:homehunt/models/property_card/property_card_model.dart';
-import 'package:homehunt/pages/user_pages/edit_listing_page.dart';
 import 'package:homehunt/models/map/map_model.dart';
+import 'package:homehunt/pages/user_pages/edit_listing_page.dart';
+import 'package:intl/intl.dart';
 
 class MyListingsPage extends StatefulWidget {
   const MyListingsPage({super.key});
@@ -13,20 +13,14 @@ class MyListingsPage extends StatefulWidget {
 }
 
 class MyListingsPageState extends State<MyListingsPage> {
-  final CollectionReference propertiesRef = FirebaseFirestore.instance.collection('properties');
+  final CollectionReference propertiesRef = FirebaseFirestore.instance
+      .collection('properties');
 
   // A ScrollController for each card's horizontal gallery
-  final Map<String, ScrollController> galleryControllers = {};
+  final Map<int, ScrollController> scrollControllers = {};
+
   // Track which cards have phone expanded
   final Map<String, bool> showPhone = {};
-
-  @override
-  void dispose() {
-    for (var c in galleryControllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
 
   void openGallery(BuildContext c, List<String> imgs, int idx) {
     Navigator.of(c).push(
@@ -154,7 +148,12 @@ class MyListingsPageState extends State<MyListingsPage> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: StreamBuilder<QuerySnapshot>(
-          stream: propertiesRef.where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+          stream:
+              propertiesRef
+                  .where(
+                    'userId',
+                    isEqualTo: FirebaseAuth.instance.currentUser?.uid,
+                  )
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
           builder: (ctx, snap) {
@@ -173,39 +172,440 @@ class MyListingsPageState extends State<MyListingsPage> {
             return SingleChildScrollView(
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 700),
-                  child: Column(
-                    children:
-                        docs.asMap().entries.map((entry) {
-                          final data = entry.value.data()! as Map<String, dynamic>;
-                          final id = entry.value.id;
-                          data['id'] = id;
-                          galleryControllers.putIfAbsent(id, () => ScrollController());
-                          return PropertyCard(
-                            data: data,
-                            isFavorite: false,
-                            onToggleFavorite: null, //nu am nevoie aici de favorite
-                            onEdit: (id) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => EditListingPage(listingId: id),
+                  constraints: const BoxConstraints(maxWidth: 600),
+                    child: Column(
+                      children:
+                          docs.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final doc = entry.value;
+                            scrollControllers[i] ??= ScrollController();
+
+                            final data = doc.data()! as Map<String, dynamic>;
+                            data['id'] = doc.id;
+                            final images = List<String>.from(
+                              data['images'] as List? ?? [],
+                            );
+                            final loc =
+                                data['location'] as Map<String, dynamic>? ?? {};
+                            final fullAddress = [
+                              loc['street'] ?? '',
+                              loc['number'] ?? '',
+                              if ((loc['sector'] ?? '').toString().isNotEmpty)
+                                'Sector ${loc['sector']}',
+                              loc['city'] ?? '',
+                              loc['county'] ?? '',
+                            ].where((s) => s.trim().isNotEmpty).join(', ');
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                              top: Radius.circular(12),
+                                            ),
+                                        child: AspectRatio(
+                                          aspectRatio: 16 / 9,
+                                          child:
+                                              images.isNotEmpty
+                                                  ? Image.network(
+                                                    images.first,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (_, __, ___) =>
+                                                            Container(
+                                                              color:
+                                                                  Colors
+                                                                      .grey
+                                                                      .shade300,
+                                                            ),
+                                                  )
+                                                  : Container(
+                                                    color: Colors.grey.shade300,
+                                                  ),
+                                        ),
+                                      ),
+                                      // EDIT & DELETE buttons
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: Row(
+                                          children: [
+                                            ElevatedButton.icon(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white70,
+                                                elevation: 0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.edit,
+                                                size: 18,
+                                                color: Colors.black87,
+                                              ),
+                                              label: const Text(
+                                                'Edit',
+                                                style: TextStyle(
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                              onPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (_) => EditListingPage(
+                                                          listingId:
+                                                              data['id']
+                                                                  as String,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                            const SizedBox(width: 4),
+                                            ElevatedButton.icon(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white70,
+                                                elevation: 0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                              ),
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                size: 18,
+                                                color: Colors.redAccent,
+                                              ),
+                                              label: const Text(
+                                                'Delete',
+                                                style: TextStyle(
+                                                  color: Colors.redAccent,
+                                                ),
+                                              ),
+                                              onPressed: () async {
+                                                final ok = await showDialog<
+                                                  bool
+                                                >(
+                                                  context: context,
+                                                  builder:
+                                                      (ctx) => AlertDialog(
+                                                        title: const Text(
+                                                          'Confirma stergerea',
+                                                        ),
+                                                        content: const Text(
+                                                          'Sigur vrei sa stergi acest anunt?',
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.pop(
+                                                                      ctx,
+                                                                      false,
+                                                                    ),
+                                                            child: const Text(
+                                                              'Anuleaza',
+                                                            ),
+                                                          ),
+                                                          TextButton(
+                                                            onPressed:
+                                                                () =>
+                                                                    Navigator.pop(
+                                                                      ctx,
+                                                                      true,
+                                                                    ),
+                                                            child: const Text(
+                                                              'Sterge',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                );
+                                                if (ok == true) {
+                                                  await propertiesRef
+                                                      .doc(data['id'] as String)
+                                                      .delete();
+                                                }
+                                              },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                    // ---- DETALII & EXPANSIONTILE ----
+                                    ExpansionTile(
+                                      tilePadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                      title: Text(
+                                        data['title'] as String? ?? '',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
+                                      ),
+                                      childrenPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
+                                          ),
+                                      children: [
+                                        if (fullAddress.isNotEmpty)
+                                          Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.location_on,
+                                                size: 16,
+                                                color: Colors.grey,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  fullAddress,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 4,
+                                          children: buildChips(data),
+                                        ),
+                                        if ((data['description'] as String?)
+                                                ?.isNotEmpty ??
+                                            false) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            data['description'] as String,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                        if (images.length > 1) ...[
+                                          const SizedBox(height: 8),
+                                          SizedBox(
+                                            height: 100,
+                                            child: Row(
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.arrow_back_ios,
+                                                  ),
+                                                  onPressed: () {
+                                                    final c =
+                                                        scrollControllers[i]!;
+                                                    final newOffset =
+                                                        (c.offset - 100).clamp(
+                                                          0.0,
+                                                          c
+                                                              .position
+                                                              .maxScrollExtent,
+                                                        );
+                                                    c.animateTo(
+                                                      newOffset,
+                                                      duration: const Duration(
+                                                        milliseconds: 300,
+                                                      ),
+                                                      curve: Curves.easeInOut,
+                                                    );
+                                                  },
+                                                ),
+                                                Expanded(
+                                                  child: ListView.separated(
+                                                    controller:
+                                                        scrollControllers[i]!,
+                                                    scrollDirection:
+                                                        Axis.horizontal,
+                                                    itemCount: images.length,
+                                                    separatorBuilder:
+                                                        (_, __) =>
+                                                            const SizedBox(
+                                                              width: 8,
+                                                            ),
+                                                    itemBuilder:
+                                                        (
+                                                          _,
+                                                          idx,
+                                                        ) => GestureDetector(
+                                                          onTap:
+                                                              () => openGallery(
+                                                                context,
+                                                                images,
+                                                                idx,
+                                                              ),
+                                                          child: ClipRRect(
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  6,
+                                                                ),
+                                                            child: Image.network(
+                                                              images[idx],
+                                                              width: 100,
+                                                              height: 100,
+                                                              fit: BoxFit.cover,
+                                                              errorBuilder:
+                                                                  (
+                                                                    _,
+                                                                    __,
+                                                                    ___,
+                                                                  ) => Container(
+                                                                    color:
+                                                                        Colors
+                                                                            .grey
+                                                                            .shade300,
+                                                                  ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.arrow_forward_ios,
+                                                  ),
+                                                  onPressed: () {
+                                                    final c =
+                                                        scrollControllers[i]!;
+                                                    final newOffset =
+                                                        (c.offset + 100).clamp(
+                                                          0.0,
+                                                          c
+                                                              .position
+                                                              .maxScrollExtent,
+                                                        );
+                                                    c.animateTo(
+                                                      newOffset,
+                                                      duration: const Duration(
+                                                        milliseconds: 300,
+                                                      ),
+                                                      curve: Curves.easeInOut,
+                                                    );
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 8),
+                                        buildMapSection(fullAddress),
+                                        const SizedBox(height: 8),
+
+                                        // Agent row cu toggle telefon
+                                        FutureBuilder<DocumentSnapshot>(
+                                          future:
+                                              FirebaseFirestore.instance
+                                                  .collection('agents')
+                                                  .doc(
+                                                    data['agentId'] as String,
+                                                  )
+                                                  .get(),
+                                          builder: (ctx, snapAgent) {
+                                            final name =
+                                                data['agentName'] as String? ??
+                                                '';
+                                            final phone =
+                                                snapAgent.hasData
+                                                    ? (snapAgent.data!['phone']
+                                                            as String? ??
+                                                        '')
+                                                    : '';
+                                            return Row(
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 20,
+                                                  backgroundColor:
+                                                      Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                  child: Text(
+                                                    name.isNotEmpty
+                                                        ? name[0].toUpperCase()
+                                                        : 'A',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        name,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      if (showPhone[data['id']] ??
+                                                          false) ...[
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          phone,
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.phone),
+                                                  color:
+                                                      Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                  onPressed:
+                                                      () => togglePhone(
+                                                        data['id'] as String,
+                                                      ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               );
-                            },
-                            onDelete: (id) async {
-                              await propertiesRef.doc(id).delete();
-                            },
-                            openGallery: openGallery,
-                            buildMapSection: buildMapSection,
-                            scrollController: galleryControllers[id],
-                          );
-                        }).toList(),
+                          }).toList(),
+                    ),
                   ),
                 ),
-              ),
-            );
+              );
           },
         ),
       ),

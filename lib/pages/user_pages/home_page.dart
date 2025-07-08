@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
+import 'package:homehunt/models/gallery/gallery_model.dart';
 import 'package:homehunt/models/map/map_model.dart';
-import 'package:homehunt/models/property_card/property_card_model.dart';
 import 'package:homehunt/pages/user_pages/add_booking_page.dart';
 import 'package:homehunt/pages/user_pages/favourites_page.dart';
-import 'package:homehunt/models/gallery/gallery_model.dart';
 import 'package:homehunt/pages/user_pages/my_bookings_page.dart';
 import 'package:homehunt/firebase/auth/auth_service.dart';
 import 'package:homehunt/pages/user_pages/new_listing_page.dart';
 import 'package:homehunt/pages/user_pages/profile_page.dart';
 import 'package:homehunt/pages/user_pages/my_listings_page.dart';
-import 'package:homehunt/models/error_widgets/error_banner.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -62,16 +62,13 @@ class HomePageState extends State<HomePage> {
   void dispose() {
     snapshotProperties?.cancel();
     snapshotUserDoc?.cancel();
-    for (final c in galleryControllers.values) {
-      c.dispose();
-    }
     super.dispose();
   }
 
   Future<void> loadUserAndProperties() async {
     setState(() => isLoading = true);
 
-    // user-ul curent
+    // 1) user-ul curent
     user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       // daca user e null, nu afisam nimic
@@ -79,7 +76,7 @@ class HomePageState extends State<HomePage> {
       return;
     }
 
-    //proprietatile (lista completa, pentru filtrare)
+    // 2)  proprietatile (lista completa, pentru filtrare)
     snapshotProperties = propertiesRef
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -96,21 +93,25 @@ class HomePageState extends State<HomePage> {
           },
           onError: (e) {
             if (!mounted) return;
-            setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
+            setState(() => errorMessage = 'Eroare la incărcarea anunyurilor');
           },
         );
 
+    // 3) ascultăm documentul user-ului pentru a prelua array-ul de favoriteIds
     snapshotUserDoc = usersRef.doc(user!.uid).snapshots().listen((docSnap) {
       if (!mounted) return;
       final data = docSnap.data() as Map<String, dynamic>? ?? {};
       final favList = data['favoriteIds'] as List<dynamic>? ?? [];
       favoriteIds = favList.map((e) => e.toString()).toList();
+      // nu afectează lista allListings, dar va forța rebuild pentru a actualiza iconițele inimioară
       setState(() {});
     });
 
+    // 4) terminăm loading
     setState(() => isLoading = false);
   }
 
+  /// Toggle între adăugare/scoatere din favorites în Firestore
   Future<void> toggleFavorite(String propertyId) async {
     if (user == null) return;
     final userDoc = usersRef.doc(user!.uid);
@@ -166,15 +167,10 @@ class HomePageState extends State<HomePage> {
   }
 
   void applyFilters() {
-    filteredListings = allListings.where((data) {
+    filteredListings =
+        allListings.where((data) {
           // transaction
-          final type = data['type'] as String? ?? '';
-
-          if (type != 'De vanzare' && type != 'De inchiriat') {
-            return false;
-          }
-
-          if (type != 'Toate' && data['type'] != transactionType) {
+          if (transactionType != 'Toate' && data['type'] != transactionType) {
             return false;
           }
           // category mapping
@@ -186,7 +182,6 @@ class HomePageState extends State<HomePage> {
                   'Case': 'Casa',
                   'Teren': 'Teren',
                   'Spatii comerciale': 'Spatiu comercial',
-                  'Birouri': 'Birou',
                 }[propertyFilter]!;
             if (data['category'] != mapFilter) {
               return false;
@@ -466,7 +461,7 @@ class HomePageState extends State<HomePage> {
         ),
       ),
 
-      // Drawer cu opțiunea de Favorite
+      // Drawer
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
@@ -546,7 +541,7 @@ class HomePageState extends State<HomePage> {
                             propertyFilter = 'Apartamente';
                             applyFilters();
                           },
-                          child: const Text('Apartamente de vânzare'),
+                          child: const Text('Apartamente de vanzare'),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -559,9 +554,101 @@ class HomePageState extends State<HomePage> {
                             propertyFilter = 'Apartamente';
                             applyFilters();
                           },
-                          child: const Text('Apartamente de închiriat'),
+                          child: const Text('Apartamente de inchiriat'),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De vanzare';
+                            propertyFilter = 'Case';
+                            applyFilters();
+                          },
+                          child: const Text('Case de vanzare'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De inchiriat';
+                            propertyFilter = 'Case';
+                            applyFilters();
+                          },
+                          child: const Text('Case de inchiriat'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De vanzare';
+                            propertyFilter = 'Garsoniere';
+                            applyFilters();
+                          },
+                          child: const Text('Garsoniere de vanzare'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De inchiriat';
+                            propertyFilter = 'Garsoniere';
+                            applyFilters();
+                          },
+                          child: const Text('Garsoniere de inchiriat'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De vanzare';
+                            propertyFilter = 'Teren';
+                            applyFilters();
+                          },
+                          child: const Text('Terenuri de vanzare'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De inchiriat';
+                            propertyFilter = 'Spatii comerciale';
+                            applyFilters();
+                          },
+                          child: const Text('Spatii comerciale de inchiriat'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            transactionType = 'De vanzare';
+                            propertyFilter = 'Spatii comerciale';
+                            applyFilters();
+                          },
+                          child: const Text('Spatii comerciale de vanzare'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
                     ],
                   ),
                 ),
@@ -669,7 +756,6 @@ class HomePageState extends State<HomePage> {
                                     'Case',
                                     'Teren',
                                     'Spatii comerciale',
-                                    'Birouri',
                                   ],
                                   onChanged: (v) {
                                     propertyFilter = v!;
@@ -786,33 +872,662 @@ class HomePageState extends State<HomePage> {
                               ? const Center(child: Text('Nu exista anunturi'))
                               : SingleChildScrollView(
                                 child: Center(
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 700),
+                                  child: FractionallySizedBox(
+                                    widthFactor: 0.5,
                                     child: Column(
-                                      children: filteredListings.map((data) {
-                                        final id = data['id'] as String;
-                                        galleryControllers.putIfAbsent(id, () => ScrollController());
-                                        return PropertyCard(
-                                          data: data,
-                                          isFavorite: favoriteIds.contains(data['id']),
-                                          onToggleFavorite: toggleFavorite,
-                                          openGallery: openGallery,
-                                          buildMapSection: buildMapSection,
-                                          scrollController: galleryControllers[id],
-                                          showBooking: true,
-                                          onBook: (id) {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => AddBookingPage(
-                                                  agentId: data['agentId'] as String,
-                                                  propertyId: id,
+                                      children:
+                                          filteredListings.map((data) {
+                                            final id = data['id'] as String;
+                                            final agentId =
+                                                data['agentId'] as String;
+                                            galleryControllers.putIfAbsent(
+                                              id,
+                                              () => ScrollController(),
+                                            );
+
+                                            // build full address
+                                            final loc =
+                                                (data['location'] as Map?) ??
+                                                {};
+                                            final fullAddress = [
+                                                  loc['street'] ?? '',
+                                                  loc['number'] ?? '',
+                                                  if ((loc['sector'] ?? '')
+                                                      .toString()
+                                                      .isNotEmpty)
+                                                    'Sector ${loc['sector']}',
+                                                  loc['city'] ?? '',
+                                                  loc['county'] ?? '',
+                                                ]
+                                                .where(
+                                                  (s) => s.trim().isNotEmpty,
+                                                )
+                                                .join(', ');
+
+                                            final images = List<String>.from(
+                                              data['images'] as List? ?? [],
+                                            );
+
+                                            return ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                maxWidth: 700,
+                                              ),
+                                              child: Card(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                elevation: 2,
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    // Image + favorite + tag
+                                                    Stack(
+                                                      children: [
+                                                        ClipRRect(
+                                                          borderRadius:
+                                                              const BorderRadius.vertical(
+                                                                top:
+                                                                    Radius.circular(
+                                                                      12,
+                                                                    ),
+                                                              ),
+                                                          child: AspectRatio(
+                                                            aspectRatio: 16 / 9,
+                                                            child:
+                                                                images.isNotEmpty
+                                                                    ? Image.network(
+                                                                      images
+                                                                          .first,
+                                                                      fit:
+                                                                          BoxFit
+                                                                              .cover,
+                                                                      errorBuilder:
+                                                                          (
+                                                                            _,
+                                                                            __,
+                                                                            ___,
+                                                                          ) => Container(
+                                                                            color:
+                                                                                Colors.grey.shade300,
+                                                                          ),
+                                                                    )
+                                                                    : Container(
+                                                                      color:
+                                                                          Colors
+                                                                              .grey
+                                                                              .shade300,
+                                                                    ),
+                                                          ),
+                                                        ),
+                                                        // Butonul de Favorite (inima)
+                                                        Positioned(
+                                                          top: 8,
+                                                          right: 8,
+                                                          child: Container(
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                                  color:
+                                                                      Colors
+                                                                          .white,
+                                                                  shape:
+                                                                      BoxShape
+                                                                          .circle,
+                                                                ),
+                                                            child: IconButton(
+                                                              icon: Icon(
+                                                                favoriteIds
+                                                                        .contains(
+                                                                          id,
+                                                                        )
+                                                                    ? Icons
+                                                                        .favorite
+                                                                    : Icons
+                                                                        .favorite_border,
+                                                                color:
+                                                                    favoriteIds
+                                                                            .contains(
+                                                                              id,
+                                                                            )
+                                                                        ? Colors
+                                                                            .red
+                                                                        : Colors
+                                                                            .grey,
+                                                              ),
+                                                              onPressed:
+                                                                  () =>
+                                                                      toggleFavorite(
+                                                                        id,
+                                                                      ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Positioned(
+                                                          bottom: 8,
+                                                          left: 8,
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  Theme.of(
+                                                                        context,
+                                                                      )
+                                                                      .colorScheme
+                                                                      .primary,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    4,
+                                                                  ),
+                                                            ),
+                                                            child: Text(
+                                                              data['type']
+                                                                      as String? ??
+                                                                  '',
+                                                              style: const TextStyle(
+                                                                color:
+                                                                    Colors
+                                                                        .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+
+                                                    // Details & ExpansionTile
+                                                    ExpansionTile(
+                                                      tilePadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8,
+                                                          ),
+                                                      title: Text(
+                                                        data['title']
+                                                                as String? ??
+                                                            '',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      subtitle: Text(
+                                                        '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
+                                                      ),
+                                                      childrenPadding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 8,
+                                                          ),
+                                                      children: [
+                                                        if (fullAddress
+                                                            .isNotEmpty) ...[
+                                                          Row(
+                                                            children: [
+                                                              const Icon(
+                                                                Icons
+                                                                    .location_on,
+                                                                size: 16,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                              Expanded(
+                                                                child: Text(
+                                                                  fullAddress,
+                                                                  style:
+                                                                      const TextStyle(
+                                                                        fontSize:
+                                                                            14,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                        const SizedBox(
+                                                          height: 15,
+                                                        ),
+                                                        Wrap(
+                                                          spacing: 8,
+                                                          runSpacing: 4,
+                                                          children: buildChips(
+                                                            data,
+                                                          ),
+                                                        ),
+                                                        if ((data['description']
+                                                                    as String?)
+                                                                ?.isNotEmpty ??
+                                                            false) ...[
+                                                          const SizedBox(
+                                                            height: 20,
+                                                          ),
+                                                          Text(
+                                                            data['description']
+                                                                as String,
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize: 14,
+                                                                ),
+                                                          ),
+                                                        ],
+                                                        if (images
+                                                            .isNotEmpty) ...[
+                                                          const SizedBox(
+                                                            height: 20,
+                                                          ),
+                                                          SizedBox(
+                                                            height: 150,
+                                                            child: Row(
+                                                              children: [
+                                                                IconButton(
+                                                                  icon: const Icon(
+                                                                    Icons
+                                                                        .arrow_back_ios,
+                                                                  ),
+                                                                  onPressed:
+                                                                      () => galleryControllers[id]!.animateTo(
+                                                                        galleryControllers[id]!.offset -
+                                                                            100,
+                                                                        duration: const Duration(
+                                                                          milliseconds:
+                                                                              300,
+                                                                        ),
+                                                                        curve:
+                                                                            Curves.easeInOut,
+                                                                      ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: ListView.separated(
+                                                                    controller:
+                                                                        galleryControllers[id],
+                                                                    scrollDirection:
+                                                                        Axis.horizontal,
+                                                                    itemCount:
+                                                                        images
+                                                                            .length,
+                                                                    separatorBuilder:
+                                                                        (
+                                                                          _,
+                                                                          __,
+                                                                        ) => const SizedBox(
+                                                                          width:
+                                                                              8,
+                                                                        ),
+                                                                    itemBuilder:
+                                                                        (
+                                                                          _,
+                                                                          idx,
+                                                                        ) => GestureDetector(
+                                                                          onTap:
+                                                                              () => openGallery(
+                                                                                context,
+                                                                                images,
+                                                                                idx,
+                                                                              ),
+                                                                          child: ClipRRect(
+                                                                            borderRadius: BorderRadius.circular(
+                                                                              6,
+                                                                            ),
+                                                                            child: Image.network(
+                                                                              images[idx],
+                                                                              width:
+                                                                                  100,
+                                                                              height:
+                                                                                  100,
+                                                                              fit:
+                                                                                  BoxFit.cover,
+                                                                              errorBuilder:
+                                                                                  (
+                                                                                    _,
+                                                                                    __,
+                                                                                    ___,
+                                                                                  ) => Container(
+                                                                                    color:
+                                                                                        Colors.grey.shade300,
+                                                                                  ),
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                  ),
+                                                                ),
+                                                                IconButton(
+                                                                  icon: const Icon(
+                                                                    Icons
+                                                                        .arrow_forward_ios,
+                                                                  ),
+                                                                  onPressed:
+                                                                      () => galleryControllers[id]!.animateTo(
+                                                                        galleryControllers[id]!.offset +
+                                                                            100,
+                                                                        duration: const Duration(
+                                                                          milliseconds:
+                                                                              300,
+                                                                        ),
+                                                                        curve:
+                                                                            Curves.easeInOut,
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                        const SizedBox(
+                                                          height: 20,
+                                                        ),
+                                                        buildMapSection(
+                                                          fullAddress,
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 20,
+                                                        ),
+                                                        // agentii din card
+                                                        if (user != null) ...[
+                                                          FutureBuilder<
+                                                            DocumentSnapshot
+                                                          >(
+                                                            future:
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                      'agents',
+                                                                    )
+                                                                    .doc(
+                                                                      data['agentId']
+                                                                          as String,
+                                                                    )
+                                                                    .get(),
+                                                            builder: (
+                                                              ctx,
+                                                              snapAgent,
+                                                            ) {
+                                                              if (snapAgent
+                                                                  .hasError) {
+                                                                return const Text(
+                                                                  'Eroare detalii agent',
+                                                                );
+                                                              }
+                                                              if (!snapAgent
+                                                                      .hasData ||
+                                                                  !snapAgent
+                                                                      .data!
+                                                                      .exists) {
+                                                                // agentul a fost sters sau nu exista
+                                                                return const Text(
+                                                                  'Agent inexistent',
+                                                                );
+                                                              }
+                                                              final agentDoc =
+                                                                  snapAgent
+                                                                      .data!;
+                                                              final name =
+                                                                  agentDoc.get(
+                                                                        'name',
+                                                                      )
+                                                                      as String;
+                                                              final phone =
+                                                                  agentDoc.get(
+                                                                        'phone',
+                                                                      )
+                                                                      as String;
+                                                              final email = agentDoc.get('email') as String;
+                                                              // Înlocuim return-ul simplu cu un Column
+                                                              return Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment
+                                                                        .stretch,
+                                                                children: [
+                                                                  // —–––––––––––– Rândul cu avatar, nume și buton telefon ––––––––––––
+                                                                  Row(
+                                                                    children: [
+                                                                      CircleAvatar(
+                                                                        radius:
+                                                                            20,
+                                                                        backgroundColor:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                        child: Text(
+                                                                          name.isNotEmpty
+                                                                              ? name[0].toUpperCase()
+                                                                              : 'A',
+                                                                          style: const TextStyle(
+                                                                            color:
+                                                                                Colors.white,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        width:
+                                                                            8,
+                                                                      ),
+                                                                      Expanded(
+                                                                        child: Column(
+                                                                          crossAxisAlignment:
+                                                                              CrossAxisAlignment.start,
+                                                                          children: [
+                                                                            Text(
+                                                                              name,
+                                                                              style: const TextStyle(
+                                                                                fontWeight:
+                                                                                    FontWeight.bold,
+                                                                              ),
+                                                                            ),
+                                                                            Text(email),
+                                                                            if (showPhone[id] ??
+                                                                                false) ...[
+                                                                              const SizedBox(
+                                                                                height:
+                                                                                    4,
+                                                                              ),
+                                                                              Text(
+                                                                                phone,
+                                                                                style: const TextStyle(
+                                                                                  color:
+                                                                                      Colors.grey,
+                                                                                ),
+                                                                              ),
+                                                                            ],
+                                                                          ],
+                                                                        ),
+                                                                      ),
+                                                                      IconButton(
+                                                                        icon: const Icon(
+                                                                          Icons
+                                                                              .phone,
+                                                                        ),
+                                                                        color:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                        onPressed:
+                                                                            () => togglePhone(
+                                                                              id,
+                                                                            ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+
+                                                                  const SizedBox(
+                                                                    height: 7,
+                                                                  ),
+
+                                                                  // —–––––––––––– Textul „sau” centrat ––––––––––––
+                                                                  const Center(
+                                                                    child: Text(
+                                                                      'sau',
+                                                                      style: TextStyle(
+                                                                        fontSize:
+                                                                            14,
+                                                                        fontStyle:
+                                                                            FontStyle.italic,
+                                                                        color:
+                                                                            Colors.grey,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+
+                                                                  const SizedBox(
+                                                                    height: 12,
+                                                                  ),
+
+                                                                  // —–––––––––––– Butonul „Programează o vizionare” ––––––––––––
+                                                                  Center(
+                                                                    child: ElevatedButton(
+                                                                      onPressed: () {
+                                                                        Navigator.push(
+                                                                          context,
+                                                                          MaterialPageRoute(
+                                                                            builder:
+                                                                                (_) => AddBookingPage(
+                                                                                  agentId:
+                                                                                      agentId,
+                                                                                  propertyId:
+                                                                                      id,
+                                                                                ),
+                                                                          ),
+                                                                        );
+                                                                      },
+                                                                      style: ElevatedButton.styleFrom(
+                                                                        backgroundColor:
+                                                                            Theme.of(
+                                                                              context,
+                                                                            ).colorScheme.primary,
+                                                                        padding: const EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              24,
+                                                                          vertical:
+                                                                              12,
+                                                                        ),
+                                                                        shape: RoundedRectangleBorder(
+                                                                          borderRadius:
+                                                                              BorderRadius.circular(
+                                                                                8,
+                                                                              ),
+                                                                        ),
+                                                                      ),
+                                                                      child: const Text(
+                                                                        'Programeaza o vizionare',
+                                                                        style: TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  SizedBox(
+                                                                    height: 10,
+                                                                  ),
+                                                                ],
+                                                              );
+                                                            },
+                                                          ),
+                                                        ] else ...[
+                                                          // Dacă nu avem user logat, afișăm tot „nume agent + sau + buton”
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .stretch,
+                                                            children: [
+                                                              Text(
+                                                                data['agentName']
+                                                                        as String? ??
+                                                                    '',
+                                                                style: const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 14,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 7,
+                                                              ),
+                                                              //sau text
+                                                              const Center(
+                                                                child: Text(
+                                                                  'sau',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontStyle:
+                                                                        FontStyle
+                                                                            .italic,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey,
+                                                                  ),
+                                                                ),
+                                                              ),
+
+                                                              const SizedBox(
+                                                                height: 12,
+                                                              ),
+
+                                                              Center(
+                                                                child: ElevatedButton(
+                                                                  onPressed: () {
+                                                                    Navigator.push(
+                                                                      context,
+                                                                      MaterialPageRoute(
+                                                                        builder:
+                                                                            (
+                                                                              _,
+                                                                            ) =>
+                                                                                const FavoritesPage(),
+                                                                      ),
+                                                                    );
+                                                                  },
+                                                                  style: ElevatedButton.styleFrom(
+                                                                    backgroundColor:
+                                                                        Theme.of(
+                                                                          context,
+                                                                        ).colorScheme.primary,
+                                                                    padding: const EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          24,
+                                                                      vertical:
+                                                                          12,
+                                                                    ),
+                                                                    shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                            8,
+                                                                          ),
+                                                                    ),
+                                                                  ),
+                                                                  child: const Text(
+                                                                    'Programeaza o vizionare',
+                                                                    style: TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             );
-                                          },
-                                        );
-                                      }).toList(),
+                                          }).toList(),
                                     ),
                                   ),
                                 ),
@@ -848,6 +1563,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+  
   Widget buildTextField({
     required String hint,
     required double width,
