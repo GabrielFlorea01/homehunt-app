@@ -11,10 +11,10 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final emailController = TextEditingController();
-  bool isLoading = false;
-  bool emailSent = false;
-  String? errorMessage;
+  final emailController = TextEditingController(); // controller pentru email
+  bool isLoading = false; // flag pentru loading
+  bool emailSent = false; // flag daca s-a trimis emailul
+  String? errorMessage; // mesaj de eroare
 
   @override
   void dispose() {
@@ -22,6 +22,7 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
+  //emailul de resetare
   Future<void> sendResetEmail() async {
     setState(() {
       isLoading = true;
@@ -29,8 +30,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      await AuthService().forgotPassword(emailController.text.trim());
-      setState(() => emailSent = true);
+      await AuthService().forgotPassword(emailController.text.trim()); // serviciul de resetare
+      setState(() => emailSent = true); // marcheaza ca trimis emailul
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
     } finally {
@@ -64,6 +65,7 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
+                  //text informativ
                   emailSent
                       ? 'Verifica email-ul pentru linkul de resetare'
                       : 'Introdu adresa de email pentru a primi link de resetare',
@@ -71,7 +73,7 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-
+                // afiseaza eroare daca e cazul
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -79,7 +81,7 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ),
                   const SizedBox(height: 20),
                 ],
-
+                // formularul doar daca nu s-a trimis emailul
                 if (!emailSent) ...[
                   TextField(
                     controller: emailController,
@@ -97,7 +99,7 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2), // loading
                             )
                             : const Text('Trimite link'),
                   ),
@@ -108,11 +110,11 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
+                        builder: (context) => const LoginPage(), // inapoi la login
                       ),
                     );
                   },
-                  child: const Text('Inapoi la login'),
+                  child: const Text('Inapoi la login'), //buton inapoi
                 ),
               ],
             ),

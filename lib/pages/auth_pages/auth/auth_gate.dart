@@ -10,9 +10,11 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // StreamBuilder pentru a asculta schimbarile de autentificare
     return StreamBuilder(
       stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
+        //indicator de incarcare cat timp conexiunea este in asteptare
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),

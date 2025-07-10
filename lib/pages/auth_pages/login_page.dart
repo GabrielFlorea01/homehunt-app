@@ -12,6 +12,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class LoginPageState extends State<LoginPage> {
+  // controllere pentru email si parola
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
@@ -25,7 +26,10 @@ class LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // functie pentru login normal
   Future<void> login() async {
+    if (!mounted) return;
+    
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -43,6 +47,7 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
+  // login cu google
   Future<void> googleSignIn() async {
     if (!mounted) return;
 
@@ -64,7 +69,7 @@ class LoginPageState extends State<LoginPage> {
       if (mounted) {
         setState(() {
           isLoading = false;
-          errorMessage = "A aparut o eroare";
+          errorMessage = "a aparut o eroare";
         });
       }
     }
@@ -84,9 +89,11 @@ class LoginPageState extends State<LoginPage> {
               child: IntrinsicHeight(
                 child:
                     isWide
+                        // daca e lat, afisam login si imaginea pe orizontala
                         ? Row(
                           children: [buildLoginContainer(), buildImageSide()],
                         )
+                        // altfel, pe verticala
                         : Column(
                           children: [buildImageSide(), buildLoginContainer()],
                         ),
@@ -98,6 +105,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
+  // containerul cu formularul de login
   Widget buildLoginContainer() {
     return Expanded(
       child: Center(
@@ -114,12 +122,14 @@ class LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 15),
+                // logo-ul aplicatiei
                 Image(
                   image: const AssetImage('lib/images/logomov.png'),
                   width: 150,
                   height: 150,
                 ),
                 const SizedBox(height: 30),
+                // afisam eroarea daca exista
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -127,6 +137,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // camp pentru email
                 TextField(
                   controller: emailController,
                   decoration: const InputDecoration(
@@ -135,6 +146,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // camp pentru parola cu toggle pentru vizibilitate
                 TextField(
                   controller: passwordController,
                   obscureText: obscurePassword,
@@ -156,6 +168,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // buton pentru uitat parola
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -171,6 +184,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 15),
+                // buton de login, cu loading indicator daca e loading
                 FilledButton(
                   onPressed: isLoading ? null : login,
                   child:
@@ -183,6 +197,7 @@ class LoginPageState extends State<LoginPage> {
                           : const Text('Conecteaza-te'),
                 ),
                 const SizedBox(height: 45),
+                // buton pentru login cu google
                 FilledButton.icon(
                   onPressed: isLoading ? null : googleSignIn,
                   icon: Image.asset(
@@ -198,6 +213,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                // link catre pagina de signup
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -223,6 +239,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
+  // partea cu imaginea din dreapta/stanga
   Widget buildImageSide() {
     return Expanded(
       child: Container(
