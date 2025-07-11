@@ -166,6 +166,11 @@ class LoginPageState extends State<LoginPage> {
                       },
                     ),
                   ),
+                  onSubmitted: (_) {
+                    if (!isLoading) {
+                      login();
+                    }
+                  },
                 ),
                 const SizedBox(height: 8),
                 // buton pentru uitat parola

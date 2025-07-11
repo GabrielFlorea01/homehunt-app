@@ -21,10 +21,22 @@ class AdminListingsPageState extends State<AdminListingsPage> {
   }
 
   Widget buildListingsContainer() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 600),
-      child: Padding(
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+        margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
           children: [
             TextField(

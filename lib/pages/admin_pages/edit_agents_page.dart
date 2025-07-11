@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:homehunt/pages/admin_pages/add_agent_page.dart';
 
 class EditAgentsPage extends StatefulWidget {
@@ -94,7 +95,7 @@ class EditAgentsPageState extends State<EditAgentsPage> {
               child: Container(
                 color: Colors.white,
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: agentsColl.orderBy('createdAt').snapshots(),
+                  stream: agentsColl.orderBy('createdAt', descending: true).snapshots(),
                   builder: (ctx, snapshot) {
                     if (snapshot.hasError) {
                       return Center(child: Text('Eroare: ${snapshot.error}'));
@@ -149,6 +150,7 @@ class EditAgentsPageState extends State<EditAgentsPage> {
                                     labelText: 'Telefon',
                                     prefixIcon: Icon(Icons.phone),
                                   ),
+                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                   keyboardType: TextInputType.phone,
                                   onChanged: (val) => doc.reference.update({'phone': val}),
                                 ),

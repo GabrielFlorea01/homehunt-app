@@ -42,10 +42,16 @@ class UsersReportPageState extends State<UsersReportPage> {
         .collection('users')
         .orderBy('createdAt');
     if (fromDate != null) {
-      ref = ref.startAt([Timestamp.fromDate(fromDate!)]);
+      // inceputul zilei
+      ref = ref.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(
+        DateTime(fromDate!.year, fromDate!.month, fromDate!.day, 0, 0, 0),
+      ));
     }
     if (toDate != null) {
-      ref = ref.endAt([Timestamp.fromDate(toDate!)]);
+      // sfarsitul zilei
+      ref = ref.where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(
+        DateTime(toDate!.year, toDate!.month, toDate!.day, 23, 59, 59, 999),
+      ));
     }
     final snap = await ref.get();
     setState(() {

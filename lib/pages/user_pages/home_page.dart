@@ -114,11 +114,24 @@ class HomePageState extends State<HomePage> {
   /// Toggle între adăugare/scoatere din favorites în Firestore
   Future<void> toggleFavorite(String propertyId) async {
     if (user == null) return;
+
+    final property = allListings.firstWhere(
+      (p) => p['id'] == propertyId,
+      orElse: () => {},
+    );
+
+    if(property['type'] == 'Vandut') {
+      setState(() {
+        errorMessage = 'Nu poti adauga la favorite un anunt vandut';
+      });
+      return;
+    }
+
     final userDoc = usersRef.doc(user!.uid);
 
     try {
       if (favoriteIds.contains(propertyId)) {
-        // dacă există deja, scoatem:
+        // daca exista deja, scoatem:
         await userDoc.update({
           'favoriteIds': FieldValue.arrayRemove([propertyId]),
         });
@@ -872,8 +885,8 @@ class HomePageState extends State<HomePage> {
                               ? const Center(child: Text('Nu exista anunturi'))
                               : SingleChildScrollView(
                                 child: Center(
-                                  child: FractionallySizedBox(
-                                    widthFactor: 0.5,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 600),
                                     child: Column(
                                       children:
                                           filteredListings.map((data) {
