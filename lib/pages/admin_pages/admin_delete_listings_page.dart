@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AdminListingsPage extends StatefulWidget {
-  const AdminListingsPage({super.key});
+class AdminDeleteListingsPage extends StatefulWidget {
+  const AdminDeleteListingsPage({super.key});
 
   @override
-  State<AdminListingsPage> createState() => AdminListingsPageState();
+  State<AdminDeleteListingsPage> createState() => AdminDeleteListingsPageState();
 }
 
-class AdminListingsPageState extends State<AdminListingsPage> {
-  final CollectionReference propertiesRef = FirebaseFirestore.instance.collection('properties');
+class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
+  final CollectionReference propertiesRef = FirebaseFirestore.instance
+      .collection('properties');
 
   String searchQuery = '';
   final TextEditingController searchController = TextEditingController();
@@ -23,7 +24,7 @@ class AdminListingsPageState extends State<AdminListingsPage> {
   Widget buildListingsContainer() {
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 800),
         margin: const EdgeInsets.all(24),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -39,6 +40,28 @@ class AdminListingsPageState extends State<AdminListingsPage> {
         ),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Sterge anunturi',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 25),
             TextField(
               controller: searchController,
               decoration: InputDecoration(
@@ -57,9 +80,10 @@ class AdminListingsPageState extends State<AdminListingsPage> {
             const SizedBox(height: 16),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: propertiesRef
-                    .orderBy('createdAt', descending: true)
-                    .snapshots(),
+                stream:
+                    propertiesRef
+                        .orderBy('createdAt', descending: true)
+                        .snapshots(),
                 builder: (ctx, snap) {
                   if (snap.hasError) {
                     return Center(child: Text('Eroare: ${snap.error}'));
@@ -67,11 +91,12 @@ class AdminListingsPageState extends State<AdminListingsPage> {
                   if (!snap.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  final docs = snap.data!.docs.where((doc) {
-                    final title =
-                        (doc['title'] as String? ?? '').toLowerCase();
-                    return title.contains(searchQuery);
-                  }).toList();
+                  final docs =
+                      snap.data!.docs.where((doc) {
+                        final title =
+                            (doc['title'] as String? ?? '').toLowerCase();
+                        return title.contains(searchQuery);
+                      }).toList();
                   if (docs.isEmpty) {
                     return const Center(child: Text('Niciun anunt gasit'));
                   }
@@ -97,8 +122,7 @@ class AdminListingsPageState extends State<AdminListingsPage> {
                               // text pe stanga
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       data['title'] as String? ?? '',
@@ -120,23 +144,22 @@ class AdminListingsPageState extends State<AdminListingsPage> {
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
-                                      child: images.isNotEmpty
-                                          ? Image.network(
-                                              images.first,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (_, __, ___) =>
-                                                      Container(
-                                                color:
-                                                    Colors.grey.shade300,
+                                      child:
+                                          images.isNotEmpty
+                                              ? Image.network(
+                                                images.first,
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (_, __, ___) => Container(
+                                                      color:
+                                                          Colors.grey.shade300,
+                                                    ),
+                                              )
+                                              : Container(
+                                                color: Colors.grey.shade300,
                                               ),
-                                            )
-                                          : Container(
-                                              color:
-                                                  Colors.grey.shade300,
-                                            ),
                                     ),
                                     Positioned(
                                       top: 4,
@@ -151,30 +174,36 @@ class AdminListingsPageState extends State<AdminListingsPage> {
                                             color: Colors.redAccent,
                                           ),
                                           onPressed: () async {
-                                            final ok =
-                                                await showDialog<bool>(
+                                            final ok = await showDialog<bool>(
                                               context: context,
-                                              builder: (ctx) => AlertDialog(
-                                                title: const Text(
-                                                  'Confirma stergerea',
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(
-                                                            ctx, false),
-                                                    child:
-                                                        const Text('Anuleaza'),
+                                              builder:
+                                                  (ctx) => AlertDialog(
+                                                    title: const Text(
+                                                      'Confirma stergerea',
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              ctx,
+                                                              false,
+                                                            ),
+                                                        child: const Text(
+                                                          'Anuleaza',
+                                                        ),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              ctx,
+                                                              true,
+                                                            ),
+                                                        child: const Text(
+                                                          'Sterge',
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(
-                                                            ctx, true),
-                                                    child:
-                                                        const Text('Sterge'),
-                                                  ),
-                                                ],
-                                              ),
                                             );
                                             if (ok == true) {
                                               await propertiesRef
@@ -203,39 +232,44 @@ class AdminListingsPageState extends State<AdminListingsPage> {
     );
   }
 
-  Widget buildImageSide() {
-    return Expanded(
-      flex: 2,
-      child: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('lib/images/homehuntlogin.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width >= 900;
+
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (ctx, constraints) {
+          if (isWide) {
+            return Row(
+              children: [
+                Expanded(child: buildListingsContainer()),
+                Expanded(child: buildImageSide()),
+              ],
+            );
+          } else {
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  buildImageSide(height: 300),
+                  buildListingsContainer(),
+                ],
+              ),
+            );
+          }
+        },
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final isWide = width >= 900;
-
-    return Scaffold(
-      body: isWide
-          ? Row(
-              children: [
-                buildListingsContainer(),
-                buildImageSide(),
-              ],
-            )
-          : Column(
-              children: [
-                buildImageSide(),
-                Expanded(child: buildListingsContainer()),
-              ],
-            ),
+  Widget buildImageSide({double? height}) {
+    return Container(
+      height: height,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('lib/images/homehuntlogin.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 }

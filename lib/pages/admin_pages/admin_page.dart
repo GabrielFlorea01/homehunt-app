@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:homehunt/pages/admin_pages/admin_listings_page.dart';
-import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
+import 'package:homehunt/pages/admin_pages/admin_agents_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_delete_listings_page.dart';
 import 'package:homehunt/pages/admin_pages/admin_sold_rented_page.dart';
-import 'package:homehunt/pages/admin_pages/edit_agents_page.dart';
-import 'package:homehunt/pages/reports_pages/rapoarte_page.dart';
+import 'package:homehunt/pages/admin_pages/reports_pages/rapoarte_page.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -43,19 +43,23 @@ class AdminPageState extends State<AdminPage> {
   void confirmSignOut() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sigur te deconectezi?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Nu')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              signOut();
-            },
-            child: const Text('Da'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Sigur te deconectezi?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Nu'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  signOut();
+                },
+                child: const Text('Da'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -92,10 +96,14 @@ class AdminPageState extends State<AdminPage> {
                         const SizedBox(height: 30),
                         CircleAvatar(
                           radius: 40,
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           child: Text(
                             user?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                            style: const TextStyle(fontSize: 32, color: Colors.white),
+                            style: const TextStyle(
+                              fontSize: 32,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 50),
@@ -107,7 +115,7 @@ class AdminPageState extends State<AdminPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const EditAgentsPage(),
+                                builder: (context) => const AdminAgentsPage(),
                               ),
                             );
                           },
@@ -133,12 +141,14 @@ class AdminPageState extends State<AdminPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AdminListingsPage(),
+                                builder:
+                                    (context) =>
+                                        const AdminDeleteListingsPage(),
                               ),
                             );
                           },
                         ),
-                          ListTile(
+                        ListTile(
                           leading: const Icon(Icons.playlist_add_check_circle),
                           title: const Text('Vandut/inchiriat'),
                           onTap: () {
@@ -146,7 +156,8 @@ class AdminPageState extends State<AdminPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AdminSoldRentedPage(),
+                                builder:
+                                    (context) => const AdminSoldRentedPage(),
                               ),
                             );
                           },

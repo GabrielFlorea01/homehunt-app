@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AddAgentPage extends StatefulWidget {
-  const AddAgentPage({super.key});
+class AdminAddAgentPage extends StatefulWidget {
+  const AdminAddAgentPage({super.key});
 
   @override
-  AddAgentPageState createState() => AddAgentPageState();
+  AdminAddAgentPageState createState() => AdminAddAgentPageState();
 }
 
-class AddAgentPageState extends State<AddAgentPage> {
+class AdminAddAgentPageState extends State<AdminAddAgentPage> {
   // colectia agents din Firestore
   final agentsColl = FirebaseFirestore.instance.collection('agents');
   // controller pentru campurile de input
@@ -60,10 +60,7 @@ class AddAgentPageState extends State<AddAgentPage> {
             return SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  buildImagePane(height: 300),
-                  buildFormPane(),
-                ],
+                children: [buildImagePane(height: 300), buildFormPane()],
               ),
             );
           }
@@ -107,20 +104,24 @@ class AddAgentPageState extends State<AddAgentPage> {
                     const SizedBox(width: 8),
                     const Text(
                       'Adauga Agent',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 // buton adauga
                 TextButton(
                   onPressed: saveAgent,
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Adauga'),
+                  child:
+                      isSaving
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Adauga'),
                 ),
               ],
             ),

@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
-import 'package:homehunt/pages/admin_pages/add_agent_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_add_agent_page.dart';
 
-class EditAgentsPage extends StatefulWidget {
-  const EditAgentsPage({super.key});
+class AdminAgentsPage extends StatefulWidget {
+  const AdminAgentsPage({super.key});
 
   @override
-  EditAgentsPageState createState() => EditAgentsPageState();
+  AdminAgentsPageState createState() => AdminAgentsPageState();
 }
 
-class EditAgentsPageState extends State<EditAgentsPage> {
+class AdminAgentsPageState extends State<AdminAgentsPage> {
   final agentsColl = FirebaseFirestore.instance.collection('agents');
 
   void openAddAgent() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AddAgentPage()),
+      MaterialPageRoute(builder: (_) => const AdminAddAgentPage()),
     );
   }
 
