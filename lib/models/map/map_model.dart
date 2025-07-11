@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 Future<LatLng?> geocodeAddress(String address) async {
-  // URL-ul pentru request, + Romania ca sa fie mai precis
+  // URL-ul pentru request + Romania ca sa fie mai precis
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
     'address': '$address, Romania',
     'key': googleMapsApiKey,
