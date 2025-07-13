@@ -2,7 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'reports_models/user_model.dart';
+
+class UserModel {
+  final String id;
+  final String email;
+  final DateTime createdAt;
+
+  UserModel({required this.id, required this.email, required this.createdAt});
+
+  factory UserModel.fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    return UserModel(
+      id: doc.id,
+      email: data['email'] as String,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+    );
+  }
+}
 
 class UsersReportPage extends StatefulWidget {
   const UsersReportPage({super.key});

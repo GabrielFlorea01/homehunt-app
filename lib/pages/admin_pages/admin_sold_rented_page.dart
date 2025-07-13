@@ -9,9 +9,10 @@ class AdminSoldRentedPage extends StatefulWidget {
 }
 
 class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
+  // referinta la colectia de proprietati din Firestore
   final propertiesRef = FirebaseFirestore.instance.collection('properties');
-  String searchQuery = '';
-  final searchController = TextEditingController();
+  String searchQuery = ''; // textul cautat in campul de cautare
+  final searchController = TextEditingController(); // controller pentru cautare
 
   @override
   void dispose() {
@@ -19,7 +20,8 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
     super.dispose();
   }
 
-  Future<void> toggleSold(String id, String currentType) async {
+  // se marcheaza proprietatea ca vandut sau inchiriat in functie de tipul curent
+  Future<void> toggleSoldRented(String id, String currentType) async {
     final newType =
         currentType == 'De vanzare'
             ? 'Vandut'
@@ -29,6 +31,50 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
     await propertiesRef.doc(id).update({'type': newType});
   }
 
+  // imaginea de fundal
+  Widget buildImageSide({double? height}) {
+    return Container(
+      height: height,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('lib/images/homehuntlogin.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width >= 900;
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (ctx, constraints) {
+          if (isWide) {
+            // pe ecrane mari afiseaza lista si imaginea in paralel
+            return Row(
+              children: [
+                Expanded(child: buildListingsContainer()),
+                Expanded(child: buildImageSide()),
+              ],
+            );
+          } else {
+            // pe ecrane mici imaginea sus si lista jos
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  buildImageSide(height: 200),
+                  buildListingsContainer(),
+                ],
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  // widget pentru afisarea si cautarea anunturilor
   Widget buildListingsContainer() {
     return Container(
       constraints: const BoxConstraints(maxWidth: 600),
@@ -47,6 +93,7 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
       ),
       child: Column(
         children: [
+          // buton de inapoi si titlu
           Row(
             children: [
               IconButton(
@@ -68,6 +115,7 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
             ],
           ),
           const SizedBox(height: 25),
+          // cautare dupa titlu
           TextField(
             controller: searchController,
             decoration: InputDecoration(
@@ -84,6 +132,7 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
             },
           ),
           const SizedBox(height: 16),
+          // lista anunturilor filtrate
           StreamBuilder<QuerySnapshot>(
             stream:
                 propertiesRef
@@ -104,6 +153,7 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
               if (docs.isEmpty) {
                 return const Center(child: Text('Niciun anunt gasit'));
               }
+              // fiecare anunt in card cu imagine de referinta si buton de marcare
               return ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -125,6 +175,7 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
+                          // titlul si tipul anuntului
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,6 +193,7 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
                             ),
                           ),
                           const SizedBox(width: 12),
+                          // imaginea anuntului daca exista
                           if (images.isNotEmpty) ...[
                             SizedBox(
                               width: 100,
@@ -160,8 +212,9 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
                             ),
                             const SizedBox(width: 12),
                           ],
+                          // buton pentru a marca anuntul ca vandut/inchiriat
                           ElevatedButton(
-                            onPressed: () => toggleSold(doc.id, type),
+                            onPressed: () => toggleSoldRented(doc.id, type),
                             child: const Text('Aplica'),
                           ),
                         ],
@@ -173,46 +226,6 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
             },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget buildImageSide({double? height}) {
-    return Container(
-      height: height,
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('lib/images/homehuntlogin.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 900;
-    return Scaffold(
-      body: LayoutBuilder(
-        builder: (ctx, constraints) {
-          if (isWide) {
-            return Row(
-              children: [
-                Expanded(child: buildListingsContainer()),
-                Expanded(child: buildImageSide()),
-              ],
-            );
-          } else {
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  buildImageSide(height: 200),
-                  buildListingsContainer(),
-                ],
-              ),
-            );
-          }
-        },
       ),
     );
   }

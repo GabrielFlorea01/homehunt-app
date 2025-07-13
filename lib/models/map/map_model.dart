@@ -5,6 +5,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+// Model de widget pentru harta afisata in card-uri
+
+// obtine coordonatele geografice ale unei adrese
 Future<LatLng?> geocodeAddress(String address) async {
   // URL-ul pentru request + Romania ca sa fie mai precis
   final url = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
@@ -22,7 +25,8 @@ Future<LatLng?> geocodeAddress(String address) async {
     return null;
   }
   // coordonatele din raspuns
-  final loc = body['results'][0]['geometry']['location'] as Map<String, dynamic>;
+  final loc =
+      body['results'][0]['geometry']['location'] as Map<String, dynamic>;
   return LatLng((loc['lat'] as num).toDouble(), (loc['lng'] as num).toDouble());
 }
 

@@ -30,7 +30,9 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      await AuthService().forgotPassword(emailController.text.trim()); // serviciul de resetare
+      await AuthService().forgotPassword(
+        emailController.text.trim(),
+      ); // serviciul de resetare
       setState(() => emailSent = true); // marcheaza ca trimis emailul
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
@@ -99,7 +101,9 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2), // loading
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ), // loading
                             )
                             : const Text('Trimite link'),
                   ),
@@ -110,7 +114,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LoginPage(), // inapoi la login
+                        builder:
+                            (context) => const LoginPage(), // inapoi la login
                       ),
                     );
                   },

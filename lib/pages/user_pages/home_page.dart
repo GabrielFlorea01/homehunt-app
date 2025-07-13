@@ -22,30 +22,40 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
+  User? user; // userul curent
+  bool isLoading = true; // stare pentru indicator de incarcare
+  String? errorMessage; // mesaj de eroare daca exista
+
+  // filtrele de sus pentru anunturi
+
+  // tipul tranzactiei (vanzare/inchiriere) - default = 'Toate'
+  String transactionType = 'Toate';
+  // tipul proprietatii - default = 'Tip de proprietate'
+  String propertyFilter = 'Tip de proprietate';
+  String? roomFilter; // numarul de camere
+  String? locationFilter; // localitatea
+  double? minPrice; // pretul minim
+  double? maxPrice; // pretul maxim
+  String? titleFilter; // titlul anuntului
+  // sortarea anunturilor - default = 'Cele mai noi'
+  String selectedSort = 'Cele mai noi';
+
+  // toate anunturile din baza de date
+  List<Map<String, dynamic>> allListings = [];
+  // anunturile filtrate in functie de criterii
+  List<Map<String, dynamic>> filteredListings = [];
+  // lista de favorite a userului
+  List<String> favourites = [];
+  // afiseaza/ascunde telefonul agentului pentru fiecare anunt
+  Map<String, bool> showPhone = {};
+  // controllere pentru galeria de imagini a fiecarui anunt
+  Map<String, ScrollController> galleryControllers = {};
+
+  // stream pentru ascultare modificari pentru proprietati si user
   StreamSubscription<QuerySnapshot>? snapshotProperties;
   StreamSubscription<DocumentSnapshot>? snapshotUserDoc;
 
-  User? user;
-  bool isLoading = true;
-  String? errorMessage;
-
-  // Filters
-  String transactionType = 'Toate';
-  String propertyFilter = 'Tip de proprietate';
-  String? roomFilter;
-  String? locationFilter;
-  double? minPrice;
-  double? maxPrice;
-  String? titleFilter;
-  String selectedSort = 'Cele mai noi';
-
-  // Data
-  List<Map<String, dynamic>> allListings = [];
-  List<Map<String, dynamic>> filteredListings = [];
-  List<String> favoriteIds = []; // lista de favorites a user-ului
-  Map<String, bool> showPhone = {};
-  Map<String, ScrollController> galleryControllers = {};
-
+  // referinte la colectiile din baza de date
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection('properties');
   final CollectionReference usersRef = FirebaseFirestore.instance.collection(
@@ -55,9 +65,10 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    loadUserAndProperties();
+    loadUserAndProperties(); // incarca userul curent si proprietatile din baza la initializare
   }
 
+  // se elibereaza stream-urile la eliminarea widget-ului din arbore
   @override
   void dispose() {
     snapshotProperties?.cancel();
@@ -65,18 +76,18 @@ class HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  // incarca userul curent si proprietatile din baza
   Future<void> loadUserAndProperties() async {
     setState(() => isLoading = true);
 
-    // 1) user-ul curent
+    // userul curent
     user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // daca user e null, nu afisam nimic
       setState(() => isLoading = false);
       return;
     }
 
-    // 2)  proprietatile (lista completa, pentru filtrare)
+    // toate proprietatile pentru filtrare
     snapshotProperties = propertiesRef
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -93,25 +104,22 @@ class HomePageState extends State<HomePage> {
           },
           onError: (e) {
             if (!mounted) return;
-            setState(() => errorMessage = 'Eroare la incărcarea anunyurilor');
+            setState(() => errorMessage = 'Eroare la incarcarea anunturilor');
           },
         );
 
-    // 3) ascultăm documentul user-ului pentru a prelua array-ul de favoriteIds
+    // listener pe documentul userului pentru favorite
     snapshotUserDoc = usersRef.doc(user!.uid).snapshots().listen((docSnap) {
       if (!mounted) return;
       final data = docSnap.data() as Map<String, dynamic>? ?? {};
-      final favList = data['favoriteIds'] as List<dynamic>? ?? [];
-      favoriteIds = favList.map((e) => e.toString()).toList();
-      // nu afectează lista allListings, dar va forța rebuild pentru a actualiza iconițele inimioară
+      final favList = data['favourites'] as List<dynamic>? ?? [];
+      favourites = favList.map((e) => e.toString()).toList();
       setState(() {});
     });
-
-    // 4) terminăm loading
     setState(() => isLoading = false);
   }
 
-  /// Toggle între adăugare/scoatere din favorites în Firestore
+  // adauga sau scoate din favorite in firestore
   Future<void> toggleFavorite(String propertyId) async {
     if (user == null) return;
 
@@ -120,7 +128,8 @@ class HomePageState extends State<HomePage> {
       orElse: () => {},
     );
 
-    if(property['type'] == 'Vandut') {
+    // daca proprietatea este vanduta nu se poate adauga la favorite
+    if (property['type'] == 'Vandut') {
       setState(() {
         errorMessage = 'Nu poti adauga la favorite un anunt vandut';
       });
@@ -130,31 +139,29 @@ class HomePageState extends State<HomePage> {
     final userDoc = usersRef.doc(user!.uid);
 
     try {
-      if (favoriteIds.contains(propertyId)) {
-        // daca exista deja, scoatem:
+      if (favourites.contains(propertyId)) {
+        // daca exista deja scoatem
         await userDoc.update({
-          'favoriteIds': FieldValue.arrayRemove([propertyId]),
+          'favourites': FieldValue.arrayRemove([propertyId]),
         });
-        // actualizăm local:
-        favoriteIds.remove(propertyId);
+        favourites.remove(propertyId);
       } else {
-        // altfel adăugăm:
+        // else adaugam
         await userDoc.update({
-          'favoriteIds': FieldValue.arrayUnion([propertyId]),
+          'favourites': FieldValue.arrayUnion([propertyId]),
         });
-        favoriteIds.add(propertyId);
+        favourites.add(propertyId);
       }
       if (mounted) setState(() {});
     } catch (e) {
-      // dacă nu există câmpul favoriteIds, putem crea
+      // daca nu exista campul favourites il cream
       try {
         await userDoc.set({
-          'favoriteIds': [propertyId],
+          'favourites': [propertyId],
         }, SetOptions(merge: true));
-        favoriteIds = [propertyId];
+        favourites = [propertyId];
         if (mounted) setState(() {});
       } catch (_) {
-        // eroare generică
         if (mounted) {
           setState(() => errorMessage = 'Eroare la actualizarea favorite');
         }
@@ -162,6 +169,7 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  // logout user
   Future<void> signOut() async {
     setState(() {
       isLoading = true;
@@ -169,6 +177,7 @@ class HomePageState extends State<HomePage> {
     });
 
     try {
+      // se apeleaza metoda de sign-out din AuthService
       await AuthService().signOut();
     } on AuthException catch (e) {
       setState(() => errorMessage = e.message);
@@ -179,14 +188,15 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  // aplica filtrele pe lista de anunturi
   void applyFilters() {
     filteredListings =
         allListings.where((data) {
-          // transaction
+          // tranzactie
           if (transactionType != 'Toate' && data['type'] != transactionType) {
             return false;
           }
-          // category mapping
+          // tip proprietate
           if (propertyFilter != 'Tip de proprietate') {
             final mapFilter =
                 {
@@ -200,13 +210,13 @@ class HomePageState extends State<HomePage> {
               return false;
             }
           }
-          //titlu
+          // filtrul pentru titlu
           final title = (data['title'] as String? ?? '').toLowerCase();
           if (titleFilter?.isNotEmpty == true &&
               !title.contains(titleFilter!.toLowerCase())) {
             return false;
           }
-          // rooms
+          // filtrul pentru camere
           if (roomFilter?.isNotEmpty == true) {
             final cat = data['category'] as String? ?? '';
             String actualRooms;
@@ -228,10 +238,12 @@ class HomePageState extends State<HomePage> {
               return false;
             }
           }
-          // location substring
+          //filtrul pentru locatie
           if (locationFilter?.isNotEmpty == true) {
             final loc = (data['location'] as Map?) ?? {};
-            final fullAddr =
+            // se constuieste adresa formatata pentru filtrare
+            // se verifica daca adresa contine textul din filtru
+            final fullAddress =
                 [
                   loc['street'] ?? '',
                   loc['number'] ?? '',
@@ -240,11 +252,11 @@ class HomePageState extends State<HomePage> {
                   loc['city'] ?? '',
                   loc['county'] ?? '',
                 ].where((s) => s.trim().isNotEmpty).join(', ').toLowerCase();
-            if (!fullAddr.contains(locationFilter!.toLowerCase())) {
+            if (!fullAddress.contains(locationFilter!.toLowerCase())) {
               return false;
             }
           }
-          // price
+          // filtru pentru pret
           final price = (data['price'] as num?)?.toDouble() ?? 0.0;
           if (minPrice != null && price < minPrice!) {
             return false;
@@ -257,13 +269,16 @@ class HomePageState extends State<HomePage> {
     setState(() {});
   }
 
+  // afiseaza/ascunde telefonul agentului
   void togglePhone(String id) {
     showPhone[id] = !(showPhone[id] ?? false);
     setState(() {});
   }
 
+  // da dismiss la mesajul de eroare
   void clearError() => setState(() => errorMessage = null);
 
+  // navigare catre pagina de adaugare a unui anunt nou
   void addListing() {
     Navigator.push(
       context,
@@ -271,36 +286,39 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  void myProfilePage() {
+  // navigare catre pagina de profil a userului
+  void profilePage() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ProfilePage()),
     );
   }
 
+  // casuta de dialog pentru confirmare logout
   void confirmSignOut() {
     showDialog(
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('Sigur te deconectezi?'),
+            title: const Text('Te deconectezi?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('No'),
+                child: const Text('Nu'),
               ),
               TextButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
                   await signOut();
                 },
-                child: const Text('Yes'),
+                child: const Text('Sigur'),
               ),
             ],
           ),
     );
   }
 
+  // deschide galeria de imagini la apasare
   void openGallery(BuildContext ctx, List<String> imgs, int idx) {
     Navigator.of(ctx).push(
       MaterialPageRoute(
@@ -310,10 +328,6 @@ class HomePageState extends State<HomePage> {
               appBar: AppBar(
                 backgroundColor: Colors.black,
                 iconTheme: const IconThemeData(color: Colors.white),
-                title: Text(
-                  '${idx + 1}/${imgs.length}',
-                  style: const TextStyle(color: Colors.white),
-                ),
               ),
               body: GalleryView(images: imgs, initialIndex: idx),
             ),
@@ -321,8 +335,11 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+  // lista de chips cu detalii in functie de tipul proprietatii
   List<Widget> buildChips(Map<String, dynamic> data) {
+    // se verifica tipul proprietatii si se returneaza chips in functie de tip
     switch (data['category'] as String? ?? '') {
+      // Apartament chips
       case 'Apartament':
         final apt = (data['apartmentDetails'] as Map?) ?? {};
         return [
@@ -343,24 +360,25 @@ class HomePageState extends State<HomePage> {
             visualDensity: VisualDensity.compact,
           ),
         ];
+      // Garsoniera chips
       case 'Garsoniera':
-        final g = (data['garsonieraDetails'] as Map?) ?? {};
+        final gars = (data['garsonieraDetails'] as Map?) ?? {};
         return [
-          Chip(label: Text('1 cameră'), visualDensity: VisualDensity.compact),
+          Chip(label: Text('1 camera'), visualDensity: VisualDensity.compact),
           Chip(
-            label: Text('${g['area']} mp'),
+            label: Text('${gars['area']} mp'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('Etaj ${g['floor']}'),
+            label: Text('Etaj ${gars['floor']}'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('An ${g['yearBuilt']}'),
+            label: Text('An ${gars['yearBuilt']}'),
             visualDensity: VisualDensity.compact,
           ),
         ];
-
+      // Casa chips
       case 'Casa':
         final c = (data['houseDetails'] as Map?) ?? {};
         return [
@@ -385,6 +403,7 @@ class HomePageState extends State<HomePage> {
             visualDensity: VisualDensity.compact,
           ),
         ];
+      // Teren chips
       case 'Teren':
         final t = (data['landDetails'] as Map?) ?? {};
         return [
@@ -401,6 +420,7 @@ class HomePageState extends State<HomePage> {
             visualDensity: VisualDensity.compact,
           ),
         ];
+      // Spatiu comercial chips
       case 'Spatiu comercial':
         final sc = (data['commercialDetails'] as Map?) ?? {};
         return [
@@ -418,9 +438,11 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  // UI-ul paginii principale
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // app bar cu logo si butoane catre profil si adaugare anunt
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
@@ -462,10 +484,10 @@ class HomePageState extends State<HomePage> {
                   alignment: Alignment.center,
                   textStyle: const TextStyle(fontSize: 17),
                 ),
-                onPressed: myProfilePage,
+                onPressed: profilePage,
                 icon: const Icon(Icons.person, color: Colors.white, size: 20),
                 label: const Text(
-                  'Contul meu',
+                  'Profil',
                   style: TextStyle(color: Colors.white),
                 ),
               ),
@@ -473,8 +495,7 @@ class HomePageState extends State<HomePage> {
           ],
         ),
       ),
-
-      // Drawer
+      // Meniul lateral cu optiuni de filtrare si navigare catre alte pagini + adaugare anunt
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
@@ -490,6 +511,7 @@ class HomePageState extends State<HomePage> {
                       CircleAvatar(
                         radius: 40,
                         backgroundColor: Theme.of(context).colorScheme.primary,
+                        //se extrage prima litera din email pentru avatar
                         child: Text(
                           user?.email?.substring(0, 1).toUpperCase() ?? 'U',
                           style: const TextStyle(
@@ -499,6 +521,7 @@ class HomePageState extends State<HomePage> {
                         ),
                       ),
                       const SizedBox(height: 50),
+                      // marketplace, favorite, anunturile mele, vizionari
                       ListTile(
                         leading: const Icon(Icons.home),
                         title: const Text('Marketplace'),
@@ -544,7 +567,7 @@ class HomePageState extends State<HomePage> {
                         },
                       ),
                       const Divider(),
-                      // quick filters
+                      // butoane pentru filtrare rapida
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton(
@@ -667,6 +690,7 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 30),
+              // buton pentru adaugare anunt nou
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ElevatedButton(
@@ -685,6 +709,7 @@ class HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 20),
+              // buton deconectare
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: TextButton(
@@ -701,14 +726,14 @@ class HomePageState extends State<HomePage> {
         ),
       ),
 
-      // Body: filtre + listings
+      // Body-ul paginii: filtrele si lista de anunturi
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : Center(
                 child: Column(
                   children: [
-                    // Top filters
+                    // filtrele de sus
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -825,7 +850,7 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    // Results count & sort
+                    // rezultate returnate  si sortare
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -878,15 +903,17 @@ class HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    // Listings
+                    // lista de anunturi
                     Expanded(
                       child:
                           filteredListings.isEmpty
                               ? const Center(child: Text('Nu exista anunturi'))
                               : SingleChildScrollView(
                                 child: Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 600),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 600,
+                                    ),
                                     child: Column(
                                       children:
                                           filteredListings.map((data) {
@@ -898,11 +925,11 @@ class HomePageState extends State<HomePage> {
                                               () => ScrollController(),
                                             );
 
-                                            // build full address
+                                            // adresa completa pentru afisare se concateneaza
                                             final loc =
                                                 (data['location'] as Map?) ??
                                                 {};
-                                            final fullAddress = [
+                                            final fullAddressess = [
                                                   loc['street'] ?? '',
                                                   loc['number'] ?? '',
                                                   if ((loc['sector'] ?? '')
@@ -939,7 +966,7 @@ class HomePageState extends State<HomePage> {
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
-                                                    // Image + favorite + tag
+                                                    // cardul cu imaginea, detalii si butoane
                                                     Stack(
                                                       children: [
                                                         ClipRRect(
@@ -978,7 +1005,7 @@ class HomePageState extends State<HomePage> {
                                                                     ),
                                                           ),
                                                         ),
-                                                        // Butonul de Favorite (inima)
+                                                        // butonul de favorite
                                                         Positioned(
                                                           top: 8,
                                                           right: 8,
@@ -994,7 +1021,7 @@ class HomePageState extends State<HomePage> {
                                                                 ),
                                                             child: IconButton(
                                                               icon: Icon(
-                                                                favoriteIds
+                                                                favourites
                                                                         .contains(
                                                                           id,
                                                                         )
@@ -1003,7 +1030,7 @@ class HomePageState extends State<HomePage> {
                                                                     : Icons
                                                                         .favorite_border,
                                                                 color:
-                                                                    favoriteIds
+                                                                    favourites
                                                                             .contains(
                                                                               id,
                                                                             )
@@ -1059,7 +1086,7 @@ class HomePageState extends State<HomePage> {
                                                       ],
                                                     ),
 
-                                                    // Details & ExpansionTile
+                                                    // detalii si ExpansionTile
                                                     ExpansionTile(
                                                       tilePadding:
                                                           const EdgeInsets.symmetric(
@@ -1084,7 +1111,7 @@ class HomePageState extends State<HomePage> {
                                                             vertical: 8,
                                                           ),
                                                       children: [
-                                                        if (fullAddress
+                                                        if (fullAddressess
                                                             .isNotEmpty) ...[
                                                           Row(
                                                             children: [
@@ -1100,7 +1127,7 @@ class HomePageState extends State<HomePage> {
                                                               ),
                                                               Expanded(
                                                                 child: Text(
-                                                                  fullAddress,
+                                                                  fullAddressess,
                                                                   style:
                                                                       const TextStyle(
                                                                         fontSize:
@@ -1242,7 +1269,7 @@ class HomePageState extends State<HomePage> {
                                                           height: 20,
                                                         ),
                                                         buildMapSection(
-                                                          fullAddress,
+                                                          fullAddressess,
                                                         ),
                                                         const SizedBox(
                                                           height: 20,
@@ -1270,7 +1297,7 @@ class HomePageState extends State<HomePage> {
                                                               if (snapAgent
                                                                   .hasError) {
                                                                 return const Text(
-                                                                  'Eroare detalii agent',
+                                                                  'eroare detalii agent',
                                                                 );
                                                               }
                                                               if (!snapAgent
@@ -1280,7 +1307,7 @@ class HomePageState extends State<HomePage> {
                                                                       .exists) {
                                                                 // agentul a fost sters sau nu exista
                                                                 return const Text(
-                                                                  'Agent inexistent',
+                                                                  'agent inexistent',
                                                                 );
                                                               }
                                                               final agentDoc =
@@ -1296,14 +1323,17 @@ class HomePageState extends State<HomePage> {
                                                                         'phone',
                                                                       )
                                                                       as String;
-                                                              final email = agentDoc.get('email') as String;
-                                                              // Înlocuim return-ul simplu cu un Column
+                                                              final email =
+                                                                  agentDoc.get(
+                                                                        'email',
+                                                                      )
+                                                                      as String;
+                                                              // returneaza detalii agent + buton telefon + vizionare
                                                               return Column(
                                                                 crossAxisAlignment:
                                                                     CrossAxisAlignment
                                                                         .stretch,
                                                                 children: [
-                                                                  // —–––––––––––– Rândul cu avatar, nume și buton telefon ––––––––––––
                                                                   Row(
                                                                     children: [
                                                                       CircleAvatar(
@@ -1339,7 +1369,9 @@ class HomePageState extends State<HomePage> {
                                                                                     FontWeight.bold,
                                                                               ),
                                                                             ),
-                                                                            Text(email),
+                                                                            Text(
+                                                                              email,
+                                                                            ),
                                                                             if (showPhone[id] ??
                                                                                 false) ...[
                                                                               const SizedBox(
@@ -1378,7 +1410,6 @@ class HomePageState extends State<HomePage> {
                                                                     height: 7,
                                                                   ),
 
-                                                                  // —–––––––––––– Textul „sau” centrat ––––––––––––
                                                                   const Center(
                                                                     child: Text(
                                                                       'sau',
@@ -1397,7 +1428,6 @@ class HomePageState extends State<HomePage> {
                                                                     height: 12,
                                                                   ),
 
-                                                                  // —–––––––––––– Butonul „Programează o vizionare” ––––––––––––
                                                                   Center(
                                                                     child: ElevatedButton(
                                                                       onPressed: () {
@@ -1433,7 +1463,7 @@ class HomePageState extends State<HomePage> {
                                                                         ),
                                                                       ),
                                                                       child: const Text(
-                                                                        'Programeaza o vizionare',
+                                                                        'programeaza o vizionare',
                                                                         style: TextStyle(
                                                                           fontSize:
                                                                               14,
@@ -1449,7 +1479,7 @@ class HomePageState extends State<HomePage> {
                                                             },
                                                           ),
                                                         ] else ...[
-                                                          // Dacă nu avem user logat, afișăm tot „nume agent + sau + buton”
+                                                          // daca nu avem user logat, afisam doar nume agent si buton
                                                           Column(
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
@@ -1469,7 +1499,6 @@ class HomePageState extends State<HomePage> {
                                                               const SizedBox(
                                                                 height: 7,
                                                               ),
-                                                              //sau text
                                                               const Center(
                                                                 child: Text(
                                                                   'sau',
@@ -1523,7 +1552,7 @@ class HomePageState extends State<HomePage> {
                                                                     ),
                                                                   ),
                                                                   child: const Text(
-                                                                    'Programeaza o vizionare',
+                                                                    'programeaza o vizionare',
                                                                     style: TextStyle(
                                                                       fontSize:
                                                                           16,
@@ -1552,6 +1581,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+  // dropdown custom pentru filtre
   Widget buildDropdown({
     required String value,
     required List<String> items,
@@ -1576,7 +1606,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  
+  // textfield custom pentru filtre
   Widget buildTextField({
     required String hint,
     required double width,

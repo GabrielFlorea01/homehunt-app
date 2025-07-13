@@ -1,8 +1,41 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'reports_models/properies_model.dart';
 
+// Clasa de model pentru proprietati - pentru a fi folosit in tabel
+class PropertyModel {
+  final String id;
+  final String title;
+  final String type;
+  final double price;
+  final DateTime createdAt;
+
+  PropertyModel({
+    required this.id,
+    required this.title,
+    required this.type,
+    required this.price,
+    required this.createdAt,
+  });
+
+  // Constructor din documentul Firestore
+  // pentru a crea modelul de proprietate pe baza documentului din db
+  // foloseste datele din document pentru a initializa campurile
+  factory PropertyModel.fromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    return PropertyModel(
+      id: doc.id,
+      title: data['title'] as String,
+      type: data['type'] as String,
+      price: (data['price'] as num).toDouble(),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+    );
+  }
+}
+
+// Pagina pentru raportul proprietatilor
 class PropertiesReportPage extends StatefulWidget {
   const PropertiesReportPage({super.key});
 
@@ -27,8 +60,24 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
         .collection('properties')
         .orderBy('createdAt');
     if (filterType != 'Toate') ref = ref.where('type', isEqualTo: filterType);
-    if (fromDate != null) ref = ref.startAt([Timestamp.fromDate(fromDate!)]);
-    if (toDate != null) ref = ref.endAt([Timestamp.fromDate(toDate!)]);
+    if (fromDate != null) {
+      // inceputul zilei
+      ref = ref.where(
+        'createdAt',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(
+          DateTime(fromDate!.year, fromDate!.month, fromDate!.day, 0, 0, 0),
+        ),
+      );
+    }
+    if (toDate != null) {
+      // sfarsitul zilei
+      ref = ref.where(
+        'createdAt',
+        isLessThanOrEqualTo: Timestamp.fromDate(
+          DateTime(toDate!.year, toDate!.month, toDate!.day, 23, 59, 59, 999),
+        ),
+      );
+    }
     final snap = await ref.get();
     setState(() {
       properties = snap.docs.map((d) => PropertyModel.fromDoc(d)).toList();
@@ -55,7 +104,6 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // back arrow + title
                     Row(
                       children: [
                         IconButton(
@@ -66,6 +114,7 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                         const Text(
                           'Proprietati',
                           style: TextStyle(
+                            // butonul de inapoi si titlul paginii
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -73,7 +122,6 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // filtre
                     Row(
                       children: [
                         DropdownButton<String>(
@@ -85,7 +133,9 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                             ),
                             DropdownMenuItem(
                               value: 'Vandut',
-                              child: Text('Vandut'),
+                              child: Text(
+                                'Vandut',
+                              ), //filtru pentru tipul de proprietate
                             ),
                             DropdownMenuItem(
                               value: 'Inchiriat',
@@ -94,7 +144,9 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                           ],
                           onChanged: (v) {
                             if (v != null) {
-                              setState(() => filterType = v);
+                              setState(
+                                () => filterType = v,
+                              ); // actualizeaza tipul de proprietate
                               applyFilter();
                             }
                           },
@@ -112,7 +164,8 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                               if (d != null) setState(() => fromDate = d);
                             },
                             child: Text(
-                              fromDate == null
+                              fromDate ==
+                                      null // selectorul pentru data de inceput
                                   ? 'De la'
                                   : DateFormat('dd/MM/yyyy').format(fromDate!),
                             ),
@@ -128,7 +181,11 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                                 firstDate: DateTime(2020),
                                 lastDate: DateTime.now(),
                               );
-                              if (d != null) setState(() => toDate = d);
+                              if (d != null) {
+                                setState(
+                                  () => toDate = d,
+                                ); // selectorul pentru data de sfarsit
+                              }
                             },
                             child: Text(
                               toDate == null
@@ -145,7 +202,7 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // tabel scrollabil pe orizontala centrat
+                    // tabelul cu proprietati
                     Center(
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -167,6 +224,7 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                                 DataCell(
                                   Text(
                                     NumberFormat.decimalPattern(
+                                      // formatarea pretului in format romanesc
                                       'ro',
                                     ).format(p.price),
                                   ),
@@ -185,7 +243,7 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // total
+                    // afisarea numarului total de proprietati
                     Align(
                       alignment: Alignment.centerRight,
                       child: Text(

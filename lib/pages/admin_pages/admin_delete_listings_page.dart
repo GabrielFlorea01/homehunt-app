@@ -5,15 +5,18 @@ class AdminDeleteListingsPage extends StatefulWidget {
   const AdminDeleteListingsPage({super.key});
 
   @override
-  State<AdminDeleteListingsPage> createState() => AdminDeleteListingsPageState();
+  State<AdminDeleteListingsPage> createState() =>
+      AdminDeleteListingsPageState();
 }
 
 class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
+  // referinta la colectia de proprietati din Firestore
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection('properties');
 
-  String searchQuery = '';
-  final TextEditingController searchController = TextEditingController();
+  String searchQuery = ''; // textul cautat in campul de cautare
+  final TextEditingController searchController =
+      TextEditingController(); // controller pentru campul de cautare
 
   @override
   void dispose() {
@@ -21,6 +24,22 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
     super.dispose();
   }
 
+  Future<void> deletePropertyAndRemoveFromAgents(String propertyId) async {
+    final agentsRef = FirebaseFirestore.instance.collection('agents');
+    // toti agentii care au aceasta proprietate in lista lor
+    final agentsWithProperty =
+        await agentsRef.where('properties', arrayContains: propertyId).get();
+    // se extrage id-ul proprietatii din lista fiecarui agent gasit
+    for (final agent in agentsWithProperty.docs) {
+      final List<dynamic> properties = agent['properties'] ?? [];
+      properties.remove(propertyId);
+      await agent.reference.update({'properties': properties});
+    }
+    // Sterge proprietatea din colectia de proprietati
+    await propertiesRef.doc(propertyId).delete();
+  }
+
+  // widget pentru afisarea si cautarea anunturilor
   Widget buildListingsContainer() {
     return Center(
       child: Container(
@@ -40,6 +59,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
         ),
         child: Column(
           children: [
+            // buton de inapoi si titlu
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -62,6 +82,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
               ],
             ),
             const SizedBox(height: 25),
+            // camp de cautare dupa titlu
             TextField(
               controller: searchController,
               decoration: InputDecoration(
@@ -78,6 +99,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
               },
             ),
             const SizedBox(height: 16),
+            // lista cu anunturile filtrate - stream Firestore
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream:
@@ -86,7 +108,11 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
                         .snapshots(),
                 builder: (ctx, snap) {
                   if (snap.hasError) {
-                    return Center(child: Text('Eroare: ${snap.error}'));
+                    return Center(
+                      child: Text(
+                        'Eroare la gasirea anunturilor ${snap.error}',
+                      ),
+                    );
                   }
                   if (!snap.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -100,6 +126,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
                   if (docs.isEmpty) {
                     return const Center(child: Text('Niciun anunt gasit'));
                   }
+                  // fiecare anunt intr-un card cu imagine sugestiva si buton de stergere
                   return ListView.builder(
                     itemCount: docs.length,
                     itemBuilder: (ctx, i) {
@@ -119,7 +146,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
-                              // text pe stanga
+                              // titlul anuntului
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,7 +163,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              // imagine + delete pe dreapta
+                              // imagine si buton de stergere
                               SizedBox(
                                 width: 120,
                                 height: 120,
@@ -174,6 +201,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
                                             color: Colors.redAccent,
                                           ),
                                           onPressed: () async {
+                                            // dialog pentru confirmare stergere anunt
                                             final ok = await showDialog<bool>(
                                               context: context,
                                               builder:
@@ -206,9 +234,10 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
                                                   ),
                                             );
                                             if (ok == true) {
-                                              await propertiesRef
-                                                  .doc(doc.id)
-                                                  .delete();
+                                              // sterge proprietatea si din lista agentilor asociati
+                                              await deletePropertyAndRemoveFromAgents(
+                                                doc.id,
+                                              );
                                             }
                                           },
                                         ),
@@ -234,12 +263,14 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // verific daca ecranul e suficient de lat
     final isWide = MediaQuery.of(context).size.width >= 900;
 
     return Scaffold(
       body: LayoutBuilder(
         builder: (ctx, constraints) {
           if (isWide) {
+            // pe ecrane mari afiseaza lista si imaginea una langa alta
             return Row(
               children: [
                 Expanded(child: buildListingsContainer()),
@@ -247,6 +278,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
               ],
             );
           } else {
+            // pe ecrane mici imaginea sus si lista jos
             return SingleChildScrollView(
               child: Column(
                 children: [
@@ -261,6 +293,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
     );
   }
 
+  // Widget pentru afisarea imaginii de fundal
   Widget buildImageSide({double? height}) {
     return Container(
       height: height,

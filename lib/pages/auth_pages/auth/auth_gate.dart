@@ -29,9 +29,11 @@ class AuthGate extends StatelessWidget {
 
         //daca e admin - se preia cheia din secrets si o verifica
         if (user.uid == adminUUID) {
+          // daca este admin se returneaza pagina de admin
           return const AdminPage();
         }
 
+        // else user normal
         //user normal
         return const HomePage();
       },

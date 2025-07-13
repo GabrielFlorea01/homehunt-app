@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:homehunt/pages/admin_pages/reports_pages/properties_reports_page.dart';
 import 'package:homehunt/pages/admin_pages/reports_pages/users_report_page.dart';
 
+// Pagina principala pentru rapoarte
 class RapoartePage extends StatelessWidget {
   const RapoartePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 900;
-
+    // daca e wide sau nu pentru a decide layout-ul
     return Scaffold(
       body: LayoutBuilder(
         builder: (ctx, constraints) {
@@ -35,6 +36,7 @@ class RapoartePage extends StatelessWidget {
     );
   }
 
+  // construieste partea cu formularul
   Widget buildFormPane(BuildContext context) {
     return Center(
       child: Container(
@@ -91,6 +93,7 @@ class RapoartePage extends StatelessWidget {
     );
   }
 
+  // construieste partea cu imaginea
   Widget buildImagePane({double? height}) {
     return Container(
       height: height,
@@ -104,10 +107,11 @@ class RapoartePage extends StatelessWidget {
   }
 }
 
+// card pentru fiecare raport
 class ReportCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
+  final IconData icon; // iconita butonului raport
+  final String title; // titlul butonului  de  raport
+  final VoidCallback onTap; // actiunea la apasare
 
   const ReportCard({
     required this.icon,

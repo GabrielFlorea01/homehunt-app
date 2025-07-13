@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
+// model pentru banner de eroare
+// widget-ul este folosit pentru a afisa mesaje de eroare sau succes
 // tipuri de mesaje pentru banner
 enum MessageType { error, success }
 
 class ErrorBanner extends StatelessWidget {
-  final String message;
-  final MessageType messageType;
-  final VoidCallback? onDismiss;
-
+  final String message; // mesajul de afisat
+  final MessageType messageType; // tipul mesajului (eroare sau succes)
+  final VoidCallback? onDismiss; // callback pentru butonul de inchidere
   const ErrorBanner({
     super.key,
     required this.message,

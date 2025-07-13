@@ -15,9 +15,9 @@ class LoginPageState extends State<LoginPage> {
   // controllere pentru email si parola
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  bool isLoading = false;
-  String? errorMessage;
-  bool obscurePassword = true;
+  bool isLoading = false; // stare pentru loading indicator
+  String? errorMessage; // mesaj de eroare daca exista
+  bool obscurePassword = true; // ascunde/afiseaza parola
 
   @override
   void dispose() {
@@ -26,10 +26,10 @@ class LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // functie pentru login normal
+  // functie pentru login cu email si parola - se apeleaza din AuthService
   Future<void> login() async {
     if (!mounted) return;
-    
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -47,7 +47,7 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  // login cu google
+  // functie pentru login cu Google - se apeleaza din AuthService
   Future<void> googleSignIn() async {
     if (!mounted) return;
 
@@ -89,7 +89,7 @@ class LoginPageState extends State<LoginPage> {
               child: IntrinsicHeight(
                 child:
                     isWide
-                        // daca e lat, afisam login si imaginea pe orizontala
+                        // pe ecrane mari afiseaza formularul si imaginea una langa alta
                         ? Row(
                           children: [buildLoginContainer(), buildImageSide()],
                         )
@@ -122,14 +122,14 @@ class LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 15),
-                // logo-ul aplicatiei
+                // logo aplicatiei
                 Image(
                   image: const AssetImage('lib/images/logomov.png'),
                   width: 150,
                   height: 150,
                 ),
                 const SizedBox(height: 30),
-                // afisam eroarea daca exista
+                // afiseaza eroarea daca e cazul
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -173,7 +173,7 @@ class LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 8),
-                // buton pentru uitat parola
+                // buton pentru pagina de resetare a parolei
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -189,7 +189,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                // buton de login, cu loading indicator daca e loading
+                // buton de login cu circular progress indicator daca e loading
                 FilledButton(
                   onPressed: isLoading ? null : login,
                   child:
@@ -218,7 +218,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                // link catre pagina de signup
+                // buton catre pagina de signup
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

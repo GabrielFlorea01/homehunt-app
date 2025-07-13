@@ -1,12 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// clasa pentru exceptii personalizate
-class AuthException implements Exception {
-  final String message;
-  AuthException(this.message);
-}
-
 //pentru gestionarea autentificarii
 class AuthService {
   //pentru autentificare
@@ -138,4 +132,10 @@ class AuthService {
       throw AuthException('Eroare la sign out. Incearca din nou');
     }
   }
+}
+
+// clasa pentru exceptii personalizate
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
 }
