@@ -12,21 +12,20 @@ class ProfilePage extends StatefulWidget {
 }
 
 class ProfilePageState extends State<ProfilePage> {
-  final firestore = FirebaseFirestore.instance;
-  final storage = FirebaseStorage.instance;
-  final user = FirebaseAuth.instance.currentUser;
-  final picker = ImagePicker();
+  final firestore = FirebaseFirestore.instance; // referinta la db
+  final storage = FirebaseStorage.instance; // referinta la storage
+  final user = FirebaseAuth.instance.currentUser; // userul curent
+  final picker = ImagePicker(); // picker pentru poza
 
-  final nameCtrl = TextEditingController();
-  final emailCtrl = TextEditingController();
-  final phoneCtrl = TextEditingController();
+  final nameCtrl = TextEditingController(); // controller nume
+  final emailCtrl = TextEditingController(); // controller email
+  final phoneCtrl = TextEditingController(); // controller telefon
 
-  bool isLoading = false;
-  bool imageUploading = false;
-  String? errorMessage;
-  String? successMessage;
-  String? phoneError;
-  String? profileImageUrl;
+  bool isLoading = false; // flag pentru loading pagina
+  bool imageUploading = false; // flag pentru loading la upload poza
+  String? errorMessage; // mesaj de eroare
+  String? successMessage; // mesaj de succes
+  String? profileImageUrl; // url poza profil
 
   @override
   void initState() {
@@ -34,6 +33,7 @@ class ProfilePageState extends State<ProfilePage> {
     loadUser();
   }
 
+  // utilizatorul din Firestore
   Future<void> loadUser() async {
     if (user == null) return;
     setState(() => isLoading = true);
@@ -48,6 +48,7 @@ class ProfilePageState extends State<ProfilePage> {
     setState(() => isLoading = false);
   }
 
+  // incarca poza de profil in Storage
   Future<void> uploadProfileImage() async {
     final XFile? picked = await picker.pickImage(
       source: ImageSource.gallery,
@@ -74,17 +75,36 @@ class ProfilePageState extends State<ProfilePage> {
     });
   }
 
+  // metoda pentru stergerea pozei de profil
+  Future<void> deleteProfileImage() async {
+    if (profileImageUrl == null) return;
+    setState(() => imageUploading = true);
+    try {
+      // sterge poza din storage daca exista
+      final ref = storage.refFromURL(profileImageUrl!);
+      await ref.delete();
+    } catch (_) {}
+    // sterge url-ul din Firestore
+    await firestore.collection('users').doc(user!.uid).update({
+      'profileImageUrl': FieldValue.delete(),
+    });
+    setState(() {
+      profileImageUrl = null;
+      imageUploading = false;
+    });
+  }
+
+  // salveaza modificarile
   Future<void> saveProfile() async {
     final phone = phoneCtrl.text.trim();
     if (phone.isEmpty) {
-      setState(() => phoneError = 'Telefon obligatoriu');
+      setState(() => errorMessage = 'Numarul de telefon este obligatoriu');
       return;
     }
     setState(() {
       isLoading = true;
       errorMessage = null;
       successMessage = null;
-      phoneError = null;
     });
     try {
       final updateData = {'name': nameCtrl.text.trim(), 'phone': phone};
@@ -99,7 +119,9 @@ class ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width >= 900;
+    final isWide =
+        MediaQuery.of(context).size.width >=
+        900; // verificare pentru layout wide
 
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -125,6 +147,7 @@ class ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // widget/formularul de editare profil
   Widget buildFormPane() {
     final theme = Theme.of(context);
     return Expanded(
@@ -212,6 +235,23 @@ class ProfilePageState extends State<ProfilePage> {
                                     ),
                           ),
                         ),
+                        if (profileImageUrl != null)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: InkWell(
+                              onTap: imageUploading ? null : deleteProfileImage,
+                              child: CircleAvatar(
+                                radius: 15,
+                                backgroundColor: Colors.red,
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -226,7 +266,7 @@ class ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 60),
               TextField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(
@@ -240,14 +280,13 @@ class ProfilePageState extends State<ProfilePage> {
                 decoration: InputDecoration(
                   labelText: 'Telefon',
                   prefixIcon: const Icon(Icons.phone),
-                  errorText: phoneError,
                 ),
               ),
               const SizedBox(height: 24),
 
               FilledButton(
                 onPressed: saveProfile,
-                child: const Text('Salveaza modificarile'),
+                child: const Text('Salveaza'),
               ),
             ],
           ),
@@ -256,6 +295,7 @@ class ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // widget cu imaginea de fundal
   Widget buildImagePane() {
     return Expanded(
       flex: 5,

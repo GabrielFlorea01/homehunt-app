@@ -98,11 +98,12 @@ class MyBookingsPageState extends State<MyBookingsPage> {
               // Lista scrollabila
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('bookings')
-                      .where('userId', isEqualTo: user!.uid)
-                      .orderBy('date')
-                      .snapshots(),
+                  stream:
+                      FirebaseFirestore.instance
+                          .collection('bookings')
+                          .where('userId', isEqualTo: user!.uid)
+                          .orderBy('date')
+                          .snapshots(),
                   builder: (context, snap) {
                     if (snap.hasError) {
                       return Center(child: Text('Eroare: ${snap.error}'));
@@ -131,10 +132,11 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                         final propertyId = data['properties'] as String;
 
                         return FutureBuilder<DocumentSnapshot>(
-                          future: FirebaseFirestore.instance
-                              .collection('properties')
-                              .doc(propertyId)
-                              .get(),
+                          future:
+                              FirebaseFirestore.instance
+                                  .collection('properties')
+                                  .doc(propertyId)
+                                  .get(),
                           builder: (context, propSnap) {
                             String propertyName = 'Proprietate';
                             if (propSnap.hasData && propSnap.data!.exists) {
@@ -166,11 +168,12 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                                     onPressed: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
-                                          builder: (_) => EditBookingPage(
-                                            bookingId: bookingId,
-                                            initialDateTime: dt,
-                                            propertyName: propertyName,
-                                          ),
+                                          builder:
+                                              (_) => EditBookingPage(
+                                                bookingId: bookingId,
+                                                initialDateTime: dt,
+                                                propertyName: propertyName,
+                                              ),
                                         ),
                                       );
                                     },

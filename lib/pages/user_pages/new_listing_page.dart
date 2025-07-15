@@ -14,23 +14,30 @@ class NewListingPage extends StatefulWidget {
 }
 
 class NewListingPageState extends State<NewListingPage> {
-  bool isLoading = false;
-  String? errorMessage;
-  String? successMessage;
+  bool isLoading = false; // starea de incarcare
+  String? errorMessage; // mesaj de eroare
+  String? successMessage; // mesaj de succes
 
-  // common
-  List<String> categories = ['Apartament', 'Garsoniera', 'Casa', 'Teren', 'Spatiu comercial'];
-  String selectedCategory = 'Apartament';
-  String transactionType = 'De vanzare';
+  // lista de categorii
+  List<String> categories = [
+    'Apartament',
+    'Garsoniera',
+    'Casa',
+    'Teren',
+    'Spatiu comercial',
+  ];
+  String selectedCategory = 'Apartament'; // categoria selectata -default
+  String transactionType = 'De vanzare'; // tipul tranzactiei - default
 
-  // image picker
+  // initializare liste si metode pentru imagini
   final ImagePicker picker = ImagePicker();
   List<String> imageUrls = [];
   List<XFile> selectedImages = [];
   List<Uint8List> selectedImageBytes = [];
   final int maxPhotos = 15;
 
-  // form controllers
+  // controllere pentru formular
+  // cheia pentru validarea si controlul formularului
   final formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
   final priceController = TextEditingController();
@@ -40,40 +47,40 @@ class NewListingPageState extends State<NewListingPage> {
   final numberController = TextEditingController();
   final sectorController = TextEditingController();
 
-  // Apartament fields
+  // campuri pentru Apartament
   String? selectedNumarCamereApartament;
   String? selectedCompartimentare;
   final etajController = TextEditingController();
   final suprafataUtilaApartController = TextEditingController();
   final anConstructieApartController = TextEditingController();
 
-  // Garsoniera fields
+  // campuri pentru Garsoniera
   final etajGarsonieraController = TextEditingController();
   final suprafataUtilaGarsonieraController = TextEditingController();
   final anConstructieGarsonieraController = TextEditingController();
 
-  // Casa fields
+  // campuri pentru Casa
   String? selectedNumarCamereCasa;
   final suprafataUtilaCasaController = TextEditingController();
   final suprafataTerenCasaController = TextEditingController();
   final anConstructieCasaController = TextEditingController();
   final etajeCasaController = TextEditingController();
 
-  // Teren fields
+  // campuri pentru Teren
   String? selectedTipTeren;
   String? selectedClasificare;
   final suprafataTerenController = TextEditingController();
 
-  // Spatiu comercial fields
+  // campuri pentru Spatiu Comercial
   String? selectedCategorieSpatiu;
   final suprafataSpatiuComController = TextEditingController();
 
-  // agents
+  // initializare lista agenti
   List<Map<String, dynamic>> agents = [];
-  String? selectedAgentName;
-  String? selectedAgentId;
+  String? selectedAgentName; // numele agentului selectat
+  String? selectedAgentId; // id-ul agentului selectat
 
-  // location
+  // lista cu judete pentru locatie
   String? selectedJudet;
   final judete = [
     'Alba',
@@ -120,7 +127,7 @@ class NewListingPageState extends State<NewListingPage> {
     'Bucuresti',
   ];
 
-  // schimbare din dupa tipul de tranzactie
+  // eticheta pentru pret in functie de tipul tranzactiei
   String get priceLabel =>
       transactionType == 'De inchiriat'
           ? 'Pret chirie (EUR/luna)'
@@ -132,17 +139,19 @@ class NewListingPageState extends State<NewListingPage> {
     loadAgents();
   }
 
+  // initializare lista de agenti din baza de date
   Future<void> loadAgents() async {
     final snap = await FirebaseFirestore.instance.collection('agents').get();
     if (!mounted) return;
     setState(() {
       agents =
           snap.docs
-              .map((d) => {'id': d.id, 'name': d['name'] as String})
+              .map((agent) => {'id': agent.id, 'name': agent['name'] as String})
               .toList();
     });
   }
 
+  // dropdown pentru alegerea agentului
   Widget buildAgentDropdown() {
     return DropdownButtonFormField<String>(
       decoration: const InputDecoration(
@@ -152,32 +161,36 @@ class NewListingPageState extends State<NewListingPage> {
       isExpanded: true,
       value: selectedAgentId,
       validator: (v) => v == null ? 'Selecteaza agentul' : null,
-      items: agents.map((a) {
-        return DropdownMenuItem<String>(
-          value: a['id'] as String,
-          child: Text(a['name'] as String),
-        );
-      }).toList(),
+      items:
+          agents.map((agent) {
+            return DropdownMenuItem<String>(
+              value: agent['id'] as String,
+              child: Text(agent['name'] as String),
+            );
+          }).toList(),
       onChanged: (id) {
         setState(() {
-          selectedAgentId   = id;
-          selectedAgentName = agents
-            .firstWhere((a) => a['id'] == id)['name']
-            as String;
+          selectedAgentId = id;
+          selectedAgentName =
+              agents.firstWhere((aName) => aName['id'] == id)['name'] as String;
         });
       },
     );
   }
 
-
-
+  // selectarea imaginilor
   Future<void> pickImages() async {
     final pics = await picker.pickMultiImage(maxWidth: 1200, imageQuality: 80);
     if (pics.isEmpty) return;
+
+    // verificam cate locuri sunt disponibile
     final slotsLeft = maxPhotos - imageUrls.length - selectedImages.length;
-    final toAdd = pics.take(slotsLeft).toList();
+    final toAdd =
+        pics.take(slotsLeft).toList(); // doar atat cate sunt disponibile
     for (final f in toAdd) {
-      selectedImageBytes.add(await f.readAsBytes());
+      selectedImageBytes.add(
+        await f.readAsBytes(),
+      ); // adaugam imaginea in lista de bytes
     }
     setState(() {
       selectedImages.addAll(toAdd);
@@ -187,12 +200,15 @@ class NewListingPageState extends State<NewListingPage> {
     });
   }
 
+  // incarcare imagini in Firebase Storage si returnare url-uri
   Future<List<String>> uploadImages(String propertyId) async {
-    final newUrls = <String>[];
+    final newUrls = <String>[]; // lista pentru url-uri
     for (final file in selectedImages) {
       final ext = file.name.split('.').last;
       final name = '${DateTime.now().millisecondsSinceEpoch}.$ext';
-      final ref = FirebaseStorage.instance.ref('properties/$propertyId/$name');
+      final ref = FirebaseStorage.instance.ref(
+        'properties/$propertyId/$name',
+      ); // referinta la fisierul din storage
       final snap = await ref.putData(
         await file.readAsBytes(),
         SettableMetadata(contentType: file.mimeType),
@@ -202,6 +218,7 @@ class NewListingPageState extends State<NewListingPage> {
     return [...imageUrls, ...newUrls];
   }
 
+  // stergere imaginea selectata
   void removeImage(int index) {
     if (index < imageUrls.length) {
       imageUrls.removeAt(index);
@@ -214,15 +231,32 @@ class NewListingPageState extends State<NewListingPage> {
     setState(() {});
   }
 
+  // salvare proprietate
   Future<void> saveProperty() async {
+    // validare formular + validare numar camere formulare
     if (!formKey.currentState!.validate()) return;
+    // validare numar camere pentru apartament si casa
+    if (selectedCategory == 'Apartament' &&
+        selectedNumarCamereApartament == null) {
+      setState(() => errorMessage = 'Selecteaza numarul de camere');
+      return;
+    }
+
+    if (selectedCategory == 'Casa' && selectedNumarCamereCasa == null) {
+      setState(() {
+        errorMessage = 'Selecteaza numarul de camere pentru casa';
+      });
+      return;
+    }
+
     setState(() {
-      isLoading = true;
-      errorMessage = null;
+      isLoading = true; //se porneste starea de incarcare
+      errorMessage = null; // se reseteaza mesajele de eroare si succes
       successMessage = null;
     });
+
     try {
-      // se creeaza documentul cu datele initiale
+      // documentul cu datele initiale preluate din controllere
       final data = <String, dynamic>{
         'title': titleController.text,
         'price': parseFormattedNumber(priceController.text),
@@ -243,6 +277,7 @@ class NewListingPageState extends State<NewListingPage> {
         'userId': FirebaseAuth.instance.currentUser!.uid,
       };
 
+      // detalii specifice in functie de categorie
       switch (selectedCategory) {
         case 'Apartament':
           data['apartmentDetails'] = {
@@ -256,7 +291,9 @@ class NewListingPageState extends State<NewListingPage> {
         case 'Garsoniera':
           data['garsonieraDetails'] = {
             'floor': etajGarsonieraController.text,
-            'area': parseFormattedNumber(suprafataUtilaGarsonieraController.text),
+            'area': parseFormattedNumber(
+              suprafataUtilaGarsonieraController.text,
+            ),
             'yearBuilt': int.parse(anConstructieGarsonieraController.text),
           };
           break;
@@ -283,55 +320,65 @@ class NewListingPageState extends State<NewListingPage> {
           };
           break;
       }
-//adaugam datele pentru proprietate
+
+      // se adauga datele pentru proprietate
       final docRef = await FirebaseFirestore.instance
           .collection('properties')
           .add(data);
 
-//actualizam imaginile pentru proprietate
+      // se actualizeaza campul cu imaginile pentru proprietate
       final allUrls = await uploadImages(docRef.id);
       await docRef.update({'images': allUrls});
 
-//actualizam lista cu prop pentru agenti
+      // se actualizeaza lista cu proprietati pentru agenti
       await FirebaseFirestore.instance
-      .collection('agents')
-      .doc(selectedAgentId)
-      .update({
-        'properties': FieldValue.arrayUnion([docRef.id]),
-      });
+          .collection('agents')
+          .doc(selectedAgentId)
+          .update({
+            'properties': FieldValue.arrayUnion([docRef.id]),
+          });
 
       if (!mounted) return;
-      setState(() => successMessage = 'Anunt publicat cu succes');
+      setState(
+        () => successMessage = 'Anunt publicat cu succes',
+      ); // mesaj de succes
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      setState(() => errorMessage = 'Eroare la salvarea anuntului');
+      setState(
+        () => errorMessage = 'Eroare la salvarea anuntului',
+      ); // mesaj de eroare daca apare o exceptie
     } finally {
       if (!mounted) return;
       setState(() => isLoading = false);
     }
   }
 
+  // parse numar din text
   int parseFormattedNumber(String text) {
-  final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-  return digits.isEmpty ? 0 : int.parse(digits);
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.isEmpty ? 0 : int.parse(digits);
   }
 
+  // formatare numar la tastaare - live
   void formatNumber(TextEditingController controller, String text) {
     final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) {
       controller.clear();
       return;
     }
-    final formatted = NumberFormat.decimalPattern('ro').format(int.parse(digits));
+    final formatted = NumberFormat.decimalPattern(
+      'ro',
+    ).format(int.parse(digits));
     controller.value = TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 
+  // widget chips pentru alegerea diferitelor optiuni din formular
   Widget buildChoiceChips(
     String label,
     List<String> options,
@@ -360,6 +407,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // chips pentru tipul tranzactiei
   Widget buildTransactionTypeChips() {
     final types = ['De vanzare', 'De inchiriat'];
     return buildChoiceChips(
@@ -370,6 +418,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // campuri pentru localizare
   Widget buildLocalizareFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +437,10 @@ class NewListingPageState extends State<NewListingPage> {
           validator: (v) => v == null ? 'Selecteaza judetul' : null,
           items:
               judete
-                  .map((j) => DropdownMenuItem(value: j, child: Text(j)))
+                  .map(
+                    (judet) =>
+                        DropdownMenuItem(value: judet, child: Text(judet)),
+                  )
                   .toList(),
           onChanged: (v) => setState(() => selectedJudet = v),
         ),
@@ -433,6 +485,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // widget pentru sectiunea de imagini
   Widget buildImageSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +504,7 @@ class NewListingPageState extends State<NewListingPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // the big upload/tap area
+              // zona pentru upload/tap
               GestureDetector(
                 onTap: pickImages,
                 child: Container(
@@ -468,6 +521,7 @@ class NewListingPageState extends State<NewListingPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child:
+                      // iconita si text daca nu sunt imagini
                       (imageUrls.isEmpty && selectedImageBytes.isEmpty)
                           ? Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -513,15 +567,14 @@ class NewListingPageState extends State<NewListingPage> {
                           ),
                 ),
               ),
-
-              // previews of both remote and local images
+              // afisam preview pentru imagini daca exista
               if (imageUrls.isNotEmpty || selectedImageBytes.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    // already‐uploaded:
+                    // imagini deja incarcate
                     for (var i = 0; i < imageUrls.length; i++)
                       Stack(
                         children: [
@@ -540,6 +593,7 @@ class NewListingPageState extends State<NewListingPage> {
                               ),
                             ),
                           ),
+                          // este imagine incarcata, afisam butonul de stergere cu functia de removeImage
                           Positioned(
                             top: 4,
                             right: 4,
@@ -563,8 +617,7 @@ class NewListingPageState extends State<NewListingPage> {
                           ),
                         ],
                       ),
-
-                    // newly-picked local bytes:
+                    // imagini noi selectate local, se afiseaza ca stack
                     for (var j = 0; j < selectedImageBytes.length; j++)
                       Stack(
                         children: [
@@ -583,6 +636,7 @@ class NewListingPageState extends State<NewListingPage> {
                               ),
                             ),
                           ),
+                          // daca este imagine noua incarcata afisam butonul de stergere cu functia de removeImage si aici
                           Positioned(
                             top: 4,
                             right: 4,
@@ -617,6 +671,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // widget/formular pentru apartament
   Widget buildApartmentForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -630,6 +685,8 @@ class NewListingPageState extends State<NewListingPage> {
           validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
         ),
         const SizedBox(height: 10),
+
+        // chips pentru numarul de camere
         buildChoiceChips(
           'Numar camere',
           ['1', '2', '3', '4', '5', '5+'],
@@ -637,6 +694,7 @@ class NewListingPageState extends State<NewListingPage> {
           (v) => setState(() => selectedNumarCamereApartament = v),
         ),
         const SizedBox(height: 10),
+
         DropdownButtonFormField<String>(
           decoration: const InputDecoration(
             labelText: 'Compartimentare',
@@ -685,8 +743,11 @@ class NewListingPageState extends State<NewListingPage> {
           validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
         ),
         const SizedBox(height: 20),
+
+        // chips pentru tipul tranzactiei
         buildTransactionTypeChips(),
         const SizedBox(height: 20),
+
         TextFormField(
           controller: priceController,
           onChanged: (v) => formatNumber(priceController, v),
@@ -696,8 +757,7 @@ class NewListingPageState extends State<NewListingPage> {
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator:
-              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -711,11 +771,14 @@ class NewListingPageState extends State<NewListingPage> {
           validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
         ),
         const SizedBox(height: 30),
+
+        // campuri pentru locatie
         buildLocalizareFields(),
       ],
     );
   }
 
+  // widget/formular pentru garsoniera - la fel ca pentru apartament
   Widget buildGarsonieraForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -772,8 +835,7 @@ class NewListingPageState extends State<NewListingPage> {
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator:
-              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -792,6 +854,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // widget/formular pentru casa
   Widget buildCasaForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,13 +870,18 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         buildChoiceChips(
           'Numar camere',
-          [
-            for (var i = 1; i <= 10; i++) '$i',
-            '10+'                                    
-          ],
+          [for (var i = 1; i <= 10; i++) '$i', '10+'],
           selectedNumarCamereCasa,
           (v) => setState(() => selectedNumarCamereCasa = v),
         ),
+        if (selectedNumarCamereCasa == null)
+          const Padding(
+            padding: EdgeInsets.only(top: 4, left: 4),
+            child: Text(
+              'Selecteaza numarul de camere',
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaCasaController,
@@ -872,8 +940,7 @@ class NewListingPageState extends State<NewListingPage> {
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator:
-              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -892,6 +959,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // widget/formular pentru teren
   Widget buildTerenForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -959,8 +1027,7 @@ class NewListingPageState extends State<NewListingPage> {
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator:
-              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -979,6 +1046,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // formular pentru spatiu comercial
   Widget buildSpatiuComercialForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1031,8 +1099,7 @@ class NewListingPageState extends State<NewListingPage> {
           ),
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator:
-              (v) => v!.isEmpty ? 'Introdu ${priceLabel.toLowerCase()}' : null,
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
         buildImageSection(),
@@ -1051,6 +1118,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // formular dinamic in functie de categoria selectata
   Widget buildDynamicForm() {
     switch (selectedCategory) {
       case 'Apartament':
@@ -1068,6 +1136,7 @@ class NewListingPageState extends State<NewListingPage> {
     }
   }
 
+  //widget default impartit cu fomrularul si imaginea
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1093,6 +1162,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // construire formularul si publicarea anuntului
   Widget buildFormSide() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -1119,38 +1189,34 @@ class NewListingPageState extends State<NewListingPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // category chips
+                // categoria selectata din chips
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
                   children:
-                      categories.map((cat) {
+                      categories.map((category) {
                         return ChoiceChip(
-                          label: Text(cat),
-                          selected: selectedCategory == cat,
+                          label: Text(category),
+                          selected: selectedCategory == category,
                           onSelected: (_) {
                             setState(() {
-                              selectedCategory = cat;
+                              selectedCategory = category;
                             });
                           },
                         );
                       }).toList(),
                 ),
                 const SizedBox(height: 20),
-
-                // dynamic form
+                // se genereaza formularul dinamic in functie de categorie
                 buildDynamicForm(),
                 const SizedBox(height: 30),
-
-                // agent dropdown
+                // dropdown pentru selectarea agentului
                 buildAgentDropdown(),
                 const SizedBox(height: 40),
-
-                // publish button
+                // butonul de publicare anunt
                 Center(
                   child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.4,
+                    width: 300,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -1164,6 +1230,7 @@ class NewListingPageState extends State<NewListingPage> {
                           isLoading
                               ? null
                               : () {
+                                //verificare daca sunt imagini incarcate
                                 if (selectedImages.isEmpty &&
                                     imageUrls.isEmpty) {
                                   setState(() {
@@ -1172,6 +1239,7 @@ class NewListingPageState extends State<NewListingPage> {
                                   });
                                   return;
                                 }
+                                // se salveaza proprietatea daca formularul este in regula
                                 saveProperty();
                               },
                       child:
@@ -1194,6 +1262,7 @@ class NewListingPageState extends State<NewListingPage> {
     );
   }
 
+  // widget pentru partea de imagine
   Widget buildImageSide() {
     return Container(
       decoration: const BoxDecoration(

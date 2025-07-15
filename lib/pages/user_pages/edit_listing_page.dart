@@ -7,7 +7,7 @@ import 'package:homehunt/models/error_widgets/error_banner.dart';
 import 'package:intl/intl.dart';
 
 class EditListingPage extends StatefulWidget {
-  final String listingId;
+  final String listingId; // id anunt de editat
   const EditListingPage({super.key, required this.listingId});
 
   @override
@@ -15,22 +15,22 @@ class EditListingPage extends StatefulWidget {
 }
 
 class EditListingPageState extends State<EditListingPage> {
-  bool isLoading = false;
-  String? errorMessage;
-  String? successMessage;
+  bool isLoading = false; // flag pentru loading la salvare
+  String? errorMessage; // mesaj de eroare
+  String? successMessage; // mesaj de succes
 
-  // common
+  // categoria selectata si tipul tranzactiei
   String selectedCategory = 'Apartament';
   String transactionType = 'De vanzare';
 
-  // image & picker
+  // pentru imagini si picker
   final ImagePicker picker = ImagePicker();
-  List<String> imageUrls = []; // existing remote URLs
-  List<XFile> selectedImages = []; // newly picked files
-  List<Uint8List> selectedImageBytes = []; // bytes for preview
-  final int maxPhotos = 15;
+  List<String> imageUrls = []; // url-urile imaginilor deja incarcate
+  List<XFile> selectedImages = []; // fisierele noi selectate
+  List<Uint8List> selectedImageBytes = []; // bytes pentru preview local
+  final int maxPhotos = 15; // maxim 15 poze
 
-  // form controllers
+  // controllere pentru formular
   final formKey = GlobalKey<FormState>();
   final titleController = TextEditingController();
   final priceController = TextEditingController();
@@ -63,7 +63,7 @@ class EditListingPageState extends State<EditListingPage> {
   String? selectedCategorieSpatiu;
   final suprafataSpatiuComController = TextEditingController();
 
-  // agents
+  // agenti
   List<Map<String, dynamic>> agents = [];
   String? selectedAgentName;
   String? selectedAgentId;
@@ -117,10 +117,11 @@ class EditListingPageState extends State<EditListingPage> {
   @override
   void initState() {
     super.initState();
-    loadAgents();
-    loadExisting();
+    loadAgents(); // incarca lista de agenti
+    loadExisting(); // incarca datele anuntului pentru editare
   }
 
+  // incarca agentii din baza de date
   Future<void> loadAgents() async {
     final snap = await FirebaseFirestore.instance.collection('agents').get();
     if (!mounted) return;
@@ -132,6 +133,7 @@ class EditListingPageState extends State<EditListingPage> {
     });
   }
 
+  // incarca datele existente ale anuntului pentru editare
   Future<void> loadExisting() async {
     final doc =
         await FirebaseFirestore.instance
@@ -157,7 +159,7 @@ class EditListingPageState extends State<EditListingPage> {
       numberController.text = loc['number'] as String? ?? '';
       sectorController.text = loc['sector'] as String? ?? '';
 
-      // populate category-specific
+      // populeaza campurile specifice categoriei
       switch (selectedCategory) {
         case 'Apartament':
           final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
@@ -196,6 +198,7 @@ class EditListingPageState extends State<EditListingPage> {
     });
   }
 
+  // selecteaza imagini noi pentru anunt
   Future<void> pickImages() async {
     final pics = await picker.pickMultiImage(maxWidth: 1200, imageQuality: 80);
     if (pics.isEmpty) return;
@@ -212,6 +215,7 @@ class EditListingPageState extends State<EditListingPage> {
     });
   }
 
+  // incarca imaginile noi in Firebase Storage si returneaza url-urile
   Future<List<String>> uploadImages(String propertyId) async {
     final existing = List<String>.from(imageUrls);
     final newUrls = <String>[];
@@ -228,6 +232,7 @@ class EditListingPageState extends State<EditListingPage> {
     return [...existing, ...newUrls];
   }
 
+  // sterge o imagine din lista
   void removeImage(int index) {
     if (index < imageUrls.length) {
       imageUrls.removeAt(index);
@@ -240,24 +245,29 @@ class EditListingPageState extends State<EditListingPage> {
     setState(() {});
   }
 
-    int parseFormattedNumber(String text) {
-  final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-  return digits.isEmpty ? 0 : int.parse(digits);
+  // parseaza un numar formatat din text
+  int parseFormattedNumber(String text) {
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.isEmpty ? 0 : int.parse(digits);
   }
 
+  // formateaza numarul la tastare
   void formatNumber(TextEditingController controller, String text) {
     final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) {
       controller.clear();
       return;
     }
-    final formatted = NumberFormat.decimalPattern('ro').format(int.parse(digits));
+    final formatted = NumberFormat.decimalPattern(
+      'ro',
+    ).format(int.parse(digits));
     controller.value = TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 
+  // salveaza modificarile in Firestore
   Future<void> saveChanges() async {
     if (!formKey.currentState!.validate()) return;
     setState(() {
@@ -285,6 +295,7 @@ class EditListingPageState extends State<EditListingPage> {
         'agentName': selectedAgentName,
       };
 
+      // adauga detalii specifice categoriei
       switch (selectedCategory) {
         case 'Apartament':
           data['apartmentDetails'] = {
@@ -319,14 +330,14 @@ class EditListingPageState extends State<EditListingPage> {
           break;
       }
 
-      //se actualizeaza Firestore
+      // actualizeaza documentul in Firestore
       await FirebaseFirestore.instance
           .collection('properties')
           .doc(widget.listingId)
           .update(data);
 
       if (!mounted) return;
-      setState(() => successMessage = 'Modificările au fost salvate');
+      setState(() => successMessage = 'Modificarile au fost salvate');
 
       await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
@@ -339,6 +350,7 @@ class EditListingPageState extends State<EditListingPage> {
     }
   }
 
+  // widget pentru chips-uri de selectie
   Widget buildChoiceChips(
     String label,
     List<String> options,
@@ -367,6 +379,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // campuri pentru localizare
   Widget buildLocalizareFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,6 +447,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // sectiunea pentru imagini (upload si preview)
   Widget buildImageSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +466,7 @@ class EditListingPageState extends State<EditListingPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // the big upload/tap area
+              // zona mare pentru upload/tap
               GestureDetector(
                 onTap: pickImages,
                 child: Container(
@@ -515,14 +529,14 @@ class EditListingPageState extends State<EditListingPage> {
                 ),
               ),
 
-              // previews of both remote and local images
+              // preview pentru imaginile deja incarcate si cele noi
               if (imageUrls.isNotEmpty || selectedImageBytes.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    // already‐uploaded:
+                    // imaginile deja incarcate
                     for (var i = 0; i < imageUrls.length; i++)
                       Stack(
                         children: [
@@ -565,7 +579,7 @@ class EditListingPageState extends State<EditListingPage> {
                         ],
                       ),
 
-                    // newly-picked local bytes:
+                    // imaginile noi selectate local
                     for (var j = 0; j < selectedImageBytes.length; j++)
                       Stack(
                         children: [
@@ -618,6 +632,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // formular pentru apartament
   Widget buildApartamentForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -712,6 +727,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // formular pentru casa
   Widget buildCasaForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -805,6 +821,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // formular pentru teren
   Widget buildTerenForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,6 +906,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // formular pentru spatiu comercial
   Widget buildSpatiuComercialForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -958,6 +976,7 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
+  // alege formularul in functie de categorie
   Widget buildDynamicForm() {
     switch (selectedCategory) {
       case 'Apartament':

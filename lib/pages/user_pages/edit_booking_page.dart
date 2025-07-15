@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class EditBookingPage extends StatefulWidget {
-  final String bookingId;
-  final DateTime initialDateTime;
-  final String propertyName;
+  final String bookingId; // id programare
+  final DateTime initialDateTime; // data si ora initiala
+  final String propertyName; // numele proprietatii
 
   const EditBookingPage({
     super.key,
@@ -20,33 +20,34 @@ class EditBookingPage extends StatefulWidget {
 }
 
 class EditBookingPageState extends State<EditBookingPage> {
-  late DateTime selectedDate;
-  late TimeOfDay selectedTime;
+  late DateTime selectedDate; // data selectata
+  late TimeOfDay selectedTime; // ora selectata
+  // flag pentru a arata indicatorul de loading la salvare
   bool isSaving = false;
-  String? errorMessage;
-  String? successMessage;
+  String? errorMessage; // mesaj de eroare daca apare o problema
+  String? successMessage; // mesaj de succes dupa salvare
 
   @override
   void initState() {
     super.initState();
-    // Initializam cu datele primite
+    // initializare data si ora din widget
     selectedDate = widget.initialDateTime;
     selectedTime = TimeOfDay.fromDateTime(widget.initialDateTime);
   }
 
-  /// Afiseaza picker pentru data noua
+  //date picker pentru alegerea unei date noi
   Future<void> pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
-      firstDate: now,
-      lastDate: DateTime(now.year + 1),
+      firstDate: now, // nu se poate selecta o data din trecut
+      lastDate: DateTime(now.year + 1), // maxim un an in viitor
     );
     if (picked != null) setState(() => selectedDate = picked);
   }
 
-  /// Afiseaza picker pentru ora noua
+  // time picker pentru alegerea unei ore noi
   Future<void> pickTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -55,35 +56,45 @@ class EditBookingPageState extends State<EditBookingPage> {
     if (picked != null) setState(() => selectedTime = picked);
   }
 
-  /// Salveaza modificarile in Firestore
+  //se salveaza modificarile
   Future<void> saveEdit() async {
-    // Combinam data+ora
-    final dt = DateTime(
+    final dateTime = DateTime(
       selectedDate.year,
       selectedDate.month,
       selectedDate.day,
       selectedTime.hour,
       selectedTime.minute,
     );
-    // Nu permitem trecutul
-    if (dt.isBefore(DateTime.now())) {
-      setState(() => errorMessage = 'Nu poti programa in trecut.');
+    // data si ora curenta, fara secunde/milisecunde
+    final now = DateTime.now();
+    final nowTrimmed = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+    );
+    if (dateTime.isBefore(nowTrimmed)) {
+      setState(() => errorMessage = 'Nu te poti programa in trecut');
       return;
     }
+
     setState(() {
       isSaving = true;
       errorMessage = null;
     });
     try {
+      // se actualizeaza documentul
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(widget.bookingId)
-          .update({'date': Timestamp.fromDate(dt)});
+          .update({'date': Timestamp.fromDate(dateTime)});
       setState(() => successMessage = 'Programare actualizata cu succes!');
+      await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
-      setState(() => errorMessage = 'Eroare la actualizare.');
+      setState(() => errorMessage = 'Eroare la actualizare');
     } finally {
       if (mounted) setState(() => isSaving = false);
     }
@@ -105,7 +116,6 @@ class EditBookingPageState extends State<EditBookingPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Rand cu sageata si titlul + numele proprietatii
                 Row(
                   children: [
                     IconButton(
@@ -117,7 +127,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Editeaza programare',
+                          'Editeaza programarea',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -133,8 +143,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                   ],
                 ),
                 const SizedBox(height: 24),
-
-                // Banner eroare
+                // mesaj de eroare
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -142,8 +151,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // Banner succes
+                // mesaj de succes
                 if (successMessage != null) ...[
                   ErrorBanner(
                     message: successMessage!,
@@ -152,8 +160,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // Buton data
+                // buton pentru alegerea datei
                 ElevatedButton.icon(
                   onPressed: pickDate,
                   icon: const Icon(Icons.calendar_today),
@@ -166,8 +173,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Buton ora
+                // buton pentru alegerea orei
                 ElevatedButton.icon(
                   onPressed: pickTime,
                   icon: const Icon(Icons.access_time),
@@ -180,8 +186,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Buton salvare
+                // buton pentru salvare
                 FilledButton(
                   onPressed: isSaving ? null : saveEdit,
                   style: FilledButton.styleFrom(
@@ -194,7 +199,7 @@ class EditBookingPageState extends State<EditBookingPage> {
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          : const Text('Salveaza'),
+                          : const Text('Salveaza programarea'),
                 ),
               ],
             ),

@@ -3,10 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:homehunt/models/error_widgets/error_banner.dart';
 
-/// Pagina pentru adaugarea unei programari de vizionare
 class AddBookingPage extends StatefulWidget {
-  final String agentId;
-  final String propertyId;
+  final String agentId; // id-ul agentului
+  final String propertyId; // id-ul proprietatii
 
   const AddBookingPage({
     super.key,
@@ -19,40 +18,42 @@ class AddBookingPage extends StatefulWidget {
 }
 
 class AddBookingPageState extends State<AddBookingPage> {
-  DateTime? selectedDate; // Data selectata
-  TimeOfDay? selectedTime; // Ora selectata
-  bool isSaving = false; // Flag pentru indicatorul de salvare
-  String? errorMessage; // Mesaj de eroare
-  String? successMessage; // Mesaj de succes
+  DateTime? selectedDate; // data selectata
+  TimeOfDay? selectedTime; // ora selectata
+  // flag pentru a arata indicatorul de loading la salvare
+  bool isSaving = false;
+  String? errorMessage; // mesaj de eroare
+  String? successMessage; // mesaj de succes
 
-  /// Afiseaza picker pentru alegerea datei (nu permite trecutul)
+  // date picker pentru alegerea datei
   Future<void> pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: now,
-      firstDate: now, // nu permite trecutul
-      lastDate: DateTime(now.year + 1),
+      firstDate: now, // nu se poate selecta o data din trecut
+      lastDate: DateTime(now.year + 1), // maxim un an in viitor
     );
     if (picked != null) setState(() => selectedDate = picked);
   }
 
-  /// Afiseaza picker pentru alegerea orei
+  // afiseaza un time picker pentru alegerea orei
   Future<void> pickTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: const TimeOfDay(hour: 9, minute: 0),
+      initialTime: const TimeOfDay(hour: 9, minute: 0), // ora default
     );
     if (picked != null) setState(() => selectedTime = picked);
   }
 
-  /// Verifica daca exista deja o programare pentru aceeasi proprietate si utilizator
+  // verifica daca exista deja o programare
   Future<void> checkExistingBooking() async {
-    // Combina data+ora si verificare trecut
     if (selectedDate == null || selectedTime == null) {
-      setState(() => errorMessage = 'Alege mai intai data si ora');
+      setState(() => errorMessage = 'Alege data si ora!');
       return;
     }
+
+    // verific data si ora
     final dateTime = DateTime(
       selectedDate!.year,
       selectedDate!.month,
@@ -61,16 +62,18 @@ class AddBookingPageState extends State<AddBookingPage> {
       selectedTime!.minute,
     );
     if (dateTime.isBefore(DateTime.now())) {
-      setState(() => errorMessage = 'Nu poti programa in trecut.');
+      setState(() => errorMessage = 'Nu poti programa o vizionare in trecut!');
       return;
     }
 
+    // extrage userul curent si daca e autentificat
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      setState(() => errorMessage = 'Trebuie sa fii autentificat.');
+      setState(() => errorMessage = 'User neautentificat');
       return;
     }
 
+    // daca exista deja o programare pentru user si proprietate, afiseaza mesaj de eroare
     final snap =
         await FirebaseFirestore.instance
             .collection('bookings')
@@ -82,18 +85,18 @@ class AddBookingPageState extends State<AddBookingPage> {
       setState(
         () =>
             errorMessage =
-                'Exista deja o programare pentru aceasta proprietate.',
+                'Ai deja o vizionare programata pe ${dateTime.toLocal()}!',
       );
     } else {
       saveBooking(dateTime);
     }
   }
 
-  /// Salveaza programarea in Firestore
+  // salvez programarea
   Future<void> saveBooking(DateTime dateTime) async {
     setState(() {
-      isSaving = true;
-      errorMessage = null;
+      isSaving = true; // porneste indicatorul de loading
+      errorMessage = null; // reseteaza mesajele de eroare
     });
 
     try {
@@ -105,10 +108,11 @@ class AddBookingPageState extends State<AddBookingPage> {
         'date': Timestamp.fromDate(dateTime),
       });
       setState(() => successMessage = 'Vizionare programata cu succes!');
+      await Future.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (_) {
-      setState(() => errorMessage = 'Eroare la salvarea vizionarii.');
+      setState(() => errorMessage = 'Eroare la salvare');
     } finally {
       if (mounted) setState(() => isSaving = false);
     }
@@ -117,9 +121,7 @@ class AddBookingPageState extends State<AddBookingPage> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 900;
-
     return Scaffold(
-      // Fara AppBar global
       body: LayoutBuilder(
         builder:
             (ctx, constraints) => SingleChildScrollView(
@@ -141,7 +143,7 @@ class AddBookingPageState extends State<AddBookingPage> {
     );
   }
 
-  /// Containerul formularului (jumatatea stanga/dreapta)
+  // widget/container cu formularul
   Widget buildFormContainer() {
     return Expanded(
       child: Center(
@@ -156,7 +158,6 @@ class AddBookingPageState extends State<AddBookingPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Sageata inapoi + titlu in container
               Row(
                 children: [
                   IconButton(
@@ -170,10 +171,8 @@ class AddBookingPageState extends State<AddBookingPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              // Banner eroare
+              // afiseaza banner de eroare
               if (errorMessage != null) ...[
                 ErrorBanner(
                   message: errorMessage!,
@@ -181,8 +180,7 @@ class AddBookingPageState extends State<AddBookingPage> {
                 ),
                 const SizedBox(height: 16),
               ],
-
-              // Banner succes
+              // afiseaza banner de succes
               if (successMessage != null) ...[
                 ErrorBanner(
                   message: successMessage!,
@@ -191,8 +189,7 @@ class AddBookingPageState extends State<AddBookingPage> {
                 ),
                 const SizedBox(height: 16),
               ],
-
-              // Buton Alege data
+              // buton pentru alegerea datei
               ElevatedButton.icon(
                 onPressed: pickDate,
                 icon: const Icon(Icons.calendar_today),
@@ -209,8 +206,7 @@ class AddBookingPageState extends State<AddBookingPage> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Buton Alege ora
+              // buton pentru alegerea orei
               ElevatedButton.icon(
                 onPressed: pickTime,
                 icon: const Icon(Icons.access_time),
@@ -227,8 +223,7 @@ class AddBookingPageState extends State<AddBookingPage> {
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Buton Programeaza
+              // butonul de programare
               FilledButton(
                 onPressed: isSaving ? null : checkExistingBooking,
                 style: FilledButton.styleFrom(
@@ -242,7 +237,7 @@ class AddBookingPageState extends State<AddBookingPage> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                        : const Text('Programeaza'),
+                        : const Text('Programeaza-te'),
               ),
             ],
           ),
@@ -251,7 +246,7 @@ class AddBookingPageState extends State<AddBookingPage> {
     );
   }
 
-  /// Containerul cu imagine (jumatatea opusa formularului)
+  // widget cu imaginea
   Widget buildImagePane() {
     return Expanded(
       child: Container(
