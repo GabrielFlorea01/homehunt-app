@@ -16,12 +16,13 @@ class MyListingsPageState extends State<MyListingsPage> {
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection('properties');
 
-  // A ScrollController for each card's horizontal gallery
+  // controllere pentru galeria de imagini a fiecarui anunt
   final Map<int, ScrollController> scrollControllers = {};
 
-  // Track which cards have phone expanded
+  // afiseaza/ascunde telefonul agentului pentru fiecare anunt
   final Map<String, bool> showPhone = {};
 
+  // deschide galeria de imagini la apasare
   void openGallery(BuildContext c, List<String> imgs, int idx) {
     Navigator.of(c).push(
       MaterialPageRoute(
@@ -42,11 +43,7 @@ class MyListingsPageState extends State<MyListingsPage> {
     );
   }
 
-  void togglePhone(String id) {
-    showPhone[id] = !(showPhone[id] ?? false);
-    setState(() {});
-  }
-
+  // lista de chips cu detalii in functie de tipul proprietatii
   List<Widget> buildChips(Map<String, dynamic> data) {
     switch (data['category'] as String? ?? '') {
       case 'Garsoniera':
@@ -141,6 +138,7 @@ class MyListingsPageState extends State<MyListingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // appbar cu titlu si culoare
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -158,7 +156,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                   .snapshots(),
           builder: (ctx, snap) {
             if (snap.hasError) {
-              return Center(child: Text('Eroare: ${snap.error}'));
+              return Center(child: Text('eroare: ${snap.error}'));
             }
             if (!snap.hasData) {
               return const Center(child: CircularProgressIndicator());
@@ -205,7 +203,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // imagine + tag tip tranzactie
+                                // imagine de preview
                                 Stack(
                                   children: [
                                     ClipRRect(
@@ -328,9 +326,6 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                 builder:
                                                     (ctx) => AlertDialog(
                                                       title: const Text(
-                                                        'Confirma stergerea',
-                                                      ),
-                                                      content: const Text(
                                                         'Sigur vrei sa stergi acest anunt?',
                                                       ),
                                                       actions: [
@@ -353,7 +348,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                                     true,
                                                                   ),
                                                           child: const Text(
-                                                            'Sterge',
+                                                            'Da, sterge',
                                                           ),
                                                         ),
                                                       ],
@@ -371,7 +366,8 @@ class MyListingsPageState extends State<MyListingsPage> {
                                     ),
                                   ],
                                 ),
-                                // detalii si ExpansionTile
+
+                                // detaliile anuntului in card
                                 ExpansionTile(
                                   tilePadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -418,6 +414,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                       runSpacing: 4,
                                       children: buildChips(data),
                                     ),
+
                                     // descriere
                                     if ((data['description'] as String?)
                                             ?.isNotEmpty ??
@@ -428,7 +425,8 @@ class MyListingsPageState extends State<MyListingsPage> {
                                         style: const TextStyle(fontSize: 14),
                                       ),
                                     ],
-                                    // galerie imagini
+
+                                    // mini-galerie imagini
                                     if (images.length > 1) ...[
                                       const SizedBox(height: 20),
                                       SizedBox(
@@ -440,11 +438,27 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                 Icons.arrow_back_ios,
                                               ),
                                               onPressed: () {
-                                                // scroll inapoi (optional: vezi home_page pentru logica)
+                                                final controller =
+                                                    scrollControllers[i]!;
+                                                controller.animateTo(
+                                                  (controller.offset - 100)
+                                                      .clamp(
+                                                        0.0,
+                                                        controller
+                                                            .position
+                                                            .maxScrollExtent,
+                                                      ),
+                                                  duration: const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                                  curve: Curves.easeInOut,
+                                                );
                                               },
                                             ),
                                             Expanded(
                                               child: ListView.separated(
+                                                controller:
+                                                    scrollControllers[i],
                                                 scrollDirection:
                                                     Axis.horizontal,
                                                 itemCount: images.length,
@@ -491,7 +505,21 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                 Icons.arrow_forward_ios,
                                               ),
                                               onPressed: () {
-                                                // scroll inainte (optional: vezi home_page pentru logica)
+                                                final controller =
+                                                    scrollControllers[i]!;
+                                                controller.animateTo(
+                                                  (controller.offset + 100)
+                                                      .clamp(
+                                                        0.0,
+                                                        controller
+                                                            .position
+                                                            .maxScrollExtent,
+                                                      ),
+                                                  duration: const Duration(
+                                                    milliseconds: 300,
+                                                  ),
+                                                  curve: Curves.easeInOut,
+                                                );
                                               },
                                             ),
                                           ],
@@ -499,9 +527,10 @@ class MyListingsPageState extends State<MyListingsPage> {
                                       ),
                                     ],
                                     const SizedBox(height: 20),
+                                    // harta cu locatia
                                     buildMapSection(fullAddress),
                                     const SizedBox(height: 20),
-                                    // detalii agent
+                                    // detalii despre agent
                                     FutureBuilder<DocumentSnapshot>(
                                       future:
                                           FirebaseFirestore.instance
@@ -533,10 +562,7 @@ class MyListingsPageState extends State<MyListingsPage> {
                                                   ).colorScheme.primary,
                                               child: Text(
                                                 name.isNotEmpty
-                                                    ? (name[0] +
-                                                            (name.length > 1
-                                                                ? name[1]
-                                                                : ''))
+                                                    ? (name[0] + name[1])
                                                         .toUpperCase()
                                                     : 'A',
                                                 style: const TextStyle(

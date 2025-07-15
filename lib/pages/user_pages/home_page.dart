@@ -269,12 +269,6 @@ class HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  // afiseaza/ascunde telefonul agentului
-  void togglePhone(String id) {
-    showPhone[id] = !(showPhone[id] ?? false);
-    setState(() {});
-  }
-
   // da dismiss la mesajul de eroare
   void clearError() => setState(() => errorMessage = null);
 
@@ -1352,10 +1346,7 @@ class HomePageState extends State<HomePage> {
                                                                         child: Text(
                                                                           name.isNotEmpty
                                                                               ? (name[0] +
-                                                                                      (name.length >
-                                                                                              1
-                                                                                          ? name[1]
-                                                                                          : ''))
+                                                                                      name[1])
                                                                                   .toUpperCase()
                                                                               : 'A',
                                                                           style: const TextStyle(
