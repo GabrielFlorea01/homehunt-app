@@ -1,4 +1,4 @@
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -93,109 +93,111 @@ class EditBookingPageState extends State<EditBookingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          margin: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-          padding: const EdgeInsets.all(32),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Rand cu sageata si titlul + numele proprietatii
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Editeaza programare',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            margin: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            padding: const EdgeInsets.all(32),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.all(Radius.circular(16)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Rand cu sageata si titlul + numele proprietatii
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Editeaza programare',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.propertyName,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.propertyName,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Banner eroare
+                if (errorMessage != null) ...[
+                  ErrorBanner(
+                    message: errorMessage!,
+                    onDismiss: () => setState(() => errorMessage = null),
                   ),
+                  const SizedBox(height: 16),
                 ],
-              ),
-              const SizedBox(height: 24),
 
-              // Banner eroare
-              if (errorMessage != null) ...[
-                ErrorBanner(
-                  message: errorMessage!,
-                  onDismiss: () => setState(() => errorMessage = null),
-                ),
-                const SizedBox(height: 16),
-              ],
+                // Banner succes
+                if (successMessage != null) ...[
+                  ErrorBanner(
+                    message: successMessage!,
+                    messageType: MessageType.success,
+                    onDismiss: () => setState(() => successMessage = null),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-              // Banner succes
-              if (successMessage != null) ...[
-                ErrorBanner(
-                  message: successMessage!,
-                  messageType: MessageType.success,
-                  onDismiss: () => setState(() => successMessage = null),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // Buton data
-              ElevatedButton.icon(
-                onPressed: pickDate,
-                icon: const Icon(Icons.calendar_today),
-                label: Text(DateFormat('dd/MM/yyyy').format(selectedDate)),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                // Buton data
+                ElevatedButton.icon(
+                  onPressed: pickDate,
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text(DateFormat('dd/MM/yyyy').format(selectedDate)),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Buton ora
-              ElevatedButton.icon(
-                onPressed: pickTime,
-                icon: const Icon(Icons.access_time),
-                label: Text(selectedTime.format(context)),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                // Buton ora
+                ElevatedButton.icon(
+                  onPressed: pickTime,
+                  icon: const Icon(Icons.access_time),
+                  label: Text(selectedTime.format(context)),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // Buton salvare
-              FilledButton(
-                onPressed: isSaving ? null : saveEdit,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+                // Buton salvare
+                FilledButton(
+                  onPressed: isSaving ? null : saveEdit,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  child:
+                      isSaving
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Salveaza'),
                 ),
-                child:
-                    isSaving
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Text('Salveaza'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 import 'package:homehunt/pages/auth_pages/forgot_password_page.dart';
 import 'package:homehunt/pages/auth_pages/signup_page.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,11 +12,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class LoginPageState extends State<LoginPage> {
+  // controllere pentru email si parola
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-  bool isLoading = false;
-  String? errorMessage;
-  bool obscurePassword = true;
+  bool isLoading = false; // stare pentru loading indicator
+  String? errorMessage; // mesaj de eroare daca exista
+  bool obscurePassword = true; // ascunde/afiseaza parola
 
   @override
   void dispose() {
@@ -25,7 +26,10 @@ class LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  // functie pentru login cu email si parola - se apeleaza din AuthService
   Future<void> login() async {
+    if (!mounted) return;
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -43,6 +47,7 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
+  // functie pentru login cu Google - se apeleaza din AuthService
   Future<void> googleSignIn() async {
     if (!mounted) return;
 
@@ -64,7 +69,7 @@ class LoginPageState extends State<LoginPage> {
       if (mounted) {
         setState(() {
           isLoading = false;
-          errorMessage = "A aparut o eroare";
+          errorMessage = "a aparut o eroare";
         });
       }
     }
@@ -84,9 +89,11 @@ class LoginPageState extends State<LoginPage> {
               child: IntrinsicHeight(
                 child:
                     isWide
+                        // pe ecrane mari afiseaza formularul si imaginea una langa alta
                         ? Row(
                           children: [buildLoginContainer(), buildImageSide()],
                         )
+                        // altfel, pe verticala
                         : Column(
                           children: [buildImageSide(), buildLoginContainer()],
                         ),
@@ -98,6 +105,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
+  // containerul cu formularul de login
   Widget buildLoginContainer() {
     return Expanded(
       child: Center(
@@ -114,12 +122,14 @@ class LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 15),
+                // logo aplicatiei
                 Image(
                   image: const AssetImage('lib/images/logomov.png'),
                   width: 150,
                   height: 150,
                 ),
                 const SizedBox(height: 30),
+                // afiseaza eroarea daca e cazul
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -127,6 +137,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // camp pentru email
                 TextField(
                   controller: emailController,
                   decoration: const InputDecoration(
@@ -135,6 +146,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // camp pentru parola cu toggle pentru vizibilitate
                 TextField(
                   controller: passwordController,
                   obscureText: obscurePassword,
@@ -154,8 +166,14 @@ class LoginPageState extends State<LoginPage> {
                       },
                     ),
                   ),
+                  onSubmitted: (_) {
+                    if (!isLoading) {
+                      login();
+                    }
+                  },
                 ),
                 const SizedBox(height: 8),
+                // buton pentru pagina de resetare a parolei
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -171,6 +189,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 15),
+                // buton de login cu circular progress indicator daca e loading
                 FilledButton(
                   onPressed: isLoading ? null : login,
                   child:
@@ -183,6 +202,7 @@ class LoginPageState extends State<LoginPage> {
                           : const Text('Conecteaza-te'),
                 ),
                 const SizedBox(height: 45),
+                // buton pentru login cu google
                 FilledButton.icon(
                   onPressed: isLoading ? null : googleSignIn,
                   icon: Image.asset(
@@ -198,6 +218,7 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                // buton catre pagina de signup
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -223,6 +244,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
+  // partea cu imaginea din dreapta/stanga
   Widget buildImageSide() {
     return Expanded(
       child: Container(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-// Fullscreen gallery view for pics
+// Model de widget pentru galeria de imagini
 class GalleryView extends StatefulWidget {
-  final List<String> images;
-  final int initialIndex;
+  final List<String> images; // lista url-urilor imaginilor
+  final int initialIndex; // indexul imaginii de start
+
   const GalleryView({
     super.key,
     required this.images,
@@ -15,13 +16,13 @@ class GalleryView extends StatefulWidget {
 }
 
 class GalleryViewState extends State<GalleryView> {
-  late PageController pageController;
-  late int currentIndex;
+  late PageController pageController; // controller pentru PageView
+  late int currentIndex; // indexul imaginii curente
 
   @override
   void initState() {
     super.initState();
-    currentIndex = widget.initialIndex;
+    currentIndex = widget.initialIndex; // setez indexul initial
     pageController = PageController(initialPage: currentIndex);
   }
 
@@ -36,12 +37,14 @@ class GalleryViewState extends State<GalleryView> {
     return Column(
       children: [
         Expanded(
+          //imaginile din galeria proprietatii cu PageView
           child: PageView.builder(
             controller: pageController,
             itemCount: widget.images.length,
             onPageChanged: (i) => setState(() => currentIndex = i),
             itemBuilder:
                 (_, i) => InteractiveViewer(
+                  // zoom pe imagine
                   child: Image.network(
                     widget.images[i],
                     fit: BoxFit.contain,
@@ -57,13 +60,16 @@ class GalleryViewState extends State<GalleryView> {
                           child: Icon(
                             Icons.broken_image,
                             size: 64,
-                            color: Colors.white70,
+                            color:
+                                Colors
+                                    .white70, // icon daca nu se incarca imaginea
                           ),
                         ),
                   ),
                 ),
           ),
         ),
+        // bara de jos cu navigare si indicator
         Container(
           color: Colors.black,
           height: 60,
@@ -81,7 +87,7 @@ class GalleryViewState extends State<GalleryView> {
                         : null,
               ),
               Text(
-                '${currentIndex + 1}/${widget.images.length}',
+                '${currentIndex + 1}/${widget.images.length}', // pozitia curenta
                 style: const TextStyle(color: Colors.white),
               ),
               IconButton(

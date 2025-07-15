@@ -27,9 +27,21 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="logo.png"/>
 
   <title>homehunt</title>
+    <script>
+    (function() {
+      const _origWarn = console.warn;
+      console.warn = function(msg, ...args) {
+        if (typeof msg === 'string'
+            && msg.includes('google.maps.Marker is deprecated')) {
+          return;
+        }
+        _origWarn.call(console, msg, ...args);
+      };
+    })();
+  </script>
   <script 
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDKPYR6D35iEowIp9SjJjsI8bDmTLdd35Y">
   </script>

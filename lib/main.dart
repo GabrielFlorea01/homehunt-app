@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:homehunt/firebase/auth/auth_gate.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_gate.dart';
 import 'package:homehunt/firebase/config/firebase_options.dart';
 
 Future<void> main() async {
@@ -17,13 +17,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Home Hunt', // Titlul aplicatiei
-      debugShowCheckedModeBanner: false, // Dezactivam banner-ul de debug
+      title: 'Home Hunt',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Culoare implicita pentru Card-uri
+        //culoare implicita pentru Card-uri
         cardColor: Colors.white,
-
-        // Schema de culori generata dintr-o culoare de baza
+        // schema de culori
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
           primary: Colors.deepPurple,
@@ -31,12 +30,10 @@ class MyApp extends StatelessWidget {
           tertiary: Colors.deepPurple.shade200,
           brightness: Brightness.light,
         ),
-        
-        // Fonturi personalizate prin Google Fonts
+        // fonturi personalizate prin Google Fonts
         textTheme: GoogleFonts.interTextTheme(),
         useMaterial3: true,
-
-        // Tema pentru campurile de input
+        //tema pentru campurile de input
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
           focusedBorder: OutlineInputBorder(
@@ -52,8 +49,7 @@ class MyApp extends StatelessWidget {
             vertical: 14,
           ),
         ),
-
-        // Tema pentru FilledButton (buton plin)
+        // tema pentru FilledButton
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
             backgroundColor: Colors.deepPurple,
@@ -64,8 +60,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-
-        // Tema pentru ElevatedButton
+        // tema pentru ElevatedButton
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.deepPurple,
@@ -78,7 +73,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
 
-      // Primul widget afisat este AuthGate, care gestioneaza starea de autentificare
+      // prmul widget afisat este AuthGate, care gestioneaza starea pt autentificare
       home: const AuthGate(),
     );
   }

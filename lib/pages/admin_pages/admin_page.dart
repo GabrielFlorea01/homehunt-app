@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:homehunt/pages/admin_pages/admin_listings_page.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
-import 'package:homehunt/pages/admin_pages/edit_agents_page.dart';
-import 'package:homehunt/pages/reports/reports_models/rapoarte_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_agents_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_delete_listings_page.dart';
+import 'package:homehunt/pages/admin_pages/admin_sold_rented_page.dart';
+import 'package:homehunt/pages/admin_pages/reports_pages/rapoarte_page.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -13,15 +14,16 @@ class AdminPage extends StatefulWidget {
 }
 
 class AdminPageState extends State<AdminPage> {
-  User? user;
-  String? errorMessage;
+  User? user; // utilizatorul curent autentificat
+  String? errorMessage; // mesaj de eroare
 
   @override
   void initState() {
     super.initState();
-    loadUser();
+    loadUser(); // utilizatorul la initializare
   }
 
+  // utilizatorul curent din FirebaseAuth
   void loadUser() {
     if (!mounted) return;
     setState(() => user = FirebaseAuth.instance.currentUser);
@@ -31,37 +33,16 @@ class AdminPageState extends State<AdminPage> {
     setState(() => errorMessage = null);
     try {
       await AuthService().signOut();
-      // redirectioneaza unde vrei tu
-    } on AuthException catch (e) {
+    } on FirebaseAuthException catch (e) {
       setState(() => errorMessage = e.message);
     } catch (_) {
       setState(() => errorMessage = 'Eroare la deconectare');
     }
   }
 
-  void confirmSignOut() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sigur te deconectezi?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Nu')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              signOut();
-            },
-            child: const Text('Da'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar neschimbat
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(70),
         child: AppBar(
@@ -74,6 +55,7 @@ class AdminPageState extends State<AdminPage> {
           ),
         ),
       ),
+      // drawer cu meniul de administrare
       drawer: Drawer(
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: SafeArea(
@@ -82,22 +64,28 @@ class AdminPageState extends State<AdminPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // partea scrollabila
+                // optiunile de meniu
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 30),
+                        // placeholder avatar cu initiala emailului
                         CircleAvatar(
                           radius: 40,
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           child: Text(
                             user?.email?.substring(0, 1).toUpperCase() ?? 'U',
-                            style: const TextStyle(fontSize: 32, color: Colors.white),
+                            style: const TextStyle(
+                              fontSize: 32,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 50),
+                        // spre pagina agentilor
                         ListTile(
                           leading: const Icon(Icons.group_rounded),
                           title: const Text('Agenti'),
@@ -106,11 +94,12 @@ class AdminPageState extends State<AdminPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const EditAgentsPage(),
+                                builder: (context) => const AdminAgentsPage(),
                               ),
                             );
                           },
                         ),
+                        // spre pagina de rapoarte
                         ListTile(
                           leading: const Icon(Icons.bar_chart_rounded),
                           title: const Text('Rapoarte'),
@@ -124,6 +113,7 @@ class AdminPageState extends State<AdminPage> {
                             );
                           },
                         ),
+                        // spre pagina de stergere anunturi
                         ListTile(
                           leading: const Icon(Icons.playlist_remove_rounded),
                           title: const Text('Sterge anunturi'),
@@ -132,7 +122,24 @@ class AdminPageState extends State<AdminPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AdminListingsPage(),
+                                builder:
+                                    (context) =>
+                                        const AdminDeleteListingsPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        // spre pagina de anunturi vandute/inchiriate
+                        ListTile(
+                          leading: const Icon(Icons.playlist_add_check_circle),
+                          title: const Text('Vandut/inchiriat'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const AdminSoldRentedPage(),
                               ),
                             );
                           },
@@ -142,10 +149,32 @@ class AdminPageState extends State<AdminPage> {
                     ),
                   ),
                 ),
+                // deconectare
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
-                    onPressed: confirmSignOut,
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              title: const Text('Sigur te deconectezi?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Nu'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    signOut();
+                                  },
+                                  child: const Text('Da'),
+                                ),
+                              ],
+                            ),
+                      );
+                    },
                     style: TextButton.styleFrom(
                       alignment: Alignment.center,
                       padding: const EdgeInsets.symmetric(vertical: 16),

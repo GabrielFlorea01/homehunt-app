@@ -1,16 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+//pentru gestionarea autentificarii
 class AuthService {
-  // instanta FirebaseAuth
+  //pentru autentificare
   final FirebaseAuth auth = FirebaseAuth.instance;
-  // instanta FirebaseFirestore
+  //pentru baza de date
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-  // stream pentru schimbari stare de autentificare
+  //pentru schimbarile de stare ale autentificarii
   Stream<User?> get authStateChanges => auth.authStateChanges();
 
-  // metoda clasica de signUp cu email si parola
+  //inregistrare utilizator nou
   Future<void> signUp(
     String email,
     String password,
@@ -18,12 +18,14 @@ class AuthService {
     String phone,
   ) async {
     try {
+      // creeaza utilizator cu email si parola
       final userCredential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-
+      // user-ul a fost creat cu succes
       if (userCredential.user != null) {
+        // salveaza datele in colectie
         await firestore.collection('users').doc(userCredential.user!.uid).set({
           'email': email,
           'name': name,
@@ -32,6 +34,7 @@ class AuthService {
         });
       }
     } on FirebaseAuthException catch (e) {
+      // tratare erori specifice
       if (e.code == 'weak-password') {
         throw AuthException('Parola este prea slaba');
       } else if (e.code == 'email-already-in-use') {
@@ -42,15 +45,18 @@ class AuthService {
         throw AuthException('Sign up esuat. Incearca din nou');
       }
     } catch (e) {
+      // alte erori neasteptate
       throw AuthException('Eroare neasteptata');
     }
   }
 
-  // metoda clasica de login cu email si parola
+  //logare utilizator existent
   Future<void> login(String email, String password) async {
     try {
+      // cu email si parola
       await auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
+      //tratare erori la logare
       if (e.code == 'user-not-found') {
         throw AuthException('User cu acest email nu exista');
       } else if (e.code == 'wrong-password') {
@@ -61,25 +67,29 @@ class AuthService {
         throw AuthException('Login esuat. Incearca din nou');
       }
     } catch (e) {
+      //alte erori neasteptate
       throw AuthException('Eroare neasteptata');
     }
   }
 
-  // metoda de autentificare cu Google
+  //logare cu Google
   Future<void> googleSignIn() async {
     try {
+      //provider pentru Google
       final googleProvider = GoogleAuthProvider();
+      //selectarea contului Google
       googleProvider.setCustomParameters({'prompt': 'select_account'});
-
+      // logare cu popup
       final userCredential = await auth.signInWithPopup(googleProvider);
       final user = userCredential.user;
-
+      // daca nu s-a gasit user
       if (user == null) {
-        throw AuthException('Nu s-a returnat niciun user de la Google.');
+        throw AuthException('Contul Google nu a fost gasit');
       }
-
+      // daca user exista deja
       final doc = await firestore.collection('users').doc(user.uid).get();
       if (!doc.exists) {
+        //nu exista salveaza datele user
         await firestore.collection('users').doc(user.uid).set({
           'email': user.email,
           'name': user.displayName ?? '',
@@ -88,15 +98,18 @@ class AuthService {
         });
       }
     } catch (e) {
+      // tratare erori la logarea cu Google
       throw AuthException('Logarea cu Google a esuat');
     }
   }
 
-  // metoda de resetare parola
+  //pentru resetarea parolei
   Future<void> forgotPassword(String email) async {
     try {
+      //email de resetare parola
       await auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
+      // tratare erori specifice la resetare parola
       if (e.code == 'user-not-found') {
         throw AuthException('User negasit cu acest email');
       } else if (e.code == 'invalid-email') {
@@ -105,21 +118,23 @@ class AuthService {
         throw AuthException('Introdu o adresa de email');
       }
     } catch (e) {
+      //alte erori neasteptate
       throw AuthException('Eroare neasteptata');
     }
   }
 
-  // metoda de logout
+  // metoda pentru delogare
   Future<void> signOut() async {
     try {
       await auth.signOut();
     } catch (e) {
+      //tratare erori la delogare
       throw AuthException('Eroare la sign out. Incearca din nou');
     }
   }
 }
 
-// exceptie custom pentru erorile din AuthService
+// clasa pentru exceptii personalizate
 class AuthException implements Exception {
   final String message;
   AuthException(this.message);

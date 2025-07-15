@@ -1,38 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 
-class AddAgentPage extends StatefulWidget {
-  const AddAgentPage({super.key});
+class AdminAddAgentPage extends StatefulWidget {
+  const AdminAddAgentPage({super.key});
 
   @override
-  AddAgentPageState createState() => AddAgentPageState();
+  AdminAddAgentPageState createState() => AdminAddAgentPageState();
 }
 
-class AddAgentPageState extends State<AddAgentPage> {
+class AdminAddAgentPageState extends State<AdminAddAgentPage> {
   // colectia agents din Firestore
-  final agentsColl = FirebaseFirestore.instance.collection('agents');
+  final agents = FirebaseFirestore.instance.collection('agents');
   // controller pentru campurile de input
-  final nameCtrl = TextEditingController();
-  final emailCtrl = TextEditingController();
-  final phoneCtrl = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
   // flag pentru starea de salvare
   bool isSaving = false;
+  String? successMessage;
 
   // functie pentru salvarea agentului
   Future<void> saveAgent() async {
+    // daca deja se salveaza, nu mai face nimic
     if (isSaving) return;
     setState(() => isSaving = true);
 
-    await agentsColl.add({
-      'name': nameCtrl.text.trim(),
-      'email': emailCtrl.text.trim(),
-      'phone': phoneCtrl.text.trim(),
+    await agents.add({
+      'name': nameController.text.trim(),
+      'email': emailController.text.trim(),
+      'phone': phoneController.text.trim(),
       'createdAt': FieldValue.serverTimestamp(),
       'properties': <String>[],
     });
 
     if (!mounted) return;
     setState(() => isSaving = false);
+    successMessage = 'Agent adaugat cu succes';
     Navigator.of(context).pop(); // inchidem pagina dupa salvare
   }
 
@@ -44,7 +48,7 @@ class AddAgentPageState extends State<AddAgentPage> {
     return Scaffold(
       body: LayoutBuilder(
         builder: (ctx, constraints) {
-          // pe ecrane mari form + imagine alaturat
+          // pe ecrane mari form + imagine
           if (isWide) {
             return SizedBox(
               height: constraints.maxHeight,
@@ -60,10 +64,7 @@ class AddAgentPageState extends State<AddAgentPage> {
             return SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  buildImagePane(height: 300),
-                  buildFormPane(),
-                ],
+                children: [buildImagePane(height: 300), buildFormPane()],
               ),
             );
           }
@@ -107,27 +108,31 @@ class AddAgentPageState extends State<AddAgentPage> {
                     const SizedBox(width: 8),
                     const Text(
                       'Adauga Agent',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
                 // buton adauga
                 TextButton(
                   onPressed: saveAgent,
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Adauga'),
+                  child:
+                      isSaving
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Text('Adauga'),
                 ),
               ],
             ),
             const SizedBox(height: 24),
             // camp nume
             TextField(
-              controller: nameCtrl,
+              controller: nameController,
               decoration: const InputDecoration(
                 labelText: 'Nume',
                 prefixIcon: Icon(Icons.person),
@@ -136,7 +141,7 @@ class AddAgentPageState extends State<AddAgentPage> {
             const SizedBox(height: 16),
             // camp email
             TextField(
-              controller: emailCtrl,
+              controller: emailController,
               decoration: const InputDecoration(
                 labelText: 'Email',
                 prefixIcon: Icon(Icons.email),
@@ -146,12 +151,13 @@ class AddAgentPageState extends State<AddAgentPage> {
             const SizedBox(height: 16),
             // camp telefon
             TextField(
-              controller: phoneCtrl,
+              controller: phoneController,
               decoration: const InputDecoration(
                 labelText: 'Telefon',
                 prefixIcon: Icon(Icons.phone),
               ),
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
           ],
         ),

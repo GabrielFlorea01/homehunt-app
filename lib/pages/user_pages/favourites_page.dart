@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:homehunt/images/gallery/gallery_view.dart';
-import 'package:homehunt/pages/map/map.dart';
+import 'package:homehunt/models/gallery/gallery_model.dart';
+import 'package:homehunt/models/map/map_model.dart';
 import 'package:intl/intl.dart';
 
 class FavoritesPage extends StatefulWidget {
@@ -57,7 +57,7 @@ class FavoritesPageState extends State<FavoritesPage> {
           (docSnap) {
             if (!mounted) return;
             final data = docSnap.data() as Map<String, dynamic>? ?? {};
-            final favList = data['favoriteIds'] as List<dynamic>? ?? [];
+            final favList = data['favourites'] as List<dynamic>? ?? [];
             favoriteIds = favList.map((e) => e.toString()).toList();
             setState(() {
               isLoading = false; // Opreste loader dupa ce preia datele
@@ -97,7 +97,7 @@ class FavoritesPageState extends State<FavoritesPage> {
   /// Creaza o lista de Chip-uri in functie de categoria proprietatii
   List<Widget> buildChips(Map<String, dynamic> data) {
     switch (data['category'] as String? ?? '') {
-        case 'Garsoniera':
+      case 'Garsoniera':
         final g = data['garsonieraDetails'] as Map<String, dynamic>? ?? {};
         return [
           const Chip(
@@ -249,380 +249,372 @@ class FavoritesPageState extends State<FavoritesPage> {
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 600),
-                          child: Column(
-                            children:
-                                docs.map((doc) {
-                                  final data =
-                                      doc.data()! as Map<String, dynamic>;
-                                  data['id'] = doc.id;
-                                  final images = List<String>.from(
-                                    data['images'] as List? ?? [],
-                                  );
-                                  final loc =
-                                      data['location']
-                                          as Map<String, dynamic>? ??
-                                      {};
-                                  final fullAddress = [
-                                        loc['street'] ?? '',
-                                        loc['number'] ?? '',
-                                        if ((loc['sector'] ?? '')
-                                            .toString()
-                                            .isNotEmpty)
-                                          'Sector ${loc['sector']}',
-                                        loc['city'] ?? '',
-                                        loc['county'] ?? '',
-                                      ]
-                                      .where((s) => s.trim().isNotEmpty)
-                                      .join(', ');
+                        child: Column(
+                          children:
+                              docs.map((doc) {
+                                final data =
+                                    doc.data()! as Map<String, dynamic>;
+                                data['id'] = doc.id;
+                                final images = List<String>.from(
+                                  data['images'] as List? ?? [],
+                                );
+                                final loc =
+                                    data['location'] as Map<String, dynamic>? ??
+                                    {};
+                                final fullAddress = [
+                                  loc['street'] ?? '',
+                                  loc['number'] ?? '',
+                                  if ((loc['sector'] ?? '')
+                                      .toString()
+                                      .isNotEmpty)
+                                    'Sector ${loc['sector']}',
+                                  loc['city'] ?? '',
+                                  loc['county'] ?? '',
+                                ].where((s) => s.trim().isNotEmpty).join(', ');
 
-                                  return Card(
-                                    margin: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 2,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // ---- IMAGE STACK + BUTON DE UNFAVORITE ----
-                                        Stack(
-                                          children: [
-                                            // Imaginea principala a proprietatii
-                                            ClipRRect(
-                                              borderRadius:
-                                                  const BorderRadius.vertical(
-                                                    top: Radius.circular(12),
-                                                  ),
-                                              child: AspectRatio(
-                                                aspectRatio: 16 / 9,
-                                                child:
-                                                    images.isNotEmpty
-                                                        ? Image.network(
-                                                          images.first,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder:
-                                                              (
-                                                                _,
-                                                                __,
-                                                                ___,
-                                                              ) => Container(
-                                                                color:
-                                                                    Colors
-                                                                        .grey
-                                                                        .shade300,
-                                                              ),
-                                                        )
-                                                        : Container(
-                                                          color:
-                                                              Colors
-                                                                  .grey
-                                                                  .shade300,
-                                                        ),
-                                              ),
-                                            ),
-                                            // Butonul de unfavorite (inima rosie)
-                                            Positioned(
-                                              top: 8,
-                                              right: 8,
-                                              child: Container(
-                                                decoration: const BoxDecoration(
-                                                  color: Colors.white,
-                                                  shape: BoxShape.circle,
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // imagine + buton unfavorite + tag tip tranzactie
+                                      Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                  top: Radius.circular(12),
                                                 ),
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.favorite,
-                                                    color: Colors.red,
-                                                  ),
-                                                  onPressed: () async {
-                                                    // Scoate imediat ID-ul din favoriteIds
-                                                    final propId =
-                                                        data['id'] as String;
-                                                    try {
-                                                      await usersRef
-                                                          .doc(currentUser.uid)
-                                                          .update({
-                                                            'favoriteIds':
-                                                                FieldValue.arrayRemove(
-                                                                  [propId],
-                                                                ),
-                                                          });
-                                                    } catch (e) {
-                                                      // Daca nu exista campul, cream unul gol
-                                                      await usersRef
-                                                          .doc(currentUser.uid)
-                                                          .set(
-                                                            {'favoriteIds': []},
-                                                            SetOptions(
-                                                              merge: true,
+                                            child: AspectRatio(
+                                              aspectRatio: 16 / 9,
+                                              child:
+                                                  images.isNotEmpty
+                                                      ? Image.network(
+                                                        images.first,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder:
+                                                            (
+                                                              _,
+                                                              __,
+                                                              ___,
+                                                            ) => Container(
+                                                              color:
+                                                                  Colors
+                                                                      .grey
+                                                                      .shade300,
                                                             ),
-                                                          );
-                                                    }
-                                                  },
+                                                      )
+                                                      : Container(
+                                                        color:
+                                                            Colors
+                                                                .grey
+                                                                .shade300,
+                                                      ),
+                                            ),
+                                          ),
+                                          // buton unfavorite (inima)
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: Container(
+                                              decoration: const BoxDecoration(
+                                                color: Colors.white,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.favorite,
+                                                  color: Colors.red,
+                                                ),
+                                                onPressed: () async {
+                                                  final propId =
+                                                      data['id'] as String;
+                                                  try {
+                                                    await usersRef
+                                                        .doc(currentUser.uid)
+                                                        .update({
+                                                          'favourites':
+                                                              FieldValue.arrayRemove(
+                                                                [propId],
+                                                              ),
+                                                        });
+                                                  } catch (e) {
+                                                    await usersRef
+                                                        .doc(currentUser.uid)
+                                                        .set(
+                                                          {'favourites': []},
+                                                          SetOptions(
+                                                            merge: true,
+                                                          ),
+                                                        );
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                          // tag tip tranzactie
+                                          Positioned(
+                                            bottom: 8,
+                                            left: 8,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                data['type'] as String? ?? '',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ),
-                                            // Eticheta cu tipul tranzactiei ("De vanzare" sau "De inchiriat")
-                                            Positioned(
-                                              bottom: 8,
-                                              left: 8,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
+                                          ),
+                                        ],
+                                      ),
+                                      // detalii si ExpansionTile
+                                      ExpansionTile(
+                                        tilePadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        title: Text(
+                                          data['title'] as String? ?? '',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
+                                        ),
+                                        childrenPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                        children: [
+                                          // adresa completa
+                                          if (fullAddress.isNotEmpty)
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.location_on,
+                                                  size: 16,
+                                                  color: Colors.grey,
                                                 ),
-                                                child: Text(
-                                                  data['type'] as String? ?? '',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: SelectableText(
+                                                    fullAddress,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                    ),
                                                   ),
                                                 ),
+                                              ],
+                                            ),
+                                          const SizedBox(height: 15),
+                                          // chips detalii
+                                          Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            children: buildChips(data),
+                                          ),
+                                          // descriere
+                                          if ((data['description'] as String?)
+                                                  ?.isNotEmpty ??
+                                              false) ...[
+                                            const SizedBox(height: 20),
+                                            Text(
+                                              data['description'] as String,
+                                              style: const TextStyle(
+                                                fontSize: 14,
                                               ),
                                             ),
                                           ],
-                                        ),
-
-                                        // ---- DETAILS & EXPANSIONTILE ----
-                                        ExpansionTile(
-                                          tilePadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 8,
-                                              ),
-                                          title: Text(
-                                            data['title'] as String? ?? '',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          subtitle: Text(
-                                            '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
-                                          ),
-                                          childrenPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 16,
-                                                vertical: 8,
-                                              ),
-                                          children: [
-                                            // Afiseaza adresa completa
-                                            if (fullAddress.isNotEmpty)
-                                              Row(
+                                          // galerie imagini
+                                          if (images.length > 1) ...[
+                                            const SizedBox(height: 20),
+                                            SizedBox(
+                                              height: 120,
+                                              child: Row(
                                                 children: [
-                                                  const Icon(
-                                                    Icons.location_on,
-                                                    size: 16,
-                                                    color: Colors.grey,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      fullAddress,
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                      ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.arrow_back_ios,
                                                     ),
+                                                    onPressed: () {
+                                                      // scroll inapoi (optional: vezi home_page pentru logica)
+                                                    },
+                                                  ),
+                                                  Expanded(
+                                                    child: ListView.separated(
+                                                      scrollDirection:
+                                                          Axis.horizontal,
+                                                      itemCount: images.length,
+                                                      separatorBuilder:
+                                                          (_, __) =>
+                                                              const SizedBox(
+                                                                width: 8,
+                                                              ),
+                                                      itemBuilder:
+                                                          (
+                                                            _,
+                                                            idx,
+                                                          ) => GestureDetector(
+                                                            onTap:
+                                                                () =>
+                                                                    openGallery(
+                                                                      context,
+                                                                      images,
+                                                                      idx,
+                                                                    ),
+                                                            child: ClipRRect(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    6,
+                                                                  ),
+                                                              child: Image.network(
+                                                                images[idx],
+                                                                width: 120,
+                                                                height: 80,
+                                                                fit:
+                                                                    BoxFit
+                                                                        .cover,
+                                                                errorBuilder:
+                                                                    (
+                                                                      _,
+                                                                      __,
+                                                                      ___,
+                                                                    ) => Container(
+                                                                      color:
+                                                                          Colors
+                                                                              .grey
+                                                                              .shade300,
+                                                                    ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.arrow_forward_ios,
+                                                    ),
+                                                    onPressed: () {
+                                                      // scroll inainte (optional: vezi home_page pentru logica)
+                                                    },
                                                   ),
                                                 ],
                                               ),
-                                            const SizedBox(height: 15),
-                                            // Afiseaza chip-urile corespunzatoare categoriei
-                                            Wrap(
-                                              spacing: 8,
-                                              runSpacing: 4,
-                                              children: buildChips(data),
-                                            ),
-                                            // Afiseaza descrierea, daca exista
-                                            if ((data['description'] as String?)
-                                                    ?.isNotEmpty ??
-                                                false) ...[
-                                              const SizedBox(height: 20),
-                                              Text(
-                                                data['description'] as String,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                            // Daca exista mai multe imagini, afiseaza o galerie orizontala simplificata
-                                            if (images.length > 1) ...[
-                                              const SizedBox(height: 20),
-                                              SizedBox(
-                                                height: 150,
-                                                child: Row(
-                                                  children: [
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.arrow_back_ios,
-                                                      ),
-                                                      onPressed: () {
-                                                        // nu implementam scroll orizontal aici
-                                                      },
-                                                    ),
-                                                    Expanded(
-                                                      child: ListView.separated(
-                                                        scrollDirection:
-                                                            Axis.horizontal,
-                                                        itemCount:
-                                                            images.length,
-                                                        separatorBuilder:
-                                                            (_, __) =>
-                                                                const SizedBox(
-                                                                  width: 8,
-                                                                ),
-                                                        itemBuilder:
-                                                            (
-                                                              _,
-                                                              idx,
-                                                            ) => GestureDetector(
-                                                              onTap:
-                                                                  () =>
-                                                                      openGallery(
-                                                                        context,
-                                                                        images,
-                                                                        idx,
-                                                                      ),
-                                                              child: ClipRRect(
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      6,
-                                                                    ),
-                                                                child: Image.network(
-                                                                  images[idx],
-                                                                  width: 100,
-                                                                  height: 100,
-                                                                  fit:
-                                                                      BoxFit
-                                                                          .cover,
-                                                                  errorBuilder:
-                                                                      (
-                                                                        _,
-                                                                        __,
-                                                                        ___,
-                                                                      ) => Container(
-                                                                        color:
-                                                                            Colors.grey.shade300,
-                                                                      ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                      ),
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.arrow_forward_ios,
-                                                      ),
-                                                      onPressed: () {
-                                                        // nu implementam scroll orizontal aici
-                                                      },
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                            const SizedBox(height: 20),
-                                            // Afiseaza harta pentru adresa respectiva
-                                            buildMapSection(fullAddress),
-                                            const SizedBox(height: 20),
-                                            // Afiseaza informatii despre agent
-                                            FutureBuilder<DocumentSnapshot>(
-                                              future:
-                                                  FirebaseFirestore.instance
-                                                      .collection('agents')
-                                                      .doc(
-                                                        data['agentId']
-                                                            as String,
-                                                      )
-                                                      .get(),
-                                              builder: (ctx, snapAgent) {
-                                                final name =
-                                                    data['agentName']
-                                                        as String? ??
-                                                    '';
-                                                final phone =
-                                                    snapAgent.hasData
-                                                        ? (snapAgent.data!['phone']
-                                                                as String? ??
-                                                            '')
-                                                        : '';
-                                                return Row(
-                                                  children: [
-                                                    CircleAvatar(
-                                                      radius: 20,
-                                                      backgroundColor:
-                                                          Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                      child: Text(
-                                                        name.isNotEmpty
-                                                            ? name[0]
-                                                                .toUpperCase()
-                                                            : 'A',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Text(
-                                                            name,
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                          ),
-                                                          if (snapAgent
-                                                              .hasData) ...[
-                                                            const SizedBox(
-                                                              height: 4,
-                                                            ),
-                                                            Text(
-                                                              phone,
-                                                              style:
-                                                                  const TextStyle(
-                                                                    color:
-                                                                        Colors
-                                                                            .grey,
-                                                                  ),
-                                                            ),
-                                                          ],
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                );
-                                              },
                                             ),
                                           ],
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
-                          ),
+                                          const SizedBox(height: 20),
+                                          // harta
+                                          buildMapSection(fullAddress),
+                                          const SizedBox(height: 20),
+                                          // detalii agent
+                                          FutureBuilder<DocumentSnapshot>(
+                                            future:
+                                                FirebaseFirestore.instance
+                                                    .collection('agents')
+                                                    .doc(
+                                                      data['agentId'] as String,
+                                                    )
+                                                    .get(),
+                                            builder: (ctx, snapAgent) {
+                                              final name =
+                                                  data['agentName']
+                                                      as String? ??
+                                                  '';
+                                              final phone =
+                                                  snapAgent.hasData
+                                                      ? (snapAgent.data!['phone']
+                                                              as String? ??
+                                                          '')
+                                                      : '';
+                                              final email =
+                                                  snapAgent.hasData
+                                                      ? (snapAgent.data!['email']
+                                                              as String? ??
+                                                          '')
+                                                      : '';
+                                              return Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 20,
+                                                    backgroundColor:
+                                                        Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                    child: Text(
+                                                      name.isNotEmpty
+                                                          ? (name[0] +
+                                                                  (name.length >
+                                                                          1
+                                                                      ? name[1]
+                                                                      : ''))
+                                                              .toUpperCase()
+                                                          : 'A',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          name,
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 5,
+                                                        ),
+                                                        SelectableText(email),
+                                                        SelectableText(phone),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
                         ),
                       ),
-                    );
+                    ),
+                  );
                 },
               ),
     );

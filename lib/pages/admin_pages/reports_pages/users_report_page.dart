@@ -2,7 +2,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'reports_models/user_model.dart';
+
+class UserModel {
+  final String id;
+  final String email;
+  final DateTime createdAt;
+
+  UserModel({required this.id, required this.email, required this.createdAt});
+
+  factory UserModel.fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    return UserModel(
+      id: doc.id,
+      email: data['email'] as String,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+    );
+  }
+}
 
 class UsersReportPage extends StatefulWidget {
   const UsersReportPage({super.key});
@@ -24,15 +40,17 @@ class UsersReportPageState extends State<UsersReportPage> {
 
   Future<void> loadUsers() async {
     final currentEmail = FirebaseAuth.instance.currentUser?.email;
-    final snap = await FirebaseFirestore.instance
-        .collection('users')
-        .orderBy('createdAt')
-        .get();
+    final snap =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .orderBy('createdAt')
+            .get();
     setState(() {
-      users = snap.docs
-          .map((d) => UserModel.fromDoc(d))
-          .where((u) => u.email != currentEmail)
-          .toList();
+      users =
+          snap.docs
+              .map((d) => UserModel.fromDoc(d))
+              .where((u) => u.email != currentEmail)
+              .toList();
     });
   }
 
@@ -42,35 +60,50 @@ class UsersReportPageState extends State<UsersReportPage> {
         .collection('users')
         .orderBy('createdAt');
     if (fromDate != null) {
-      ref = ref.startAt([Timestamp.fromDate(fromDate!)]);
+      // inceputul zilei
+      ref = ref.where(
+        'createdAt',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(
+          DateTime(fromDate!.year, fromDate!.month, fromDate!.day, 0, 0, 0),
+        ),
+      );
     }
     if (toDate != null) {
-      ref = ref.endAt([Timestamp.fromDate(toDate!)]);
+      // sfarsitul zilei
+      ref = ref.where(
+        'createdAt',
+        isLessThanOrEqualTo: Timestamp.fromDate(
+          DateTime(toDate!.year, toDate!.month, toDate!.day, 23, 59, 59, 999),
+        ),
+      );
     }
     final snap = await ref.get();
     setState(() {
-      users = snap.docs
-          .map((d) => UserModel.fromDoc(d))
-          .where((u) => u.email != currentEmail)
-          .toList();
+      users =
+          snap.docs
+              .map((d) => UserModel.fromDoc(d))
+              .where((u) => u.email != currentEmail)
+              .toList();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final maxHeight = MediaQuery.of(context).size.height * 0.75;
     return Scaffold(
       body: Center(
-        child: Card(
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 6,
-          color: Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 800, maxHeight: maxHeight),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 800),
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 6,
+            color: Colors.white,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // back arrow + title
                   Row(
@@ -82,7 +115,10 @@ class UsersReportPageState extends State<UsersReportPage> {
                       const SizedBox(width: 8),
                       const Text(
                         'Utilizatori inregistrati',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -101,7 +137,11 @@ class UsersReportPageState extends State<UsersReportPage> {
                             );
                             if (d != null) setState(() => fromDate = d);
                           },
-                          child: Text(fromDate == null ? 'De la' : DateFormat('dd/MM/yyyy').format(fromDate!)),
+                          child: Text(
+                            fromDate == null
+                                ? 'De la'
+                                : DateFormat('dd/MM/yyyy').format(fromDate!),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -116,35 +156,44 @@ class UsersReportPageState extends State<UsersReportPage> {
                             );
                             if (d != null) setState(() => toDate = d);
                           },
-                          child: Text(toDate == null ? 'Pana la' : DateFormat('dd/MM/yyyy').format(toDate!)),
+                          child: Text(
+                            toDate == null
+                                ? 'Pana la'
+                                : DateFormat('dd/MM/yyyy').format(toDate!),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton(onPressed: applyFilter, child: const Text('Aplica')),
+                      ElevatedButton(
+                        onPressed: applyFilter,
+                        child: const Text('Aplica'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // scrollable tabel
-                  Expanded(
+                  Center(
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('Nr.')),
-                            DataColumn(label: Text('Email')),
-                            DataColumn(label: Text('Data creare')),
-                          ],
-                          rows: List.generate(users.length, (index) {
-                            final u = users[index];
-                            return DataRow(cells: [
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        columns: const [
+                          DataColumn(label: Text('Nr.')),
+                          DataColumn(label: Text('Email')),
+                          DataColumn(label: Text('Data creare')),
+                        ],
+                        rows: List.generate(users.length, (index) {
+                          final u = users[index];
+                          return DataRow(
+                            cells: [
                               DataCell(Text((index + 1).toString())),
                               DataCell(Text(u.email)),
-                              DataCell(Text(DateFormat('dd/MM/yyyy').format(u.createdAt))),
-                            ]);
-                          }),
-                        ),
+                              DataCell(
+                                Text(
+                                  DateFormat('dd/MM/yyyy').format(u.createdAt),
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                       ),
                     ),
                   ),

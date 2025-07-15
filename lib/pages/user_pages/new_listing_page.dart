@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
 import 'package:intl/intl.dart';
 
 class NewListingPage extends StatefulWidget {
@@ -222,10 +222,10 @@ class NewListingPageState extends State<NewListingPage> {
       successMessage = null;
     });
     try {
-      // create the doc with initial data
+      // se creeaza documentul cu datele initiale
       final data = <String, dynamic>{
         'title': titleController.text,
-        'price': int.parse(priceController.text),
+        'price': parseFormattedNumber(priceController.text),
         'description': descriptionController.text,
         'type': transactionType,
         'category': selectedCategory,
@@ -249,22 +249,22 @@ class NewListingPageState extends State<NewListingPage> {
             'rooms': selectedNumarCamereApartament,
             'compartments': selectedCompartimentare,
             'floor': etajController.text,
-            'area': int.parse(suprafataUtilaApartController.text),
+            'area': parseFormattedNumber(suprafataUtilaApartController.text),
             'yearBuilt': int.parse(anConstructieApartController.text),
           };
           break;
         case 'Garsoniera':
           data['garsonieraDetails'] = {
             'floor': etajGarsonieraController.text,
-            'area': int.parse(suprafataUtilaGarsonieraController.text),
+            'area': parseFormattedNumber(suprafataUtilaGarsonieraController.text),
             'yearBuilt': int.parse(anConstructieGarsonieraController.text),
           };
           break;
         case 'Casa':
           data['houseDetails'] = {
             'rooms': selectedNumarCamereCasa,
-            'area': int.parse(suprafataUtilaCasaController.text),
-            'landArea': int.parse(suprafataTerenCasaController.text),
+            'area': parseFormattedNumber(suprafataUtilaCasaController.text),
+            'landArea': parseFormattedNumber(suprafataTerenCasaController.text),
             'yearBuilt': int.parse(anConstructieCasaController.text),
             'floors': int.parse(etajeCasaController.text),
           };
@@ -273,13 +273,13 @@ class NewListingPageState extends State<NewListingPage> {
           data['landDetails'] = {
             'type': selectedTipTeren,
             'classification': selectedClasificare,
-            'area': int.parse(suprafataTerenController.text),
+            'area': parseFormattedNumber(suprafataTerenController.text),
           };
           break;
         case 'Spatiu comercial':
           data['commercialDetails'] = {
             'type': selectedCategorieSpatiu,
-            'area': int.parse(suprafataSpatiuComController.text),
+            'area': parseFormattedNumber(suprafataSpatiuComController.text),
           };
           break;
       }
@@ -314,14 +314,19 @@ class NewListingPageState extends State<NewListingPage> {
     }
   }
 
-    void formatPrice(String text) {
+  int parseFormattedNumber(String text) {
+  final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+  return digits.isEmpty ? 0 : int.parse(digits);
+  }
+
+  void formatNumber(TextEditingController controller, String text) {
     final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.isEmpty) {
-      priceController.clear();
+      controller.clear();
       return;
     }
     final formatted = NumberFormat.decimalPattern('ro').format(int.parse(digits));
-    priceController.value = TextEditingValue(
+    controller.value = TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
     );
@@ -659,6 +664,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaApartController,
+          onChanged: (v) => formatNumber(suprafataUtilaApartController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
@@ -683,7 +689,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          onChanged: formatPrice,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -734,6 +740,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaGarsonieraController,
+          onChanged: (v) => formatNumber(suprafataUtilaGarsonieraController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
@@ -758,7 +765,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          onChanged: formatPrice,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -810,6 +817,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaCasaController,
+          onChanged: (v) => formatNumber(suprafataUtilaCasaController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
@@ -821,6 +829,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataTerenCasaController,
+          onChanged: (v) => formatNumber(suprafataTerenCasaController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata teren (mp)',
             border: OutlineInputBorder(),
@@ -856,7 +865,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          onChanged: formatPrice,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -929,6 +938,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataTerenController,
+          onChanged: (v) => formatNumber(suprafataTerenController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata teren (mp)',
             border: OutlineInputBorder(),
@@ -942,7 +952,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          onChanged: formatPrice,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),
@@ -1000,6 +1010,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataSpatiuComController,
+          onChanged: (v) => formatNumber(suprafataSpatiuComController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata (mp)',
             border: OutlineInputBorder(),
@@ -1013,7 +1024,7 @@ class NewListingPageState extends State<NewListingPage> {
         const SizedBox(height: 20),
         TextFormField(
           controller: priceController,
-          onChanged: formatPrice,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: InputDecoration(
             labelText: priceLabel,
             border: const OutlineInputBorder(),

@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,7 +21,6 @@ class ProfilePageState extends State<ProfilePage> {
   final emailCtrl = TextEditingController();
   final phoneCtrl = TextEditingController();
 
-  bool isGoogleUser = false;
   bool isLoading = false;
   bool imageUploading = false;
   String? errorMessage;
@@ -38,7 +37,6 @@ class ProfilePageState extends State<ProfilePage> {
   Future<void> loadUser() async {
     if (user == null) return;
     setState(() => isLoading = true);
-    isGoogleUser = user!.providerData.any((p) => p.providerId == 'google.com');
     final doc = await firestore.collection('users').doc(user!.uid).get();
     if (doc.exists) {
       final data = doc.data()!;
@@ -90,10 +88,6 @@ class ProfilePageState extends State<ProfilePage> {
     });
     try {
       final updateData = {'name': nameCtrl.text.trim(), 'phone': phone};
-      if (!isGoogleUser && emailCtrl.text.trim() != user!.email) {
-        await user!.updateEmail(emailCtrl.text.trim());
-        updateData['email'] = emailCtrl.text.trim();
-      }
       await firestore.collection('users').doc(user!.uid).update(updateData);
       setState(() => successMessage = 'Profil actualizat!');
     } catch (e) {
@@ -136,7 +130,6 @@ class ProfilePageState extends State<ProfilePage> {
     return Expanded(
       flex: 7,
       child: Center(
-        // center vertically
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500),
           margin: const EdgeInsets.all(24),
@@ -149,7 +142,6 @@ class ProfilePageState extends State<ProfilePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // back arrow + title
               Row(
                 children: [
                   IconButton(
@@ -164,8 +156,6 @@ class ProfilePageState extends State<ProfilePage> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // banners
               if (errorMessage != null) ...[
                 ErrorBanner(
                   message: errorMessage!,
@@ -181,68 +171,67 @@ class ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 16),
               ],
-
-              // avatar centered
               Center(
-                child: Stack(
-                  alignment: Alignment.bottomRight,
+                child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(
-                        0.1,
-                      ),
-                      backgroundImage:
-                          profileImageUrl != null
-                              ? NetworkImage(profileImageUrl!)
-                              : null,
-                      child:
-                          profileImageUrl == null
-                              ? Icon(
-                                Icons.person,
-                                size: 60,
-                                color: theme.colorScheme.primary,
-                              )
-                              : null,
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: theme.colorScheme.primary
+                              .withOpacity(0.1),
+                          backgroundImage:
+                              profileImageUrl != null
+                                  ? NetworkImage(profileImageUrl!)
+                                  : null,
+                          child:
+                              profileImageUrl == null
+                                  ? Icon(
+                                    Icons.person,
+                                    size: 60,
+                                    color: theme.colorScheme.primary,
+                                  )
+                                  : null,
+                        ),
+                        InkWell(
+                          onTap: imageUploading ? null : uploadProfileImage,
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: theme.colorScheme.primary,
+                            child:
+                                imageUploading
+                                    ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    )
+                                    : const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                          ),
+                        ),
+                      ],
                     ),
-                    InkWell(
-                      onTap: imageUploading ? null : uploadProfileImage,
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: theme.colorScheme.primary,
-                        child:
-                            imageUploading
-                                ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                )
-                                : const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
+                    const SizedBox(height: 12),
+                    Text(
+                      emailCtrl.text,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // fields
+              const SizedBox(height: 40),
               TextField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Nume complet',
                   prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emailCtrl,
-                enabled: !isGoogleUser,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
                 ),
               ),
               const SizedBox(height: 12),

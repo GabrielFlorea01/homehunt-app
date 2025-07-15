@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
+import 'package:intl/intl.dart';
 
 class EditListingPage extends StatefulWidget {
   final String listingId;
@@ -141,7 +142,8 @@ class EditListingPageState extends State<EditListingPage> {
     if (!mounted) return;
     setState(() {
       titleController.text = data['title'] as String? ?? '';
-      priceController.text = (data['price'] as num?)?.toString() ?? '';
+      final rawPrice = (data['price'] as num?)?.toInt() ?? 0;
+      priceController.text = NumberFormat.decimalPattern('ro').format(rawPrice);
       descriptionController.text = data['description'] as String? ?? '';
       transactionType = data['type'] as String? ?? 'De vanzare';
       selectedCategory = data['category'] as String? ?? 'Apartament';
@@ -238,6 +240,24 @@ class EditListingPageState extends State<EditListingPage> {
     setState(() {});
   }
 
+    int parseFormattedNumber(String text) {
+  final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+  return digits.isEmpty ? 0 : int.parse(digits);
+  }
+
+  void formatNumber(TextEditingController controller, String text) {
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      controller.clear();
+      return;
+    }
+    final formatted = NumberFormat.decimalPattern('ro').format(int.parse(digits));
+    controller.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
   Future<void> saveChanges() async {
     if (!formKey.currentState!.validate()) return;
     setState(() {
@@ -249,7 +269,7 @@ class EditListingPageState extends State<EditListingPage> {
       final allUrls = await uploadImages(widget.listingId);
       final data = <String, dynamic>{
         'title': titleController.text,
-        'price': int.parse(priceController.text),
+        'price': parseFormattedNumber(priceController.text),
         'description': descriptionController.text,
         'type': transactionType,
         'category': selectedCategory,
@@ -271,15 +291,15 @@ class EditListingPageState extends State<EditListingPage> {
             'rooms': selectedNumarCamereApartament,
             'compartments': selectedCompartimentare,
             'floor': etajController.text,
-            'area': int.parse(suprafataUtilaApartController.text),
+            'area': parseFormattedNumber(suprafataUtilaApartController.text),
             'yearBuilt': int.parse(anConstructieApartController.text),
           };
           break;
         case 'Casa':
           data['houseDetails'] = {
             'rooms': selectedNumarCamereCasa,
-            'area': int.parse(suprafataUtilaCasaController.text),
-            'landArea': int.parse(suprafataTerenCasaController.text),
+            'area': parseFormattedNumber(suprafataUtilaCasaController.text),
+            'landArea': parseFormattedNumber(suprafataTerenCasaController.text),
             'yearBuilt': int.parse(anConstructieCasaController.text),
             'floors': int.parse(etajeCasaController.text),
           };
@@ -288,13 +308,13 @@ class EditListingPageState extends State<EditListingPage> {
           data['landDetails'] = {
             'type': selectedTipTeren,
             'classification': selectedClasificare,
-            'area': int.parse(suprafataTerenController.text),
+            'area': parseFormattedNumber(suprafataTerenController.text),
           };
           break;
         case 'Spatiu comercial':
           data['commercialDetails'] = {
             'type': selectedCategorieSpatiu,
-            'area': int.parse(suprafataSpatiuComController.text),
+            'area': parseFormattedNumber(suprafataSpatiuComController.text),
           };
           break;
       }
@@ -645,12 +665,12 @@ class EditListingPageState extends State<EditListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaApartController,
+          onChanged: (v) => formatNumber(suprafataUtilaApartController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
         ),
         const SizedBox(height: 10),
@@ -667,12 +687,12 @@ class EditListingPageState extends State<EditListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: priceController,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
@@ -715,23 +735,23 @@ class EditListingPageState extends State<EditListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaCasaController,
+          onChanged: (v) => formatNumber(suprafataUtilaCasaController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata utila (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata utila' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataTerenCasaController,
+          onChanged: (v) => formatNumber(suprafataTerenCasaController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata teren (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata teren' : null,
         ),
         const SizedBox(height: 10),
@@ -759,12 +779,12 @@ class EditListingPageState extends State<EditListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: priceController,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
@@ -832,23 +852,23 @@ class EditListingPageState extends State<EditListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataTerenController,
+          onChanged: (v) => formatNumber(suprafataTerenController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata teren (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata teren' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: priceController,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),
@@ -901,23 +921,23 @@ class EditListingPageState extends State<EditListingPage> {
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataSpatiuComController,
+          onChanged: (v) => formatNumber(suprafataSpatiuComController, v),
           decoration: const InputDecoration(
             labelText: 'Suprafata (mp)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
         ),
         const SizedBox(height: 10),
         TextFormField(
           controller: priceController,
+          onChanged: (v) => formatNumber(priceController, v),
           decoration: const InputDecoration(
             labelText: 'Pret (EUR)',
             border: OutlineInputBorder(),
           ),
           keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
         ),
         const SizedBox(height: 20),

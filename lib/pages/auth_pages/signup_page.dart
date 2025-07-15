@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:homehunt/firebase/auth/auth_service.dart';
+import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
 import 'package:homehunt/pages/auth_pages/login_page.dart';
-import 'package:homehunt/error_widgets/error_banner.dart';
+import 'package:homehunt/models/error_widgets/error_banner.dart';
 import 'package:intl_phone_field/country_picker_dialog.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
@@ -13,16 +13,18 @@ class SignupPage extends StatefulWidget {
 }
 
 class SignupPageState extends State<SignupPage> {
+  // controllere pentru inputuri
   final emailController = TextEditingController();
   final nameController = TextEditingController();
   final passwordController = TextEditingController();
   final phoneController = TextEditingController();
-  bool isLoading = false;
-  String? errorMessage;
-  bool obscurePassword = true;
+  bool isLoading = false; // stare pentru indicator de incarcare
+  String? errorMessage; // mesaj de eroare daca exista
+  bool obscurePassword = true; // ascunde/afiseaza parola
 
   @override
   void dispose() {
+    //se elibereaza controllerele la eliminarea widget-ului din arbore
     emailController.dispose();
     nameController.dispose();
     passwordController.dispose();
@@ -35,7 +37,7 @@ class SignupPageState extends State<SignupPage> {
       isLoading = true;
       errorMessage = null;
     });
-
+    // se apeleaza metoda de inregistrare din AuthService
     try {
       await AuthService().signUp(
         emailController.text.trim(),
@@ -43,9 +45,13 @@ class SignupPageState extends State<SignupPage> {
         nameController.text.trim(),
         phoneController.text.trim(),
       );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop(); // revine la pagina de login dupa succes
+      }
     } on AuthException catch (e) {
-      setState(() => errorMessage = e.message);
+      setState(
+        () => errorMessage = e.message,
+      ); // seteaza mesajul de eroare cu mesajul custom din AuthException
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -55,6 +61,7 @@ class SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
+    // construieste UI pentru pagina de signup
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 44, 48, 77),
       body: Center(
@@ -70,6 +77,7 @@ class SignupPageState extends State<SignupPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 24),
+                // titlu
                 Text(
                   'Creeaza un cont',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -84,6 +92,8 @@ class SignupPageState extends State<SignupPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
+
+                // afiseaza eroarea daca exista
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
@@ -91,6 +101,8 @@ class SignupPageState extends State<SignupPage> {
                   ),
                   const SizedBox(height: 20),
                 ],
+
+                // camp pentru nume complet
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(
@@ -99,6 +111,7 @@ class SignupPageState extends State<SignupPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // camp pentru telefon cu selector de tara
                 IntlPhoneField(
                   decoration: const InputDecoration(
                     labelText: 'Telefon',
@@ -115,6 +128,7 @@ class SignupPageState extends State<SignupPage> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // camp pentru email
                 TextField(
                   controller: emailController,
                   decoration: const InputDecoration(
@@ -124,6 +138,7 @@ class SignupPageState extends State<SignupPage> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
+                // camp pentru parola cu toggle pentru vizibilitate
                 TextField(
                   controller: passwordController,
                   obscureText: obscurePassword,
@@ -145,6 +160,7 @@ class SignupPageState extends State<SignupPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                // buton pentru creare cont cu circular progress indicator daca e loading
                 FilledButton(
                   onPressed: isLoading ? null : signUp,
                   child:
@@ -157,6 +173,7 @@ class SignupPageState extends State<SignupPage> {
                           : const Text('Creeaza cont'),
                 ),
                 const SizedBox(height: 32),
+                // buton si text catre pagina de login
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
