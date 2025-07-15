@@ -37,7 +37,7 @@ Widget buildMapSection(String address) {
     builder: (context, snap) {
       if (snap.hasError) {
         return Text(
-          'Map error: ${snap.error}',
+          'Eroare la afisarea hartii: ${snap.error}',
           style: const TextStyle(color: Colors.red),
         );
       }
@@ -47,7 +47,7 @@ Widget buildMapSection(String address) {
       }
       // nu am primit coordonate, afisez mesaj
       final loc = snap.data;
-      if (loc == null) return const Text('Nu se poate afisa harta');
+      if (loc == null) return const Text('Nu se poate afisa locatia pe harta');
       //am coordonatele, afisez harta cu marker pe adresa
       return SizedBox(
         height: 500,

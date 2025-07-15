@@ -752,6 +752,7 @@ class HomePageState extends State<HomePage> {
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
+                                // filtru pentru titlu - de tip input
                                 buildTextField(
                                   hint: 'Titlu',
                                   width: 150,
@@ -762,6 +763,7 @@ class HomePageState extends State<HomePage> {
                                   },
                                 ),
                                 const SizedBox(width: 8),
+                                // drop-down filtru pentru tipul tranzactiei
                                 buildDropdown(
                                   value: transactionType,
                                   items: const [
@@ -775,6 +777,7 @@ class HomePageState extends State<HomePage> {
                                   },
                                 ),
                                 const SizedBox(width: 8),
+                                // filtru pentru localitate - de tip input
                                 buildTextField(
                                   hint: 'Localitate',
                                   width: 150,
@@ -785,6 +788,7 @@ class HomePageState extends State<HomePage> {
                                   },
                                 ),
                                 const SizedBox(width: 8),
+                                // drop-down filtru pentru tipul proprietatii
                                 buildDropdown(
                                   value: propertyFilter,
                                   items: const [
@@ -801,6 +805,7 @@ class HomePageState extends State<HomePage> {
                                   },
                                 ),
                                 const SizedBox(width: 8),
+                                // filtru pentru camere - de tip input pentru numar
                                 buildTextField(
                                   hint: 'Camere',
                                   width: 150,
@@ -815,6 +820,7 @@ class HomePageState extends State<HomePage> {
                                   },
                                 ),
                                 const SizedBox(width: 8),
+                                // filtru pentru pret
                                 buildDropdown(
                                   value: 'Pret',
                                   items: const [
@@ -852,17 +858,16 @@ class HomePageState extends State<HomePage> {
 
                     // rezultate returnate  si sortare
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
+                          // contorul de rezultate
                           Text(
                             'S-au gasit ${filteredListings.length} rezultate',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
+                          // drop-down pentru sortare
                           DropdownButton<String>(
                             value: selectedSort,
                             items:
@@ -874,6 +879,7 @@ class HomePageState extends State<HomePage> {
                                       ),
                                     )
                                     .toList(),
+                            // comparare intre valorile din lista pentru sortare
                             onChanged: (t) {
                               if (t == null) return;
                               setState(() {
@@ -924,7 +930,6 @@ class HomePageState extends State<HomePage> {
                                               id,
                                               () => ScrollController(),
                                             );
-
                                             // adresa completa pentru afisare se concateneaza
                                             final loc =
                                                 (data['location'] as Map?) ??
@@ -944,10 +949,10 @@ class HomePageState extends State<HomePage> {
                                                 )
                                                 .join(', ');
 
+                                            // initializam lista de imagini pentru poza de preview
                                             final images = List<String>.from(
                                               data['images'] as List? ?? [],
                                             );
-
                                             return ConstrainedBox(
                                               constraints: const BoxConstraints(
                                                 maxWidth: 700,
@@ -1086,7 +1091,7 @@ class HomePageState extends State<HomePage> {
                                                       ],
                                                     ),
 
-                                                    // detalii si ExpansionTile
+                                                    // restul detaliilor din card
                                                     ExpansionTile(
                                                       tilePadding:
                                                           const EdgeInsets.symmetric(
@@ -1102,6 +1107,8 @@ class HomePageState extends State<HomePage> {
                                                               FontWeight.bold,
                                                         ),
                                                       ),
+
+                                                      // pretul cu formatare
                                                       subtitle: Text(
                                                         '€ ${NumberFormat.decimalPattern('ro').format((data['price'] as num?) ?? 0)}',
                                                       ),
@@ -1111,6 +1118,7 @@ class HomePageState extends State<HomePage> {
                                                             vertical: 8,
                                                           ),
                                                       children: [
+                                                        // locatia
                                                         if (fullAddressess
                                                             .isNotEmpty) ...[
                                                           Row(
@@ -1126,7 +1134,7 @@ class HomePageState extends State<HomePage> {
                                                                 width: 8,
                                                               ),
                                                               Expanded(
-                                                                child: Text(
+                                                                child: SelectableText(
                                                                   fullAddressess,
                                                                   style:
                                                                       const TextStyle(
@@ -1170,7 +1178,7 @@ class HomePageState extends State<HomePage> {
                                                             height: 20,
                                                           ),
                                                           SizedBox(
-                                                            height: 150,
+                                                            height: 120,
                                                             child: Row(
                                                               children: [
                                                                 IconButton(
@@ -1225,9 +1233,9 @@ class HomePageState extends State<HomePage> {
                                                                             child: Image.network(
                                                                               images[idx],
                                                                               width:
-                                                                                  100,
+                                                                                  120,
                                                                               height:
-                                                                                  100,
+                                                                                  80,
                                                                               fit:
                                                                                   BoxFit.cover,
                                                                               errorBuilder:
@@ -1274,7 +1282,7 @@ class HomePageState extends State<HomePage> {
                                                         const SizedBox(
                                                           height: 20,
                                                         ),
-                                                        // agentii din card
+                                                        // Afisare detalii agent sau mesaj user nelogat
                                                         if (user != null) ...[
                                                           FutureBuilder<
                                                             DocumentSnapshot
@@ -1297,7 +1305,7 @@ class HomePageState extends State<HomePage> {
                                                               if (snapAgent
                                                                   .hasError) {
                                                                 return const Text(
-                                                                  'eroare detalii agent',
+                                                                  'Eroare la incarcare detalii agent',
                                                                 );
                                                               }
                                                               if (!snapAgent
@@ -1305,9 +1313,8 @@ class HomePageState extends State<HomePage> {
                                                                   !snapAgent
                                                                       .data!
                                                                       .exists) {
-                                                                // agentul a fost sters sau nu exista
                                                                 return const Text(
-                                                                  'agent inexistent',
+                                                                  'Agent inexistent',
                                                                 );
                                                               }
                                                               final agentDoc =
@@ -1328,7 +1335,6 @@ class HomePageState extends State<HomePage> {
                                                                         'email',
                                                                       )
                                                                       as String;
-                                                              // returneaza detalii agent + buton telefon + vizionare
                                                               return Column(
                                                                 crossAxisAlignment:
                                                                     CrossAxisAlignment
@@ -1345,7 +1351,12 @@ class HomePageState extends State<HomePage> {
                                                                             ).colorScheme.primary,
                                                                         child: Text(
                                                                           name.isNotEmpty
-                                                                              ? name[0].toUpperCase()
+                                                                              ? (name[0] +
+                                                                                      (name.length >
+                                                                                              1
+                                                                                          ? name[1]
+                                                                                          : ''))
+                                                                                  .toUpperCase()
                                                                               : 'A',
                                                                           style: const TextStyle(
                                                                             color:
@@ -1355,7 +1366,7 @@ class HomePageState extends State<HomePage> {
                                                                       ),
                                                                       const SizedBox(
                                                                         width:
-                                                                            8,
+                                                                            10,
                                                                       ),
                                                                       Expanded(
                                                                         child: Column(
@@ -1369,47 +1380,24 @@ class HomePageState extends State<HomePage> {
                                                                                     FontWeight.bold,
                                                                               ),
                                                                             ),
-                                                                            Text(
+                                                                            const SizedBox(
+                                                                              height:
+                                                                                  5,
+                                                                            ),
+                                                                            SelectableText(
                                                                               email,
                                                                             ),
-                                                                            if (showPhone[id] ??
-                                                                                false) ...[
-                                                                              const SizedBox(
-                                                                                height:
-                                                                                    4,
-                                                                              ),
-                                                                              Text(
-                                                                                phone,
-                                                                                style: const TextStyle(
-                                                                                  color:
-                                                                                      Colors.grey,
-                                                                                ),
-                                                                              ),
-                                                                            ],
+                                                                            SelectableText(
+                                                                              phone,
+                                                                            ),
                                                                           ],
                                                                         ),
                                                                       ),
-                                                                      IconButton(
-                                                                        icon: const Icon(
-                                                                          Icons
-                                                                              .phone,
-                                                                        ),
-                                                                        color:
-                                                                            Theme.of(
-                                                                              context,
-                                                                            ).colorScheme.primary,
-                                                                        onPressed:
-                                                                            () => togglePhone(
-                                                                              id,
-                                                                            ),
-                                                                      ),
                                                                     ],
                                                                   ),
-
                                                                   const SizedBox(
                                                                     height: 7,
                                                                   ),
-
                                                                   const Center(
                                                                     child: Text(
                                                                       'sau',
@@ -1423,11 +1411,9 @@ class HomePageState extends State<HomePage> {
                                                                       ),
                                                                     ),
                                                                   ),
-
                                                                   const SizedBox(
                                                                     height: 12,
                                                                   ),
-
                                                                   Center(
                                                                     child: ElevatedButton(
                                                                       onPressed: () {
@@ -1463,7 +1449,7 @@ class HomePageState extends State<HomePage> {
                                                                         ),
                                                                       ),
                                                                       child: const Text(
-                                                                        'programeaza o vizionare',
+                                                                        'Programeaza o vizionare',
                                                                         style: TextStyle(
                                                                           fontSize:
                                                                               14,
@@ -1471,7 +1457,7 @@ class HomePageState extends State<HomePage> {
                                                                       ),
                                                                     ),
                                                                   ),
-                                                                  SizedBox(
+                                                                  const SizedBox(
                                                                     height: 10,
                                                                   ),
                                                                 ],
@@ -1479,17 +1465,15 @@ class HomePageState extends State<HomePage> {
                                                             },
                                                           ),
                                                         ] else ...[
-                                                          // daca nu avem user logat, afisam doar nume agent si buton
+                                                          // user nelogat
                                                           Column(
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
                                                                     .stretch,
                                                             children: [
-                                                              Text(
-                                                                data['agentName']
-                                                                        as String? ??
-                                                                    '',
-                                                                style: const TextStyle(
+                                                              const Text(
+                                                                'User nelogat',
+                                                                style: TextStyle(
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .bold,
@@ -1501,7 +1485,7 @@ class HomePageState extends State<HomePage> {
                                                               ),
                                                               const Center(
                                                                 child: Text(
-                                                                  'sau',
+                                                                  'A aparut o eroare. Autentifica-te mai intai',
                                                                   style: TextStyle(
                                                                     fontSize:
                                                                         14,
@@ -1511,52 +1495,6 @@ class HomePageState extends State<HomePage> {
                                                                     color:
                                                                         Colors
                                                                             .grey,
-                                                                  ),
-                                                                ),
-                                                              ),
-
-                                                              const SizedBox(
-                                                                height: 12,
-                                                              ),
-
-                                                              Center(
-                                                                child: ElevatedButton(
-                                                                  onPressed: () {
-                                                                    Navigator.push(
-                                                                      context,
-                                                                      MaterialPageRoute(
-                                                                        builder:
-                                                                            (
-                                                                              _,
-                                                                            ) =>
-                                                                                const FavoritesPage(),
-                                                                      ),
-                                                                    );
-                                                                  },
-                                                                  style: ElevatedButton.styleFrom(
-                                                                    backgroundColor:
-                                                                        Theme.of(
-                                                                          context,
-                                                                        ).colorScheme.primary,
-                                                                    padding: const EdgeInsets.symmetric(
-                                                                      horizontal:
-                                                                          24,
-                                                                      vertical:
-                                                                          12,
-                                                                    ),
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                            8,
-                                                                          ),
-                                                                    ),
-                                                                  ),
-                                                                  child: const Text(
-                                                                    'programeaza o vizionare',
-                                                                    style: TextStyle(
-                                                                      fontSize:
-                                                                          16,
-                                                                    ),
                                                                   ),
                                                                 ),
                                                               ),
@@ -1581,7 +1519,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  // dropdown custom pentru filtre
+  // custom UI pentru dropdown filtre
   Widget buildDropdown({
     required String value,
     required List<String> items,
@@ -1606,7 +1544,7 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-  // textfield custom pentru filtre
+  // custom UI pentru filtrele textfield
   Widget buildTextField({
     required String hint,
     required double width,
