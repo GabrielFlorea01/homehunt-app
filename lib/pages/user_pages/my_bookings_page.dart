@@ -5,7 +5,6 @@ import 'package:homehunt/pages/user_pages/edit_booking_page.dart';
 import 'package:intl/intl.dart';
 import 'package:homehunt/models/error_widgets/error_banner.dart';
 
-/// Pagina pentru vizualizarea si editarea programarilor
 class MyBookingsPage extends StatefulWidget {
   const MyBookingsPage({super.key});
 
@@ -20,10 +19,11 @@ class MyBookingsPageState extends State<MyBookingsPage> {
   @override
   void initState() {
     super.initState();
-    // Preluam user-ul curent de la FirebaseAuth
+    // user-ul curent
     user = FirebaseAuth.instance.currentUser;
   }
 
+  // sterge vizionare din baza de date
   Future<void> deleteBooking(String bookingId) async {
     try {
       await FirebaseFirestore.instance
@@ -39,16 +39,14 @@ class MyBookingsPageState extends State<MyBookingsPage> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width >= 900;
-
-    // Daca user-ul nu este logat, afisam un mesaj simplu
+    // daca user-ul nu este logat, afisam un mesaj simplu
     if (user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Vizionarile mele')),
-        body: const Center(child: Text('Trebuie sa fii autentificat.')),
+        body: const Center(child: Text('Trebuie sa fii autentificat')),
       );
     }
-
-    // Layout 50/50 pe ecrane late, Column pe ecrane inguste
+    // layout cu imagine si form in functie de marime ecran
     return Scaffold(
       body:
           isWide
@@ -57,7 +55,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
     );
   }
 
-  /// Pane-ul cu lista de programari si butonul de inapoi interior
+  // widget/formular cu lista de vizionari si butonul de inapoi
   Widget buildListPane() {
     return Expanded(
       flex: 2,
@@ -72,7 +70,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Rand cu sageata de intoarcere si titlu
+              // sageata si titlu
               Row(
                 children: [
                   IconButton(
@@ -95,7 +93,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                 ),
                 const SizedBox(height: 16),
               ],
-              // Lista scrollabila
+              // lista de vizionari
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream:
@@ -106,7 +104,11 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                           .snapshots(),
                   builder: (context, snap) {
                     if (snap.hasError) {
-                      return Center(child: Text('Eroare: ${snap.error}'));
+                      return Center(
+                        child: Text(
+                          'Eroare la incarcarea vizionarilor: ${snap.error}',
+                        ),
+                      );
                     }
                     if (snap.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -114,7 +116,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                     final docs = snap.data!.docs;
                     if (docs.isEmpty) {
                       return const Center(
-                        child: Text('Nu ai vizionari inregistrate'),
+                        child: Text('Nu ai vizionari programate inca'),
                       );
                     }
                     return ListView.separated(
@@ -123,11 +125,11 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                       itemBuilder: (ctx, i) {
                         final data = docs[i].data()! as Map<String, dynamic>;
                         final bookingId = docs[i].id;
-                        final ts = data['date'] as Timestamp;
-                        final dt = ts.toDate();
+                        final timeStamp = data['date'] as Timestamp;
+                        final date = timeStamp.toDate();
                         final formatted = DateFormat(
-                          'dd/MM/yyyy – HH:mm',
-                        ).format(dt);
+                          'dd/MM/yyyy – HH:mm', // formatare data si ora
+                        ).format(date);
 
                         final propertyId = data['properties'] as String;
 
@@ -138,7 +140,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                                   .doc(propertyId)
                                   .get(),
                           builder: (context, propSnap) {
-                            String propertyName = 'Proprietate';
+                            String propertyName = '';
                             if (propSnap.hasData && propSnap.data!.exists) {
                               final propData =
                                   propSnap.data!.data() as Map<String, dynamic>;
@@ -171,7 +173,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
                                           builder:
                                               (_) => EditBookingPage(
                                                 bookingId: bookingId,
-                                                initialDateTime: dt,
+                                                initialDateTime: date,
                                                 propertyName: propertyName,
                                               ),
                                         ),
@@ -200,7 +202,7 @@ class MyBookingsPageState extends State<MyBookingsPage> {
     );
   }
 
-  /// Pane-ul cu imaginea decorativa
+  // widget cu imaginea
   Widget buildImagePane() {
     return Expanded(
       flex: 1,

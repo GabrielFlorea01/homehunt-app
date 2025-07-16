@@ -136,6 +136,7 @@ class HomePageState extends State<HomePage> {
       return;
     }
 
+    // inca o referinta pentru operatiile de update
     final userDoc = usersRef.doc(user!.uid);
 
     try {
