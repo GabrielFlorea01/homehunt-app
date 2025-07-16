@@ -122,11 +122,9 @@ class ProfilePageState extends State<ProfilePage> {
     final isWide =
         MediaQuery.of(context).size.width >=
         900; // verificare pentru layout wide
-
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-
     return Scaffold(
       body: LayoutBuilder(
         builder:
@@ -283,7 +281,6 @@ class ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 24),
-
               FilledButton(
                 onPressed: saveProfile,
                 child: const Text('Salveaza'),

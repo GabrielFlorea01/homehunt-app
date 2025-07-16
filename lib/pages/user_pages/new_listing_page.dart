@@ -1165,6 +1165,11 @@ class NewListingPageState extends State<NewListingPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(height: 25),
                 if (errorMessage != null) ...[
                   ErrorBanner(
                     message: errorMessage!,
