@@ -241,7 +241,6 @@ class NewListingPageState extends State<NewListingPage> {
       setState(() => errorMessage = 'Selecteaza numarul de camere');
       return;
     }
-
     if (selectedCategory == 'Casa' && selectedNumarCamereCasa == null) {
       setState(() {
         errorMessage = 'Selecteaza numarul de camere pentru casa';
@@ -874,14 +873,6 @@ class NewListingPageState extends State<NewListingPage> {
           selectedNumarCamereCasa,
           (v) => setState(() => selectedNumarCamereCasa = v),
         ),
-        if (selectedNumarCamereCasa == null)
-          const Padding(
-            padding: EdgeInsets.only(top: 4, left: 4),
-            child: Text(
-              'Selecteaza numarul de camere',
-              style: TextStyle(color: Colors.red, fontSize: 12),
-            ),
-          ),
         const SizedBox(height: 10),
         TextFormField(
           controller: suprafataUtilaCasaController,
