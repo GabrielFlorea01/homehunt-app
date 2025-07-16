@@ -189,6 +189,21 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  //reseteaza toate filtrele
+  void resetFilters() {
+    setState(() {
+      transactionType = 'Toate';
+      propertyFilter = 'Tip de proprietate';
+      roomFilter = null;
+      locationFilter = null;
+      minPrice = null;
+      maxPrice = null;
+      titleFilter = null;
+      selectedSort = 'Cele mai noi';
+    });
+    applyFilters();
+  }
+
   // aplica filtrele pe lista de anunturi
   void applyFilters() {
     filteredListings =
@@ -747,6 +762,17 @@ class HomePageState extends State<HomePage> {
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
+                                FilledButton(
+                                  onPressed: resetFilters,
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  child: const Text('Reseteaza filtre'),
+                                ),
+                                const SizedBox(width: 30),
                                 // filtru pentru titlu - de tip input
                                 buildTextField(
                                   hint: 'Titlu',
