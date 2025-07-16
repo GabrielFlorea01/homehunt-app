@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:homehunt/pages/auth_pages/auth/auth_service.dart';
-import 'package:homehunt/pages/auth_pages/login_page.dart';
 import 'package:homehunt/models/error_widgets/error_banner.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -111,13 +110,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => const LoginPage(), // inapoi la login
-                      ),
-                    );
+                    // se revine la authgate, care gestioneaza autentificarea
+                    Navigator.of(context).popUntil((route) => route.isFirst);
                   },
                   child: const Text('Inapoi la login'), //buton inapoi
                 ),
