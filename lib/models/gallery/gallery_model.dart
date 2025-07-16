@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Model de widget pentru galeria de imagini
 class GalleryView extends StatefulWidget {
   final List<String> images; // lista url-urilor imaginilor
   final int initialIndex; // indexul imaginii de start
