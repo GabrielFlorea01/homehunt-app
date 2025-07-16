@@ -13,43 +13,45 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class FavoritesPageState extends State<FavoritesPage> {
-  // Referinta catre colectia 'properties' din Firestore
+  // referinta catre colectia 'properties'
   final CollectionReference propertiesRef = FirebaseFirestore.instance
       .collection('properties');
-  // Referinta catre colectia 'users' din Firestore
+  // referinta catre colectia 'users'
   final CollectionReference usersRef = FirebaseFirestore.instance.collection(
     'users',
   );
 
-  User? user; // Referinta catre utilizatorul curent
-  List<String> favoriteIds = []; // Lista de ID-uri de anunturi favorite
-  bool isLoading = true; // Flag pentru loader
+  User? user; // user curent
+  List<String> favoriteIds = []; // lista de id-uri favorite
+  bool isLoading = true; // loader pentru date
 
   StreamSubscription<DocumentSnapshot>?
-  userSub; // Abonament la documentul user-ului
+  userSub; // subscriptie la documentul userului
+
+  // controllere pentru galeria de imagini
+  Map<String, ScrollController> galleryControllers = {};
 
   @override
   void initState() {
     super.initState();
-    loadFavorites(); // Incarca lista de favorite la initializare
+    loadFavorites(); // incarca cele favorite la pornire
   }
 
   @override
   void dispose() {
-    userSub?.cancel(); // Opreste abonamentul daca exista
+    userSub?.cancel(); // opreste subscriptia daca exista
     super.dispose();
   }
 
-  /// Incarca favoriteIds din documentul user-ului
+  /// incarca proprietatile favoritele userului
   Future<void> loadFavorites() async {
-    user = FirebaseAuth.instance.currentUser;
+    user = FirebaseAuth.instance.currentUser; // userul curent
     if (user == null) {
-      // Daca nu exista user logat, opreste loader si returneaza
       setState(() => isLoading = false);
       return;
     }
 
-    // Asculta modificari pe documentul user-ului
+    //verifica/asculta modificarile pe documentul userului
     userSub = usersRef
         .doc(user!.uid)
         .snapshots()
@@ -60,12 +62,11 @@ class FavoritesPageState extends State<FavoritesPage> {
             final favList = data['favourites'] as List<dynamic>? ?? [];
             favoriteIds = favList.map((e) => e.toString()).toList();
             setState(() {
-              isLoading = false; // Opreste loader dupa ce preia datele
+              isLoading = false;
             });
           },
           onError: (e) {
             if (!mounted) return;
-            // Daca apare eroare, opreste loader
             setState(() {
               isLoading = false;
             });
@@ -73,7 +74,7 @@ class FavoritesPageState extends State<FavoritesPage> {
         );
   }
 
-  /// Deschide galeria de imagini full-screen
+  /// galeria de imagini
   void openGallery(BuildContext ctx, List<String> imgs, int idx) {
     Navigator.of(ctx).push(
       MaterialPageRoute(
@@ -94,90 +95,93 @@ class FavoritesPageState extends State<FavoritesPage> {
     );
   }
 
-  /// Creaza o lista de Chip-uri in functie de categoria proprietatii
+  /// lista de chips in functie de categorie in interiorul card-ului
   List<Widget> buildChips(Map<String, dynamic> data) {
     switch (data['category'] as String? ?? '') {
       case 'Garsoniera':
-        final g = data['garsonieraDetails'] as Map<String, dynamic>? ?? {};
+        final garsoniera =
+            data['garsonieraDetails'] as Map<String, dynamic>? ?? {};
         return [
           const Chip(
             label: Text('1 camera'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('${g['area'] ?? ''} mp'),
+            label: Text('${garsoniera['area'] ?? ''} mp'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('Etaj ${g['floor'] ?? ''}'),
+            label: Text('Etaj ${garsoniera['floor'] ?? ''}'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('An ${g['yearBuilt'] ?? ''}'),
+            label: Text('An ${garsoniera['yearBuilt'] ?? ''}'),
             visualDensity: VisualDensity.compact,
           ),
         ];
       case 'Apartament':
-        final apt = data['apartmentDetails'] as Map<String, dynamic>? ?? {};
+        final apartament =
+            data['apartmentDetails'] as Map<String, dynamic>? ?? {};
         return [
           Chip(
-            label: Text('${apt['rooms']} camere'),
+            label: Text('${apartament['rooms']} camere'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('${apt['area']} mp'),
+            label: Text('${apartament['area']} mp'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('Etaj ${apt['floor']}'),
+            label: Text('Etaj ${apartament['floor']}'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('An ${apt['yearBuilt']}'),
+            label: Text('An ${apartament['yearBuilt']}'),
             visualDensity: VisualDensity.compact,
           ),
         ];
       case 'Casa':
-        final c = data['houseDetails'] as Map<String, dynamic>? ?? {};
+        final casa = data['houseDetails'] as Map<String, dynamic>? ?? {};
         return [
           Chip(
-            label: Text('${c['rooms']} camere'),
+            label: Text('${casa['rooms']} camere'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('${c['area']} mp utili'),
+            label: Text('${casa['area']} mp utili'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('${c['landArea']} mp teren'),
+            label: Text('${casa['landArea']} mp teren'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('${c['floors']} etaje'),
+            label: Text('${casa['floors']} etaje'),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('An ${c['yearBuilt']}'),
+            label: Text('An ${casa['yearBuilt']}'),
             visualDensity: VisualDensity.compact,
           ),
         ];
       case 'Teren':
-        final t = data['landDetails'] as Map<String, dynamic>? ?? {};
+        final teren = data['landDetails'] as Map<String, dynamic>? ?? {};
         return [
           Chip(
-            label: Text(t['classification'] ?? ''),
+            label: Text(teren['classification'] ?? ''),
             visualDensity: VisualDensity.compact,
           ),
           Chip(
-            label: Text('${t['area']} mp'),
+            label: Text('${teren['area']} mp'),
             visualDensity: VisualDensity.compact,
           ),
         ];
       case 'Spatiu comercial':
-        final sc = data['commercialDetails'] as Map<String, dynamic>? ?? {};
+        final spatiuComercial =
+            data['commercialDetails'] as Map<String, dynamic>? ?? {};
         return [
           Chip(
-            label: Text('${sc['area']} mp'),
+            label: Text('${spatiuComercial['area']} mp'),
             visualDensity: VisualDensity.compact,
           ),
         ];
@@ -188,37 +192,35 @@ class FavoritesPageState extends State<FavoritesPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Daca este inca in curs de incarcare, afiseaza loader
+    // daca starea e loading
     if (isLoading) {
       return Scaffold(
         appBar: AppBar(
-          // AppBar fara back-button (ramane implicit daca navigator are schema)
           backgroundColor: Theme.of(context).colorScheme.primary,
           iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-
-    // Daca nu mai exista user logat, intoarce un widget gol (AuthGate va prelua situatia)
+    // user nu e logat, widget gol
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       return const SizedBox.shrink();
     }
-
+    // widget/form
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.primary,
-        // IconTheme pentru a face back-arrow implicit alb
         iconTheme: const IconThemeData(color: Colors.white),
-        automaticallyImplyLeading: true, // Afiseaza back-arrow implicit
+        automaticallyImplyLeading: true,
       ),
       body:
           favoriteIds.isEmpty
-              // Daca nu exista favorite, afiseaza mesaj
-              ? const Center(child: Text('Nu ai proprietati favorite'))
+              // daca nu exista favorite
+              ? const Center(child: Text('Nu ai adaugat proprietati favorite'))
+              // daca exista favorite
+              // lista de proprietati favorite
               : StreamBuilder<QuerySnapshot>(
-                // Query Firestore: preia doar documentele a caror ID se afla in favoriteIds
                 stream:
                     propertiesRef
                         .where(FieldPath.documentId, whereIn: favoriteIds)
@@ -227,10 +229,11 @@ class FavoritesPageState extends State<FavoritesPage> {
                 builder: (ctx, snap) {
                   if (snap.hasError) {
                     final err = snap.error;
-                    // Daca eroarea este de permisiune
                     if (err is FirebaseException &&
                         err.code == 'permission-denied') {
-                      return const Center(child: Text('Nu aveti permisiune'));
+                      return const Center(
+                        child: Text('Nu s-au putut incarca favoritele'),
+                      );
                     }
                     return Center(child: Text('Eroare: ${snap.error}'));
                   }
@@ -240,27 +243,32 @@ class FavoritesPageState extends State<FavoritesPage> {
                   final docs = snap.data!.docs;
                   if (docs.isEmpty) {
                     return const Center(
-                      child: Text('Nu ai adaugat inca favorit'),
+                      child: Text('Nu ai adaugat proprietati favorite'),
                     );
                   }
-
-                  // Afiseaza lista de carduri pentru fiecare proprietate favorita
+                  // lista de carduri pentru fiecare proprietate favorita
                   return SingleChildScrollView(
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 600),
                         child: Column(
                           children:
+                              // initializare si extragere date din documente pentru afisare
                               docs.map((doc) {
                                 final data =
                                     doc.data()! as Map<String, dynamic>;
                                 data['id'] = doc.id;
+                                final id = data['id'] as String;
                                 final images = List<String>.from(
                                   data['images'] as List? ?? [],
                                 );
                                 final loc =
                                     data['location'] as Map<String, dynamic>? ??
                                     {};
+                                galleryControllers.putIfAbsent(
+                                  id,
+                                  () => ScrollController(),
+                                );
                                 final fullAddress = [
                                   loc['street'] ?? '',
                                   loc['number'] ?? '',
@@ -284,7 +292,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // imagine + buton unfavorite + tag tip tranzactie
+                                      // imagine si buton unfavorite
                                       Stack(
                                         children: [
                                           ClipRRect(
@@ -359,7 +367,8 @@ class FavoritesPageState extends State<FavoritesPage> {
                                               ),
                                             ),
                                           ),
-                                          // tag tip tranzactie
+
+                                          // chip tip tranzactie
                                           Positioned(
                                             bottom: 8,
                                             left: 8,
@@ -388,7 +397,8 @@ class FavoritesPageState extends State<FavoritesPage> {
                                           ),
                                         ],
                                       ),
-                                      // detalii si ExpansionTile
+
+                                      // detaliile din card
                                       ExpansionTile(
                                         tilePadding: const EdgeInsets.symmetric(
                                           horizontal: 16,
@@ -409,7 +419,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                                               vertical: 8,
                                             ),
                                         children: [
-                                          // adresa completa
+                                          // adresa
                                           if (fullAddress.isNotEmpty)
                                             Row(
                                               children: [
@@ -448,7 +458,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                                               ),
                                             ),
                                           ],
-                                          // galerie imagini
+                                          // galerie mica imagini
                                           if (images.length > 1) ...[
                                             const SizedBox(height: 20),
                                             SizedBox(
@@ -459,12 +469,30 @@ class FavoritesPageState extends State<FavoritesPage> {
                                                     icon: const Icon(
                                                       Icons.arrow_back_ios,
                                                     ),
-                                                    onPressed: () {
-                                                      // scroll inapoi (optional: vezi home_page pentru logica)
-                                                    },
+                                                    onPressed:
+                                                        () => galleryControllers[id]!.animateTo(
+                                                          (galleryControllers[id]!
+                                                                      .offset -
+                                                                  100)
+                                                              .clamp(
+                                                                0.0,
+                                                                galleryControllers[id]!
+                                                                    .position
+                                                                    .maxScrollExtent,
+                                                              ),
+                                                          duration:
+                                                              const Duration(
+                                                                milliseconds:
+                                                                    300,
+                                                              ),
+                                                          curve:
+                                                              Curves.easeInOut,
+                                                        ),
                                                   ),
                                                   Expanded(
                                                     child: ListView.separated(
+                                                      controller:
+                                                          galleryControllers[id],
                                                       scrollDirection:
                                                           Axis.horizontal,
                                                       itemCount: images.length,
@@ -517,9 +545,25 @@ class FavoritesPageState extends State<FavoritesPage> {
                                                     icon: const Icon(
                                                       Icons.arrow_forward_ios,
                                                     ),
-                                                    onPressed: () {
-                                                      // scroll inainte (optional: vezi home_page pentru logica)
-                                                    },
+                                                    onPressed:
+                                                        () => galleryControllers[id]!.animateTo(
+                                                          (galleryControllers[id]!
+                                                                      .offset +
+                                                                  100)
+                                                              .clamp(
+                                                                0.0,
+                                                                galleryControllers[id]!
+                                                                    .position
+                                                                    .maxScrollExtent,
+                                                              ),
+                                                          duration:
+                                                              const Duration(
+                                                                milliseconds:
+                                                                    300,
+                                                              ),
+                                                          curve:
+                                                              Curves.easeInOut,
+                                                        ),
                                                   ),
                                                 ],
                                               ),
@@ -565,11 +609,7 @@ class FavoritesPageState extends State<FavoritesPage> {
                                                         ).colorScheme.primary,
                                                     child: Text(
                                                       name.isNotEmpty
-                                                          ? (name[0] +
-                                                                  (name.length >
-                                                                          1
-                                                                      ? name[1]
-                                                                      : ''))
+                                                          ? (name[0] + name[1])
                                                               .toUpperCase()
                                                           : 'A',
                                                       style: const TextStyle(
