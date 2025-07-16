@@ -223,10 +223,7 @@ class PropertiesReportPageState extends State<PropertiesReportPage> {
                                 DataCell(Text(p.type)),
                                 DataCell(
                                   Text(
-                                    NumberFormat.decimalPattern(
-                                      // formatarea pretului in format romanesc
-                                      'ro',
-                                    ).format(p.price),
+                                    '${NumberFormat.decimalPattern('ro').format(p.price)} €',
                                   ),
                                 ),
                                 DataCell(
