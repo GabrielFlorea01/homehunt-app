@@ -732,7 +732,7 @@ class HomePageState extends State<HomePage> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 5,
                       ),
                       child: Column(
                         children: [

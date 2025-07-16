@@ -468,8 +468,6 @@ class NewListingPageState extends State<NewListingPage> {
             labelText: 'Numar',
             border: OutlineInputBorder(),
           ),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (v) => v!.isEmpty ? 'Introdu numarul' : null,
         ),
         const SizedBox(height: 10),

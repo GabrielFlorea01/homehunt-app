@@ -47,6 +47,11 @@ class EditListingPageState extends State<EditListingPage> {
   final suprafataUtilaApartController = TextEditingController();
   final anConstructieApartController = TextEditingController();
 
+  // Garsoniera
+  final etajGarsonieraController = TextEditingController();
+  final suprafataUtilaGarsonieraController = TextEditingController();
+  final anConstructieGarsonieraController = TextEditingController();
+
   // Casa
   String? selectedNumarCamereCasa;
   final suprafataUtilaCasaController = TextEditingController();
@@ -170,6 +175,14 @@ class EditListingPageState extends State<EditListingPage> {
               (apt['area'] as num?)?.toString() ?? '';
           anConstructieApartController.text =
               (apt['yearBuilt'] as num?)?.toString() ?? '';
+          break;
+        case 'Garsoniera':
+          final gars = data['garsonieraDetails'] as Map<String, dynamic>? ?? {};
+          etajController.text = gars['floor'] as String? ?? '';
+          suprafataUtilaGarsonieraController.text =
+              (gars['area'] as num?)?.toString() ?? '';
+          anConstructieGarsonieraController.text =
+              (gars['yearBuilt'] as num?)?.toString() ?? '';
           break;
         case 'Casa':
           final c = data['houseDetails'] as Map<String, dynamic>? ?? {};
@@ -304,6 +317,14 @@ class EditListingPageState extends State<EditListingPage> {
             'floor': etajController.text,
             'area': parseFormattedNumber(suprafataUtilaApartController.text),
             'yearBuilt': int.parse(anConstructieApartController.text),
+          };
+        case 'Garsoniera':
+          data['garsonieraDetails'] = {
+            'floor': etajGarsonieraController.text,
+            'area': parseFormattedNumber(
+              suprafataUtilaGarsonieraController.text,
+            ),
+            'yearBuilt': int.parse(anConstructieGarsonieraController.text),
           };
           break;
         case 'Casa':
@@ -632,7 +653,79 @@ class EditListingPageState extends State<EditListingPage> {
     );
   }
 
-  // formular pentru apartament
+  // formular pentru garsoniera
+  Widget buildGarsonieraForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: titleController,
+          decoration: const InputDecoration(
+            labelText: 'Titlu',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
+        ),
+        const SizedBox(height: 10),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: etajController,
+          decoration: const InputDecoration(
+            labelText: 'Etaj',
+            border: OutlineInputBorder(),
+          ),
+          validator: (v) => v!.isEmpty ? 'Introdu etaj' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: suprafataUtilaGarsonieraController,
+          onChanged: (v) => formatNumber(suprafataUtilaGarsonieraController, v),
+          decoration: const InputDecoration(
+            labelText: 'Suprafata utila (mp)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          validator: (v) => v!.isEmpty ? 'Introdu suprafata' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: anConstructieGarsonieraController,
+          decoration: const InputDecoration(
+            labelText: 'An constructie',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) => v!.isEmpty ? 'Introdu anul' : null,
+        ),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: priceController,
+          onChanged: (v) => formatNumber(priceController, v),
+          decoration: const InputDecoration(
+            labelText: 'Pret (EUR)',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+          validator: (v) => v!.isEmpty ? 'Introdu pretul' : null,
+        ),
+        const SizedBox(height: 20),
+        buildImageSection(),
+        TextFormField(
+          controller: descriptionController,
+          decoration: const InputDecoration(
+            labelText: 'Descriere',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 5,
+          validator: (v) => v!.isEmpty ? 'Introdu descrierea' : null,
+        ),
+        const SizedBox(height: 20),
+        buildLocalizareFields(),
+      ],
+    );
+  }
+
   Widget buildApartamentForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,7 +925,6 @@ class EditListingPageState extends State<EditListingPage> {
             labelText: 'Titlu',
             border: OutlineInputBorder(),
           ),
-          maxLength: 30,
           validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
         ),
         const SizedBox(height: 10),
@@ -917,7 +1009,6 @@ class EditListingPageState extends State<EditListingPage> {
             labelText: 'Titlu',
             border: OutlineInputBorder(),
           ),
-          maxLength: 30,
           validator: (v) => v!.isEmpty ? 'Introdu titlul' : null,
         ),
         const SizedBox(height: 10),
@@ -981,6 +1072,8 @@ class EditListingPageState extends State<EditListingPage> {
     switch (selectedCategory) {
       case 'Apartament':
         return buildApartamentForm();
+      case 'Garsoniera':
+        return buildGarsonieraForm();
       case 'Casa':
         return buildCasaForm();
       case 'Teren':

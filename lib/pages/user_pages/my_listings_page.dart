@@ -129,6 +129,10 @@ class MyListingsPageState extends State<MyListingsPage> {
             label: Text('${sc['area']} mp'),
             visualDensity: VisualDensity.compact,
           ),
+          Chip(
+            label: Text('${sc['type']}'),
+            visualDensity: VisualDensity.compact,
+          ),
         ];
       default:
         return [];

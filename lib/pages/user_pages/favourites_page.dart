@@ -184,6 +184,10 @@ class FavoritesPageState extends State<FavoritesPage> {
             label: Text('${spatiuComercial['area']} mp'),
             visualDensity: VisualDensity.compact,
           ),
+          Chip(
+            label: Text('${spatiuComercial['type']}'),
+            visualDensity: VisualDensity.compact,
+          ),
         ];
       default:
         return [];
