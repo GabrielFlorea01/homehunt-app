@@ -25,6 +25,7 @@ class AdminDeleteListingsPageState extends State<AdminDeleteListingsPage> {
   }
 
   Future<void> deletePropertyAndRemoveFromAgents(String propertyId) async {
+    //referinta la colectia de agenti
     final agentsRef = FirebaseFirestore.instance.collection('agents');
     // toti agentii care au aceasta proprietate in lista lor
     final agentsWithProperty =
