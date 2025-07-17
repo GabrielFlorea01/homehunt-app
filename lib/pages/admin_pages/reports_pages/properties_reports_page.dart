@@ -18,7 +18,6 @@ class PropertyModel {
     required this.createdAt,
   });
 
-  // Constructor din documentul Firestore
   // pentru a crea modelul de proprietate pe baza documentului din db
   // foloseste datele din document pentru a initializa campurile
   factory PropertyModel.fromDoc(
