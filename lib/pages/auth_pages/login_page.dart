@@ -185,7 +185,7 @@ class LoginPageState extends State<LoginPage> {
                         ),
                       );
                     },
-                    child: const Text('Ai uitat parola'),
+                    child: const Text('Ai uitat parola?'),
                   ),
                 ),
                 const SizedBox(height: 15),
