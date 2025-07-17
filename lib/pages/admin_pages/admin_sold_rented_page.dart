@@ -154,74 +154,77 @@ class AdminSoldRentedPageState extends State<AdminSoldRentedPage> {
                 return const Center(child: Text('Niciun anunt gasit'));
               }
               // fiecare anunt in card cu imagine de referinta si buton de marcare
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: docs.length,
-                itemBuilder: (ctx, i) {
-                  final doc = docs[i];
-                  final data = doc.data()! as Map<String, dynamic>;
-                  final images = List<String>.from(
-                    data['images'] as List? ?? [],
-                  );
-                  final type = data['type'] as String? ?? '';
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          // titlul si tipul anuntului
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  data['title'] as String? ?? '',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+              return SizedBox(
+                height: 400, // sau constraints.maxHeight * 0.6, după caz
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: docs.length,
+                  itemBuilder: (ctx, i) {
+                    final doc = docs[i];
+                    final data = doc.data()! as Map<String, dynamic>;
+                    final images = List<String>.from(
+                      data['images'] as List? ?? [],
+                    );
+                    final type = data['type'] as String? ?? '';
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            // titlul si tipul anuntului
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['title'] as String? ?? '',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text('Tip: $type'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // imaginea anuntului daca exista
-                          if (images.isNotEmpty) ...[
-                            SizedBox(
-                              width: 100,
-                              height: 100,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  images.first,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (_, __, ___) => Container(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                ),
+                                  const SizedBox(height: 4),
+                                  Text('Tip: $type'),
+                                ],
                               ),
                             ),
                             const SizedBox(width: 12),
+                            // imaginea anuntului daca exista
+                            if (images.isNotEmpty) ...[
+                              SizedBox(
+                                width: 100,
+                                height: 100,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    images.first,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (_, __, ___) => Container(
+                                          color: Colors.grey.shade300,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            // buton pentru a marca anuntul ca vandut/inchiriat
+                            ElevatedButton(
+                              onPressed: () => toggleSoldRented(doc.id, type),
+                              child: const Text('Aplica'),
+                            ),
                           ],
-                          // buton pentru a marca anuntul ca vandut/inchiriat
-                          ElevatedButton(
-                            onPressed: () => toggleSoldRented(doc.id, type),
-                            child: const Text('Aplica'),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               );
             },
           ),
