@@ -762,6 +762,7 @@ class HomePageState extends State<HomePage> {
                             scrollDirection: Axis.horizontal,
                             child: Row(
                               children: [
+                                //buton resetare filtre
                                 FilledButton(
                                   onPressed: resetFilters,
                                   style: FilledButton.styleFrom(
