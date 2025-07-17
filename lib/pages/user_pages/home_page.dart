@@ -208,7 +208,7 @@ class HomePageState extends State<HomePage> {
   void applyFilters() {
     filteredListings =
         allListings.where((data) {
-          // tranzactie
+          // tip de tranzactie
           if (transactionType != 'Toate' && data['type'] != transactionType) {
             return false;
           }
